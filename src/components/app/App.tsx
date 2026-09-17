@@ -1,4 +1,5 @@
 import "./App.css";
+import { StrictMode } from "react";
 import { NavLink } from "react-router";
 import { Outlet } from "react-router";
 
@@ -19,7 +20,7 @@ function Header() {
   ));
 
   return (
-    <>
+    <StrictMode>
       <header id="title-bar" className="bg-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-4 sm:px-6 lg:px-8">
           <NavLink className="block text-teal-600" to="/">
@@ -74,14 +75,16 @@ function Header() {
       <div style={{ marginTop: "100px" }}>
         <Outlet />
       </div>
-    </>
+    </StrictMode>
   );
 }
 
 function App() {
   return (
     <>
-      <Header />
+      <div className="app-container">
+        <Outlet />
+      </div>
     </>
   );
 }

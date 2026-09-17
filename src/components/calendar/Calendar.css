@@ -1,0 +1,26 @@
+.calendar > div {
+  padding: calc(var(--spacing) * 2);
+}
+
+.calendar > :nth-child(6n) {
+  border-inline-style: unset !important;
+}
+
+.calendar > :nth-child(n + 61) {
+  border-bottom-style: unset !important;
+}
+
+.calendar > .active {
+  background-color: var(--color-pink-200);
+}
+
+.cal-wrapper .MuiPickersLayout-actionBar,
+.cal-wrapper .MuiDayCalendar-weekDayLabel:nth-child(n + 6),
+.cal-wrapper .MuiPickerDay-root.Mui-disabled,
+.cal-wrapper
+  .MuiDayCalendar-weekContainer:has(
+    > .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-root.MuiButtonBase-root.Mui-disabled
+  ) {
+  display: none !important;
+}

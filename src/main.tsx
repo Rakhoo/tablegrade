@@ -1,8 +1,9 @@
 import { createRoot } from "react-dom/client";
-import { createHashRouter } from "react-router";
+import { createHashRouter, redirect } from "react-router";
 import { RouterProvider } from "react-router/dom";
 import "./index.css";
-import App from "./App.tsx";
+import App from "./components/app";
+import Calendar from "./components/calendar";
 
 const router = createHashRouter([
   {
@@ -10,9 +11,14 @@ const router = createHashRouter([
     Component: App,
     children: [
       {
-        path: "/calendar",
-        element: <div>AAAAAH</div>,
-      },{
+        path: "/",
+        loader: () => redirect("calendar"),
+      },
+      {
+        path: "calendar",
+        Component: Calendar,
+      },
+      {
         path: "*",
         element: <div>Error</div>,
       },
