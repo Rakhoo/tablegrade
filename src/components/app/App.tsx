@@ -1,6 +1,5 @@
 import "./App.css";
 import { StrictMode } from "react";
-import { NavLink } from "react-router";
 import { Outlet } from "react-router";
 
 /* function Header() {
@@ -81,11 +80,11 @@ import { Outlet } from "react-router";
 
 function App() {
   return (
-    <>
+    <StrictMode>
       <div className="app-container">
         <Outlet />
       </div>
-    </>
+    </StrictMode>
   );
 }
 
