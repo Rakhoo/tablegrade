@@ -3,7 +3,7 @@ import { StrictMode } from "react";
 import { NavLink } from "react-router";
 import { Outlet } from "react-router";
 
-function Header() {
+/* function Header() {
   const headers = [
     { name: "Kalender", link: "calendar" },
     { name: "Letzter", link: "last" },
@@ -77,7 +77,7 @@ function Header() {
       </div>
     </StrictMode>
   );
-}
+} */
 
 function App() {
   return (
