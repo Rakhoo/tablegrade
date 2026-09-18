@@ -16,11 +16,16 @@
 
 .cal-wrapper .MuiPickersLayout-actionBar,
 .cal-wrapper .MuiDayCalendar-weekDayLabel:nth-child(n + 6),
-.cal-wrapper .MuiPickerDay-root.Mui-disabled,
+.cal-wrapper .MuiPickerDay-root[aria-colindex="6"],
+.cal-wrapper .MuiPickerDay-root[aria-colindex="7"],
 .cal-wrapper
   .MuiDayCalendar-weekContainer:has(
     > .MuiPickerDay-dayOutsideMonth
-      + .MuiPickerDay-root.MuiButtonBase-root.Mui-disabled
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-root[aria-colindex="6"]
   ) {
   display: none !important;
 }

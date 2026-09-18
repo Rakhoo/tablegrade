@@ -5,6 +5,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { StaticDatePicker } from "@mui/x-date-pickers";
 import { de } from "date-fns/locale/de";
 import { Button } from "@mui/material";
+import { useLoaderData } from "react-router";
 
 const daysOfWeek = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
@@ -13,16 +14,22 @@ export default function Calendar() {
   if (today.getDay() == 0 || today.getDay() == 6) {
     today.setDate(today.getDate() + 1 + (today.getDay() % 5));
   }
+  const maxDate = new Date(today);
+  maxDate.setFullYear(maxDate.getFullYear() + 3);
+  maxDate.setMonth(11);
+  maxDate.setDate(31);
   const [currentDate, setCurrentDate] = useState(today);
+  const { holidays } = useLoaderData();
   const innerCal = new Array<any[]>(11)
     .fill(new Array(6).fill(null))
     .map((value, outerIndex) =>
       value.map((_, innerIndex) => {
         const key = outerIndex + "-" + innerIndex;
+        const date = new Date(currentDate);
+        date.setDate(date.getDate() + (innerIndex - currentDate.getDay()));
+
         if (outerIndex == 0) {
           if (innerIndex == 0) return <div key={key}></div>;
-          const date = new Date(currentDate);
-          date.setDate(date.getDate() + (innerIndex - currentDate.getDay()));
           return (
             <div
               className={
@@ -41,9 +48,48 @@ export default function Calendar() {
           );
         }
         if (innerIndex == 0) {
-          return <div key={key}>{outerIndex > 1 ? outerIndex - 1 : ""}</div>;
+          return (
+            <div
+              key={key}
+              className={outerIndex > 1 ? "row-span-2" : undefined}
+            >
+              {outerIndex > 1 ? outerIndex - 1 : ""}
+            </div>
+          );
         }
-        return <div key={key}>{outerIndex > 1 ? "event?" : "krank?"}</div>;
+        if (
+          holidays.find((holiday: any) => {
+            const startsOn = new Date(holiday.starts_on);
+            startsOn.setMinutes(
+              startsOn.getMinutes() + startsOn.getTimezoneOffset(),
+            );
+            const endsOn = new Date(holiday.ends_on);
+            endsOn.setDate(endsOn.getDate() + 1);
+            endsOn.setMinutes(endsOn.getMinutes() + endsOn.getTimezoneOffset());
+            return (
+              startsOn.getTime() <= date.getTime() &&
+              endsOn.getTime() > date.getTime()
+            );
+          })
+        ) {
+          return (
+            <div
+              key={key}
+              className={outerIndex > 1 ? "row-span-2" : undefined}
+            >
+              frei
+            </div>
+          );
+        }
+        return (
+          <div key={key} className={outerIndex > 1 ? "row-span-2" : undefined}>
+            {outerIndex > 1 ? (
+              <Button>event</Button>
+            ) : (
+              <Button variant="contained">frei</Button>
+            )}
+          </div>
+        );
       }),
     )
     .flat();
@@ -85,6 +131,8 @@ export default function Calendar() {
               const dayOfWeek = day.getDay();
               return dayOfWeek == 6 || dayOfWeek == 0;
             }}
+            maxDate={maxDate}
+            minDate={new Date("2026-08-02")}
           />
         </LocalizationProvider>
       </div>
