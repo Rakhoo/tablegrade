@@ -66,10 +66,9 @@ jobs:
       - name: Build with Vite
         run: ${{ steps.detect-package-manager.outputs.runner }} tsc -b && ${{ steps.detect-package-manager.outputs.runner }} vite build
       - name: Publish to Cloudflare Pages
-        uses: cloudflare/pages-action@1
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: tablegrade
-          directory: ./dist
+          command: pages deploy ./dist --project-name=tablegrade
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
