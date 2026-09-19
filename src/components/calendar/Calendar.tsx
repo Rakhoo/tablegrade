@@ -9,7 +9,7 @@ import { useLoaderData } from "react-router";
 
 const daysOfWeek = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
-export default function Calendar() {
+export function Calendar() {
   const today = new Date();
   if (today.getDay() == 0 || today.getDay() == 6) {
     today.setDate(today.getDate() + 1 + (today.getDay() % 5));
@@ -33,7 +33,9 @@ export default function Calendar() {
           return (
             <div
               className={
-                innerIndex == currentDate.getDay() ? "active" : undefined
+                innerIndex == currentDate.getDay()
+                  ? "col-span-3 active"
+                  : "col-span-3"
               }
               key={key}
             >
@@ -59,11 +61,11 @@ export default function Calendar() {
         }
         if (
           holidays.find((holiday: any) => {
-            const startsOn = new Date(holiday.starts_on);
+            const startsOn = new Date(holiday.start);
             startsOn.setMinutes(
               startsOn.getMinutes() + startsOn.getTimezoneOffset(),
             );
-            const endsOn = new Date(holiday.ends_on);
+            const endsOn = new Date(holiday.end);
             endsOn.setDate(endsOn.getDate() + 1);
             endsOn.setMinutes(endsOn.getMinutes() + endsOn.getTimezoneOffset());
             return (
@@ -75,14 +77,19 @@ export default function Calendar() {
           return (
             <div
               key={key}
-              className={outerIndex > 1 ? "row-span-2" : undefined}
+              className={
+                outerIndex > 1 ? "col-span-3 row-span-2" : "col-span-3"
+              }
             >
               frei
             </div>
           );
         }
         return (
-          <div key={key} className={outerIndex > 1 ? "row-span-2" : undefined}>
+          <div
+            key={key}
+            className={outerIndex > 1 ? "col-span-3 row-span-2" : "col-span-3"}
+          >
             {outerIndex > 1 ? (
               <Button>event</Button>
             ) : (
@@ -95,11 +102,15 @@ export default function Calendar() {
     .flat();
 
   return (
-    <div className="cal-wrapper h-screen flex flex-row justify-start gap-2">
+    <div className="cal-wrapper h-screen flex flex-row max-lg:flex-col justify-start max-lg:items-center gap-2">
       <div className="flex flex-col justify-start items-center w-min p-2">
-        <Button variant="contained" onClick={() => setCurrentDate(new Date())}>
-          Heute
-        </Button>
+        <div className="flex flex-row justify-between gap-2">
+          <Button variant="contained" onClick={() => setCurrentDate(today)}>
+            Heute
+          </Button>
+          <Button variant="outlined">Klasse hinzufügen</Button>
+        </div>
+
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
           <StaticDatePicker
             displayStaticWrapperAs="desktop"
@@ -137,7 +148,7 @@ export default function Calendar() {
         </LocalizationProvider>
       </div>
 
-      <div className="calendar w-full h-auto m-2 border rounded-lg grid grid-cols-6 divide-x-1 divide-y-1">
+      <div className="calendar w-full h-auto min-lg:m-2 max-lg:-mt-5 border rounded-lg bg-pink-50 grid grid-cols-16 divide-x-1 divide-y-1">
         {innerCal}
       </div>
     </div>

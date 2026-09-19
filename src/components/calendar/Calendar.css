@@ -14,6 +14,10 @@
   background-color: var(--color-pink-200);
 }
 
+.MuiPickersLayout-root {
+  background: transparent !important;
+}
+
 .cal-wrapper .MuiPickersLayout-actionBar,
 .cal-wrapper .MuiDayCalendar-weekDayLabel:nth-child(n + 6),
 .cal-wrapper .MuiPickerDay-root[aria-colindex="6"],

@@ -81,7 +81,7 @@ import { Outlet } from "react-router";
 function App() {
   return (
     <StrictMode>
-      <div className="app-container">
+      <div className="app-container bg-purple-100">
         <Outlet />
       </div>
     </StrictMode>

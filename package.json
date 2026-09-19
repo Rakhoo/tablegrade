@@ -16,9 +16,11 @@
     "@mui/x-date-pickers": "^9.13.0",
     "@tailwindcss/vite": "^4.3.3",
     "date-fns": "^4.4.0",
+    "drizzle-orm": "^0.45.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router": "^8.4.0",
+    "sqlocal": "^0.18.0",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
