@@ -95,7 +95,7 @@ export function Calendar() {
             return (
               <div
                 key={key}
-                className="free col-span-3 row-span-19 flex justify-center items-center"
+                className="col-span-3 row-span-19 flex justify-center items-center bg-indigo-50"
               >
                 <div className="h-fit transform-[rotate(65deg)]">FREI</div>
               </div>
@@ -199,8 +199,10 @@ export function Calendar() {
         </LocalizationProvider>
       </div>
 
-      <div className="calendar w-full h-auto min-lg:m-2 max-lg:-mt-5 border rounded-lg bg-pink-50 grid grid-cols-16 divide-x-1 divide-y-1">
-        {innerCal}
+      <div className="w-full h-auto min-lg:m-2 max-lg:-mt-5 rounded-lg overflow-hidden">
+        <div className="calendar h-1/1 border rounded-lg bg-pink-50 grid grid-cols-16 divide-x-1 divide-y-1">
+          {innerCal}
+        </div>
       </div>
     </div>
   );
