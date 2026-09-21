@@ -1,15 +1,22 @@
-import "./Calendar.css";
-import { useState } from "react";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { StaticDatePicker } from "@mui/x-date-pickers";
-import { de } from "date-fns/locale/de";
 import { Button } from "@mui/material";
-import { useLoaderData } from "react-router";
+import { StaticDatePicker } from "@mui/x-date-pickers";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { de } from "date-fns/locale/de";
+import { useState } from "react";
+import {
+  Link,
+  useLoaderData,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
+import { deleteDatabaseFile } from "../../db";
+import "./Calendar.css";
 
 const daysOfWeek = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 
 export function Calendar() {
+  const nav = useNavigate();
   const today = new Date();
   if (today.getDay() == 0 || today.getDay() == 6) {
     today.setDate(today.getDate() + 1 + (today.getDay() % 5));
@@ -18,7 +25,12 @@ export function Calendar() {
   maxDate.setFullYear(maxDate.getFullYear() + 3);
   maxDate.setMonth(11);
   maxDate.setDate(31);
-  const [currentDate, setCurrentDate] = useState(today);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [currentDate, setCurrentDate] = useState(
+    searchParams.has("current")
+      ? new Date(searchParams.get("current")!)
+      : today,
+  );
   const { holidays } = useLoaderData();
   const innerCal = new Array<any[]>(11)
     .fill(new Array(6).fill(null))
@@ -53,9 +65,13 @@ export function Calendar() {
           return (
             <div
               key={key}
-              className={outerIndex > 1 ? "row-span-2" : undefined}
+              className={
+                outerIndex > 1
+                  ? "flex justify-center items-center row-span-2"
+                  : undefined
+              }
             >
-              {outerIndex > 1 ? outerIndex - 1 : ""}
+              <div>{outerIndex > 1 ? outerIndex - 1 : ""}</div>
             </div>
           );
         }
@@ -74,26 +90,34 @@ export function Calendar() {
             );
           })
         ) {
-          return (
-            <div
-              key={key}
-              className={
-                outerIndex > 1 ? "col-span-3 row-span-2" : "col-span-3"
-              }
-            >
-              frei
-            </div>
-          );
+          console.log(innerIndex);
+          if (outerIndex == 1) {
+            return (
+              <div
+                key={key}
+                className="free col-span-3 row-span-19 flex justify-center items-center"
+              >
+                <div className="h-fit transform-[rotate(65deg)]">FREI</div>
+              </div>
+            );
+          }
+          return;
         }
         return (
           <div
             key={key}
-            className={outerIndex > 1 ? "col-span-3 row-span-2" : "col-span-3"}
+            className={
+              outerIndex > 1
+                ? "relative col-span-3 row-span-2"
+                : "relative col-span-3"
+            }
           >
             {outerIndex > 1 ? (
               <Button>event</Button>
             ) : (
-              <Button variant="contained">frei</Button>
+              <Button className="rounded-none" variant="contained">
+                frei
+              </Button>
             )}
           </div>
         );
@@ -103,19 +127,40 @@ export function Calendar() {
 
   return (
     <div className="cal-wrapper h-screen flex flex-row max-lg:flex-col justify-start max-lg:items-center gap-2">
-      <div className="flex flex-col justify-start items-center w-min p-2">
+      <div className="flex flex-col justify-start items-center w-min p-2 min-lg:mt-8">
         <div className="flex flex-row justify-between gap-2">
-          <Button variant="contained" onClick={() => setCurrentDate(today)}>
+          <Button
+            variant="contained"
+            onClick={(event) => {
+              if (event.detail >= 4) {
+                deleteDatabaseFile();
+                nav(0);
+              } else {
+                setSearchParams({
+                  current: today.toISOString(),
+                });
+                setCurrentDate(today);
+              }
+            }}
+          >
             Heute
           </Button>
-          <Button variant="outlined">Klasse hinzufügen</Button>
+          <Link to="/class/new">
+            <Button variant="outlined">Klasse hinzufügen</Button>
+          </Link>
         </div>
 
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={de}>
           <StaticDatePicker
             displayStaticWrapperAs="desktop"
             value={currentDate}
-            onChange={(value) => setCurrentDate(value || new Date())}
+            onChange={(value) => {
+              const current = value || new Date();
+              setSearchParams({
+                current: current.toISOString(),
+              });
+              setCurrentDate(current);
+            }}
             onMonthChange={(month) => {
               if (
                 month.getMonth() != currentDate.getMonth() ||
@@ -129,11 +174,17 @@ export function Calendar() {
                   if (today.getDay() == 0 || today.getDay() == 6) {
                     today.setDate(today.getDate() + 1 + (today.getDay() % 5));
                   }
+                  setSearchParams({
+                    current: today.toISOString(),
+                  });
                   setCurrentDate(today);
                 } else {
                   if (month.getDay() == 0 || month.getDay() == 6) {
                     month.setDate(month.getDate() + 1 + (month.getDay() % 5));
                   }
+                  setSearchParams({
+                    current: month.toISOString(),
+                  });
                   setCurrentDate(month);
                 }
               }

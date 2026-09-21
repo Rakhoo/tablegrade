@@ -1,0 +1,12 @@
+.tables > div {
+  padding: calc(var(--spacing) * 2);
+  min-height: 10vh;
+}
+
+.tables > :nth-child(10n) {
+  border-inline-style: unset !important;
+}
+
+.tables > :nth-child(n + 71) {
+  border-bottom-style: unset !important;
+}

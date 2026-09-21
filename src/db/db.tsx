@@ -1,7 +1,7 @@
-import { SQLocalDrizzle } from "sqlocal/drizzle";
-import { drizzle } from "drizzle-orm/sqlite-proxy";
-import { sqliteTable, int, text, primaryKey } from "drizzle-orm/sqlite-core";
 import { getTableColumns, getTableName, relations } from "drizzle-orm";
+import { int, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { drizzle } from "drizzle-orm/sqlite-proxy";
+import { SQLocalDrizzle } from "sqlocal/drizzle";
 
 export const holidays = sqliteTable("Holidays", {
   id: int("id").primaryKey(),
@@ -89,52 +89,67 @@ export const gradesRelations = relations(grades, ({ one }) => ({
 
 const allTables = [holidays, classes, students, classes2Students, grades];
 
+let initDone = false;
 // Initialize SQLocalDrizzle and pass the driver to Drizzle
-const { driver } = new SQLocalDrizzle({
+const { driver, deleteDatabaseFile } = new SQLocalDrizzle({
   databasePath: "tablegrade.sqlite3",
-  onConnect: (reason) => {
-    if (reason == "initial") {
-      //deleteDatabaseFile()
-      allTables.forEach(
-        async (table) =>
-          await db.run(
-            `CREATE TABLE IF NOT EXISTS ${getTableName(table)} (\n  ` +
-              Object.values(getTableColumns(table))
-                .map(
-                  (col) =>
-                    `${col.name} ${col.getSQLType()}` +
-                    (col.notNull && !col.primary ? " NOT NULL" : "") +
-                    (col.hasDefault && (col.default || col.defaultFn)
-                      ? ` DEFAULT ${col.default || (col.defaultFn && col.defaultFn())}`
-                      : "") +
-                    (col.primary
-                      ? " PRIMARY KEY" +
-                        (getTableName(table) != "Holidays"
-                          ? " AUTOINCREMENT"
-                          : "")
-                      : ""),
-                )
-                .join(",\n  ") +
-              ((getTableName(table).includes("2") &&
-                `,\n  PRIMARY KEY (${Object.values(getTableColumns(table))
-                  .map((col) => col.name)
-                  .join(", ")})`) ||
-                "") +
-              ((table as any)[Symbol.for("drizzle:SQLiteInlineForeignKeys")]
-                .length > 0
-                ? ",\n  " +
-                  (table as any)[Symbol.for("drizzle:SQLiteInlineForeignKeys")]
-                    .map((ref: any) => ref.reference())
-                    .map(
-                      (ref: any) =>
-                        `FOREIGN KEY(${ref.columns[0].name}) REFERENCES ${getTableName(ref.foreignTable)}(${ref.foreignColumns[0].name})`,
-                    )
-                    .join("\n  ")
-                : "") +
-              "\n)",
-          ),
-      );
+  onConnect: async () => {
+    initDone = false;
+    let tablesDone = 0;
+    for (let table of allTables) {
+      await db
+        .run(
+          `CREATE TABLE IF NOT EXISTS ${getTableName(table)} (\n  ` +
+            Object.values(getTableColumns(table))
+              .map(
+                (col) =>
+                  `${col.name} ${col.getSQLType()}` +
+                  (col.notNull && !col.primary ? " NOT NULL" : "") +
+                  (col.hasDefault && (col.default || col.defaultFn)
+                    ? ` DEFAULT ${col.default || (col.defaultFn && col.defaultFn())}`
+                    : "") +
+                  (col.primary
+                    ? " PRIMARY KEY" +
+                      (getTableName(table) != "Holidays"
+                        ? " AUTOINCREMENT"
+                        : "")
+                    : ""),
+              )
+              .join(",\n  ") +
+            ((getTableName(table).includes("2") &&
+              `,\n  PRIMARY KEY (${Object.values(getTableColumns(table))
+                .map((col) => col.name)
+                .join(", ")})`) ||
+              "") +
+            ((table as any)[Symbol.for("drizzle:SQLiteInlineForeignKeys")]
+              .length > 0
+              ? ",\n  " +
+                (table as any)[Symbol.for("drizzle:SQLiteInlineForeignKeys")]
+                  .map((ref: any) => ref.reference())
+                  .map(
+                    (ref: any) =>
+                      `FOREIGN KEY(${ref.columns[0].name}) REFERENCES ${getTableName(ref.foreignTable)}(${ref.foreignColumns[0].name})`,
+                  )
+                  .join("\n  ")
+              : "") +
+            "\n)",
+        )
+        .then(() => {
+          if (tablesDone++ >= allTables.length - 1) initDone = true;
+        });
     }
   },
 });
 export const db = drizzle(driver);
+export { deleteDatabaseFile };
+export async function dbDone() {
+  let interval: number;
+  return new Promise((resolve) => {
+    interval = setInterval(() => {
+      if (initDone) {
+        clearInterval(interval);
+        resolve(true);
+      }
+    }, 50);
+  });
+}

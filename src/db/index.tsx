@@ -1,22 +1,20 @@
 import {
-  db,
-  holidays,
   classes,
-  students,
   classes2Students,
-  classesRelations,
-  studentsRelations,
   classes2StudentsRelations,
+  classesRelations,
+  db,
+  dbDone,
+  deleteDatabaseFile,
+  holidays,
+  students,
+  studentsRelations,
 } from "./db.tsx";
 
 export {
-  db,
-  holidays,
-  classes,
-  students,
-  classes2Students,
-  classesRelations,
-  studentsRelations,
-  classes2StudentsRelations,
+  classes, classes2Students, classes2StudentsRelations, classesRelations, db,
+  dbDone,
+  deleteDatabaseFile,
+  holidays, students, studentsRelations
 };
 export default db;

@@ -1,10 +1,19 @@
+import { eq, getTableColumns } from "drizzle-orm";
 import { createRoot } from "react-dom/client";
 import { createHashRouter, redirect } from "react-router";
 import { RouterProvider } from "react-router/dom";
-import "./index.css";
 import App from "./components/app";
 import Calendar from "./components/calendar";
-import { db, holidays } from "./db";
+import Class from "./components/class";
+import {
+  classes,
+  classes2Students,
+  db,
+  dbDone,
+  holidays,
+  students,
+} from "./db";
+import "./index.css";
 
 const router = createHashRouter([
   {
@@ -18,6 +27,7 @@ const router = createHashRouter([
       {
         path: "calendar",
         loader: async () => {
+          await dbDone();
           const today = new Date();
           const holidaysArr: any[] = await db.select().from(holidays);
           if (
@@ -61,9 +71,52 @@ const router = createHashRouter([
         Component: Calendar,
       },
       {
-        path: "*",
+        path: "class/:id?/:mode?",
+        loader: async ({ params }) => {
+          await dbDone();
+          const data: {
+            class: typeof classes.$inferSelect | undefined;
+            students: (typeof students.$inferSelect)[];
+          } = {
+            class: undefined,
+            students: [],
+          };
+          const realParams =
+            params.id == "new" ? { id: undefined, mode: params.id } : params;
+          if (
+            (realParams.mode && !/^new|edit$/.test(realParams.mode)) ||
+            (realParams.mode == "edit" && !realParams.id)
+          )
+            return redirect("/404");
+          if (realParams.mode == "edit") {
+            const dbClass = await db
+              .select()
+              .from(classes)
+              .where(eq(classes.id, parseInt(realParams.id!)))
+              .execute();
+            if (dbClass && dbClass[0]) {
+              data.class = dbClass[0];
+              data.students = await db
+                .select(getTableColumns(students))
+                .from(students)
+                .leftJoin(
+                  classes2Students,
+                  eq(students.id, classes2Students.studentId),
+                )
+                .where(eq(classes2Students.classId, parseInt(realParams.id!)))
+                .execute();
+            }
+          }
+
+          return { ...realParams, ...data };
+        },
+        Component: Class,
+      },
+      {
+        path: "404",
         element: <div>Error</div>,
       },
+      { path: "*", loader: () => redirect("/404") },
     ],
   },
 ]);
