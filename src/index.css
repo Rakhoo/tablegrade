@@ -1,1 +1,70 @@
+/* MUI styles live in their own layer, so Tailwind utilities can override them */
+@layer theme, base, mui, components, utilities;
 @import "tailwindcss";
+
+/* Design tokens, mirrored in src/theme.ts for MUI */
+@theme {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
+
+  --color-canvas: #f5f2fb;
+  --color-surface: #ffffff;
+  --color-ink: #2b2540;
+  --color-muted: #7d7594;
+  --color-line: #ebe6f4;
+
+  --color-brand-50: #f6f2ff;
+  --color-brand-100: #ede6ff;
+  --color-brand-200: #ddd0ff;
+  --color-brand-300: #c5b1fb;
+  --color-brand-400: #a68cf2;
+  --color-brand-500: #8a6be5;
+  --color-brand-600: #7352d0;
+  --color-brand-700: #5c3fae;
+
+  --color-blush-100: #fde8f1;
+  --color-blush-400: #ec8ab4;
+
+  --radius-card: 1.5rem;
+  --shadow-card:
+    0 1px 2px rgb(43 37 64 / 0.04), 0 12px 32px -8px rgb(43 37 64 / 0.1);
+  --shadow-tile:
+    0 1px 2px rgb(43 37 64 / 0.06), 0 4px 12px -4px rgb(43 37 64 / 0.12);
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  background:
+    radial-gradient(
+      60rem 40rem at 0% 0%,
+      var(--color-brand-100),
+      transparent 70%
+    ),
+    radial-gradient(
+      50rem 36rem at 100% 100%,
+      var(--color-blush-100),
+      transparent 70%
+    ),
+    var(--color-canvas);
+  background-attachment: fixed;
+}
+
+@layer components {
+  /* Elevated white panel used for the main areas of each page */
+  .card {
+    border-radius: var(--radius-card);
+    background-color: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+}

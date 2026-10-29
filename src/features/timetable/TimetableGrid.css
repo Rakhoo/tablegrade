@@ -1,0 +1,9 @@
+/* Lesson-free hours and holidays: soft lavender with faint diagonal stripes */
+.free-block {
+  background-color: var(--color-brand-50);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 10px,
+    rgb(138 107 229 / 0.06) 10px 20px
+  );
+}

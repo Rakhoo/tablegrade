@@ -1,0 +1,36 @@
+.MuiPickersLayout-root {
+  background: transparent !important;
+}
+
+/* Hide weekends, the action bar and weeks consisting only of the next month's days */
+.timetable-page .MuiPickersLayout-actionBar,
+.timetable-page .MuiDayCalendar-weekDayLabel:nth-child(n + 6),
+.timetable-page .MuiPickerDay-root[aria-colindex="6"],
+.timetable-page .MuiPickerDay-root[aria-colindex="7"],
+.timetable-page
+  .MuiDayCalendar-weekContainer:has(
+    > .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-dayOutsideMonth
+      + .MuiPickerDay-root[aria-colindex="6"]
+  ) {
+  display: none !important;
+}
+
+/* Date picker in the sidebar: lavender selection, rounded days */
+.timetable-page .MuiDateCalendar-root {
+  width: 20rem;
+  height: auto;
+  max-height: none;
+}
+
+.timetable-page .MuiPickersCalendarHeader-label {
+  font-weight: 700;
+}
+
+.timetable-page .MuiDayCalendar-weekDayLabel {
+  font-weight: 600;
+  color: var(--color-muted);
+}

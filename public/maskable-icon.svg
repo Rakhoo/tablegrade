@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Tablegrade maskable icon: full-bleed, motif kept inside the 80 % safe zone. -->
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b39cf5"/>
+      <stop offset="1" stop-color="#6f4fcc"/>
+    </linearGradient>
+    <radialGradient id="glow" cx=".85" cy=".9" r=".6">
+      <stop offset="0" stop-color="#ec8ab4" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#ec8ab4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f29bc0"/>
+      <stop offset="1" stop-color="#d9578f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#background)"/>
+  <rect width="512" height="512" fill="url(#glow)"/>
+  <g transform="translate(256 256) scale(0.82) translate(-256 -256)">
+    <!-- Board -->
+    <rect x="142" y="151" width="228" height="20" rx="10" fill="#fff" fill-opacity=".55"/>
+    <!-- Desks, seen from above, with a soft shadow -->
+    <g fill="#3b2a80" fill-opacity=".18">
+      <rect x="86" y="211" width="92" height="64" rx="18"/>
+      <rect x="202" y="211" width="92" height="64" rx="18"/>
+      <rect x="318" y="211" width="92" height="64" rx="18"/>
+      <rect x="86" y="303" width="92" height="64" rx="18"/>
+      <rect x="202" y="303" width="92" height="64" rx="18"/>
+      <rect x="318" y="303" width="92" height="64" rx="18"/>
+    </g>
+    <g fill="#fff">
+      <rect x="86" y="205" width="92" height="64" rx="18"/>
+      <rect x="202" y="205" width="92" height="64" rx="18"/>
+      <rect x="318" y="205" width="92" height="64" rx="18"/>
+      <rect x="86" y="297" width="92" height="64" rx="18"/>
+      <rect x="202" y="297" width="92" height="64" rx="18"/>
+      <rect x="318" y="297" width="92" height="64" rx="18"/>
+    </g>
+    <!-- Neutral symbol on a desk -->
+    <circle cx="248" cy="329" r="13" fill="none" stroke="#8a6be5" stroke-width="7"/>
+    <!-- Grade badge with plus -->
+    <circle cx="392" cy="205" r="50" fill="url(#badge)" stroke="#fff" stroke-width="10"/>
+    <path d="M392 182v46M369 205h46" stroke="#fff" stroke-width="14" stroke-linecap="round"/>
+  </g>
+</svg>
