@@ -166,9 +166,10 @@ export function ClassroomPage() {
         )}
       </header>
 
-      {/* Fixed three-column layout, so switching modes never shifts the controls */}
-      <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-3">
-        <div>
+      {/* Fixed columns, so switching modes never shifts the controls. Landscape: reset | tool | mode;
+          portrait: reset | mode in one row, the tool centered below */}
+      <div className="grid min-h-11 grid-cols-[1fr_auto_1fr] items-center gap-3 portrait:grid-cols-2">
+        <div className="col-start-1 row-start-1">
           {cls && (
             <Button
               color="error"
@@ -180,7 +181,7 @@ export function ClassroomPage() {
             </Button>
           )}
         </div>
-        <div className="flex items-center justify-center">
+        <div className="flex h-11 items-center justify-center landscape:col-start-2 landscape:row-start-1 portrait:col-span-2 portrait:row-start-2">
           {mode == "grade" && (
             <GradeToolSelect tool={tool} onChange={setTool} />
           )}
@@ -207,7 +208,7 @@ export function ClassroomPage() {
             </span>
           )}
         </div>
-        <div className="flex justify-end">
+        <div className="row-start-1 flex justify-end landscape:col-start-3 portrait:col-start-2">
           <ToggleButtonGroup
             exclusive
             size="small"

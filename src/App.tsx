@@ -9,6 +9,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { de } from "date-fns/locale/de";
 import { StrictMode } from "react";
 import { Outlet } from "react-router";
+import { UpdateBanner } from "./components/UpdateBanner";
 import { theme } from "./theme";
 import "./App.css";
 
@@ -25,6 +26,7 @@ export function App() {
             <div className="app">
               <Outlet />
             </div>
+            <UpdateBanner />
           </LocalizationProvider>
         </ThemeProvider>
       </StyledEngineProvider>

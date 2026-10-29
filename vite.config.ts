@@ -11,7 +11,8 @@ export default defineConfig({
     sqlocal(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      // New versions wait for the user to confirm the update banner (see UpdateBanner.tsx)
+      registerType: "prompt",
       includeAssets: [
         "favicon.svg",
         "apple-touch-icon.png",

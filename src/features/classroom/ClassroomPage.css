@@ -1,7 +1,6 @@
+/* No iOS callout menu when holding a seat (text selection is off app-wide) */
 .seat {
   -webkit-touch-callout: none;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 /* Faint dots mark the whole-seat positions and give the room a sense of scale */

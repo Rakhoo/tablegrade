@@ -39,6 +39,13 @@ body {
   overscroll-behavior: none;
 }
 
+/* The app is not meant to be zoomed: no text inflation on rotation, no double-tap zoom */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   color: var(--color-ink);
@@ -58,6 +65,16 @@ body {
     ),
     var(--color-canvas);
   background-attachment: fixed;
+}
+
+@layer base {
+  /* Text stays selectable where it is typed, despite `select-none` on <body> */
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
 }
 
 @layer components {

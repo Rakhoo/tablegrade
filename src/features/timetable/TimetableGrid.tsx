@@ -93,7 +93,7 @@ function DayHeader({
   return (
     <div
       className={
-        "flex flex-col items-center gap-0.5 bg-surface px-1 py-2 select-none " +
+        "flex flex-col items-center gap-0.5 bg-surface px-1 py-2 " +
         (onLongPress ? "transition-colors active:bg-brand-50" : "")
       }
       style={{ gridColumn: column, gridRow: 1, WebkitTouchCallout: "none" }}

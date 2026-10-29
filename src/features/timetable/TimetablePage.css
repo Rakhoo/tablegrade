@@ -34,3 +34,24 @@
   font-weight: 600;
   color: var(--color-muted);
 }
+
+/* Portrait: flatter calendar, so the timetable keeps most of the height */
+@media (orientation: portrait) {
+  .timetable-page .MuiPickersCalendarHeader-root {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  .timetable-page .MuiDayCalendar-weekDayLabel {
+    height: 28px;
+  }
+
+  .timetable-page .MuiPickerDay-root {
+    height: 32px;
+  }
+
+  /* Constant height for 5- and 6-week months */
+  .timetable-page .MuiDayCalendar-slideTransition {
+    min-height: calc(6 * 36px);
+  }
+}

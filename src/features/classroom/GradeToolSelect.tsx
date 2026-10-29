@@ -60,7 +60,7 @@ export function GradeToolSelect({ tool, onChange }: GradeToolSelectProps) {
       <ButtonBase
         onClick={(event) => setAnchor(event.currentTarget)}
         aria-label={`Werkzeug: ${toolLabel(tool)}`}
-        className="flex items-center gap-2 rounded-full bg-surface py-1 pr-4 pl-1 font-semibold shadow-tile"
+        className="flex h-11 items-center gap-2 rounded-full bg-surface pr-4 pl-1.5 font-semibold shadow-tile"
       >
         <ToolIcon tool={tool} size={34} />
         {toolLabel(tool)}

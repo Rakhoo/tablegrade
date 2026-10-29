@@ -6,14 +6,18 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="mask-icon" href="/mask-icon.svg" color="#FFFFFF" />
     <meta name="theme-color" content="#f5f2fb" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <title>Sitzordnung & Noten</title>
     <meta
       name="description"
       content="App für Sitzordnung und Notenverteilung"
     />
   </head>
-  <body>
+  <!-- No text selection in the app; inputs re-enable it in src/index.css -->
+  <body class="select-none">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
