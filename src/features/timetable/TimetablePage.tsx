@@ -14,7 +14,7 @@ import {
   parseISO,
 } from "date-fns";
 import { de } from "date-fns/locale/de";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Link,
   useLoaderData,
@@ -45,9 +45,13 @@ export function TimetablePage() {
 
   const today = new Date();
   const thisWeek = getWeekStart(nextSchoolDay(today));
-  const param = parseISO(searchParams.get("date") ?? "");
-  // The chosen day only anchors the calendar's visible month; the timetable shows its whole week
-  const anchor = isValid(param) ? param : nextSchoolDay(today);
+  const dateParam = searchParams.get("date") ?? "";
+  // The chosen day only anchors the calendar's visible month; the timetable shows its whole week.
+  // Memoized: MUI re-syncs the visible month whenever it gets a new Date object.
+  const anchor = useMemo(() => {
+    const parsed = parseISO(dateParam);
+    return isValid(parsed) ? parsed : nextSchoolDay(new Date());
+  }, [dateParam]);
   const monday = getWeekStart(anchor);
   const selectDate = (date: Date) =>
     setSearchParams({ date: toIsoDate(date) }, { replace: true });
@@ -73,16 +77,40 @@ export function TimetablePage() {
   };
 
   /**
-   * Marks all days of the selected week as one continuous pill. Today is highlighted softly,
-   * or as a white dot inside the pill when it belongs to the selected week.
+   * Selects the week of a tapped day. For days of the neighboring month the anchor stays in
+   * the visible month, so tapping a grayed day does not flip the calendar.
    */
-  const weekDayClass = (day: Date) => {
+  const handleDayChange = (day: Date) => {
+    if (isSameMonth(day, anchor)) return selectDate(day);
+    const weekStart = getWeekStart(day);
+    const inVisibleMonth = [0, 1, 2, 3, 4]
+      .map((offset) => addDays(weekStart, offset))
+      .find((weekday) => isSameMonth(weekday, anchor));
+    selectDate(inVisibleMonth ?? day);
+  };
+
+  /**
+   * Marks all days of the selected week as one continuous pill. Today is highlighted softly,
+   * or as a white dot inside the pill when it belongs to the selected week. Days of the
+   * neighboring months are shown to complete the weeks, but grayed out.
+   */
+  const weekDayClass = (day: Date, isOutsideMonth: boolean) => {
     const base = "mx-0 w-10 border-0";
     const inWeek = isSameWeek(day, monday, { weekStartsOn: 1 });
     if (!inWeek) {
+      if (isOutsideMonth) return `${base} opacity-40`;
       return isToday(day)
         ? `${base} bg-brand-100 font-semibold text-brand-700 hover:bg-brand-200`
         : base;
+    }
+    if (isOutsideMonth) {
+      const outsideEdge =
+        day.getDay() == 1
+          ? "rounded-l-full"
+          : day.getDay() == 5
+            ? "rounded-r-full"
+            : "";
+      return `${base} rounded-none ${outsideEdge} bg-brand-300 font-semibold text-white/90 hover:bg-brand-400 focus:bg-brand-300`;
     }
     const edge =
       day.getDay() == 1
@@ -157,9 +185,14 @@ export function TimetablePage() {
         <StaticDatePicker
           displayStaticWrapperAs="desktop"
           value={anchor}
-          onChange={(value) => value && selectDate(value)}
+          onChange={(value) => value && handleDayChange(value)}
+          showDaysOutsideCurrentMonth
           onMonthChange={handleMonthChange}
-          slotProps={{ day: ({ day }) => ({ className: weekDayClass(day) }) }}
+          slotProps={{
+            day: ({ day, isDayOutsideMonth }) => ({
+              className: weekDayClass(day, isDayOutsideMonth),
+            }),
+          }}
           shouldDisableDate={(day) => day.getDay() == 6 || day.getDay() == 0}
           minDate={MIN_DATE}
           maxDate={maxDate}

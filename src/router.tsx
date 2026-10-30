@@ -24,6 +24,16 @@ export const createAppRouter = () =>
             {
               path: "timetable",
               loader: timetableLoader,
+              // The loaded data does not depend on the selected week (`?date=`)
+              shouldRevalidate: ({
+                currentUrl,
+                nextUrl,
+                defaultShouldRevalidate,
+              }) =>
+                currentUrl.pathname == nextUrl.pathname &&
+                currentUrl.search != nextUrl.search
+                  ? false
+                  : defaultShouldRevalidate,
               Component: TimetablePage,
             },
             {
