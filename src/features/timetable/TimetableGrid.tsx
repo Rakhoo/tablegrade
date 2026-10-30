@@ -6,6 +6,7 @@ import type { Holiday, SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
 import {
+  getClassOccurrences,
   getHoliday,
   isSchoolClassActive,
   LESSONS_PER_DAY,
@@ -173,9 +174,11 @@ export function TimetableGrid({
     }
 
     // Lesson blocks by start hour; a double lesson also covers the following hour
-    const dayClasses = schoolClasses.filter(
-      (cls) => cls.day == day && isSchoolClassActive(cls, date, holidays),
-    );
+    const dayClasses = schoolClasses
+      .flatMap(getClassOccurrences)
+      .filter(
+        (cls) => cls.day == day && isSchoolClassActive(cls, date, holidays),
+      );
     const blocks = new Map<
       number,
       { span: number; schoolClasses: SchoolClass[] }

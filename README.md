@@ -34,14 +34,19 @@ The only network request fetches school holidays from
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
 - **Class edit dialog** (`/classes/new`, `/classes/:id/edit`): school year, half, level and
-  letter, weekday, lesson, double lesson, subject and the student list:
+  letter (both also "Mix"), subject, weekday, lesson, double lesson, an optional second weekly
+  lesson on another weekday, and the student list:
   - **WebUntis PDF**: reads last name, first name and photo from all pages (first import and
     later updates). Students are matched per class by first + last name; nickname and traits
     stay, students missing in the file stay in the list. Processed on the device only.
   - **Paste a list**: one student per line, split into first and last name at the first space.
-  - **Copy** the students of another class.
+  - **Copy** the students of another class (searchable; without a search it suggests the same
+    level this year or the level below last year). The seating plan is copied along if the
+    class has none yet.
   - **Student dialog**: first and last name, nickname, photo and traits per student.
-  - The nickname "Vorname N." is prefilled when several students share a first name.
+  - Nicknames are prefilled: new PDF students with several given names ("Anna-Maria") get the
+    first one. Students sharing a given name get as much of the last name as needed ("Anna M.",
+    "Anna Mü."), same names are numbered ("Anna 1", "Anna 2").
 
 ### Installed app (PWA)
 
@@ -114,7 +119,8 @@ else in camelCase files; JSDoc on exported functions and components.
 
 | Table              | Content                                                                 |
 | ------------------ | ----------------------------------------------------------------------- |
-| `Classes`          | recurring lesson: subject, level/letter, school year + half, day, hour  |
+| `Classes`          | recurring lessons: subject, level/letter, school year + half, one or    |
+|                    | two weekly lessons (day, hour, double)                                  |
 | `Students`         | names, nickname, photo (base64); shared when copied to another class    |
 | `Traits`           | selectable properties (ADS, ADHS, ESE, Lernen, Autismus, Diabetes, LRS) |
 | `Students2Traits`  | traits assigned to students                                             |

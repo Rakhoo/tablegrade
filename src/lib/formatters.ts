@@ -1,6 +1,6 @@
 import type { SchoolClass } from "../db";
 
-/** Display name of a class, e.g. "5a" or "Q1". */
+/** Display name of a class, e.g. "5a", "7mix", "Q1" or "Mix". */
 export const formatClassName = (cls: Pick<SchoolClass, "number" | "letter">) =>
   cls.number + (cls.letter ?? "");
 

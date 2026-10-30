@@ -14,12 +14,28 @@ export const WEEKDAY_NAMES = [
   "Freitag",
 ];
 
+/** Level of offers spanning several levels. */
+export const MIXED = "Mix";
+/** Letter of offers spanning several classes of a level. */
+export const MIXED_LETTER = "mix";
+
 /** Selectable grade levels; the upper school levels have no class letter. */
-export const CLASS_LEVELS = ["5", "6", "7", "8", "9", "10", "EF", "Q1", "Q2"];
-export const UPPER_SCHOOL_LEVELS = ["EF", "Q1", "Q2"];
+export const CLASS_LEVELS = [
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "EF",
+  "Q1",
+  "Q2",
+  MIXED,
+];
+export const LEVELS_WITHOUT_LETTER = ["EF", "Q1", "Q2", MIXED];
 
 /** Selectable class letters for levels 5–10. */
-export const CLASS_LETTERS = ["a", "b", "c", "d", "e", "f"];
+export const CLASS_LETTERS = ["a", "b", "c", "d", "e", "f", MIXED_LETTER];
 
 /** Earliest selectable school year (start year). */
 export const FIRST_SCHOOL_YEAR = 2026;
@@ -107,16 +123,33 @@ export function isSchoolClassActive(
   return start <= date && date < end;
 }
 
+/**
+ * The weekly lessons of a class: the class itself and, if set, a copy carrying the day and
+ * hour of its second lesson. Lets all schedule logic treat both lessons the same way.
+ */
+export function getClassOccurrences(cls: SchoolClass): SchoolClass[] {
+  if (cls.day2 == null || cls.hour2 == null) return [cls];
+  return [cls, { ...cls, day: cls.day2, hour: cls.hour2, double: cls.double2 }];
+}
+
 /** Whether two classes share a time slot during an overlapping period. */
 export function doSchoolClassesCollide(
   a: SchoolClass,
   b: SchoolClass,
   holidayList: Holiday[],
 ) {
-  if (a.day != b.day) return false;
-  const aEnd = a.hour + (a.double ? 1 : 0);
-  const bEnd = b.hour + (b.double ? 1 : 0);
-  if (a.hour > bEnd || b.hour > aEnd) return false;
+  const shareSlot = getClassOccurrences(a).some((first) =>
+    getClassOccurrences(b).some((second) => {
+      const firstEnd = first.hour + (first.double ? 1 : 0);
+      const secondEnd = second.hour + (second.double ? 1 : 0);
+      return (
+        first.day == second.day &&
+        first.hour <= secondEnd &&
+        second.hour <= firstEnd
+      );
+    }),
+  );
+  if (!shareSlot) return false;
   const rangeA = getSchoolYearRange(a.year, a.part, holidayList);
   const rangeB = getSchoolYearRange(b.year, b.part, holidayList);
   return rangeA.start < rangeB.end && rangeB.start < rangeA.end;

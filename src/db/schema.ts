@@ -34,6 +34,10 @@ export const schoolClasses = sqliteTable("Classes", {
   /** Lesson number of the day, starting at 1. */
   hour: int("hour").notNull(),
   double: int("double", { mode: "boolean" }).notNull(),
+  /** Optional second weekly lesson; always on another weekday than `day`. */
+  day2: int("day2"),
+  hour2: int("hour2"),
+  double2: int("double2", { mode: "boolean" }).notNull().default(false),
 });
 
 export const schoolClassesRelations = relations(schoolClasses, ({ many }) => ({

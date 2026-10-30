@@ -15,6 +15,7 @@ import {
   type SeatedStudent,
 } from "../../db";
 import { getLastOccurrence, toIsoDate } from "../../lib/dates";
+import { getClassOccurrences } from "../../lib/schoolYear";
 import { getAdjacentLesson, type Lesson } from "../../lib/lessons";
 
 /** How the classroom page was opened: creating, viewing or editing a class. */
@@ -65,7 +66,11 @@ export async function classroomLoader(
   const cls = await getSchoolClass(Number(params.id));
   if (!cls) return redirect("/404");
   const date = toIsoDate(
-    isValid(dateParam) ? dateParam : getLastOccurrence(cls.day),
+    isValid(dateParam)
+      ? dateParam
+      : getClassOccurrences(cls)
+          .map((lesson) => getLastOccurrence(lesson.day))
+          .sort((a, b) => b.getTime() - a.getTime())[0],
   );
   const [students, grades] = await Promise.all([
     getClassStudents(cls.id),

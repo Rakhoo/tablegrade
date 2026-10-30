@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { freeSeats, type Seat } from "../../lib/seating";
+import { freeSeats, seatsOverlap, type Seat } from "../../lib/seating";
 import { client, db } from "../client";
 import {
   classStudents,
@@ -20,6 +20,8 @@ export type RosterEntry = {
   nickname: string | null;
   image: string | null;
   traitIds: number[];
+  /** Preferred seat for a new member, taken over from the class it was copied from. */
+  seat?: { x: number; y: number };
 };
 
 /** Returns all classes, ordered by weekday and lesson. */
@@ -106,8 +108,14 @@ export async function saveSchoolClass(
     }
 
     const memberIds = new Set(existing.map((s) => s.id));
-    for (const entry of roster) {
-      const { id: entryId, traitIds, ...fields } = entry;
+    // A copied seating plan is only used for classes without one. Copied seats come first,
+    // so the free seats given to the other new members cannot block them.
+    const keepsCopiedSeats = occupied.every((seat) => seat.x == null);
+    const ordered = [...roster].sort(
+      (a, b) => Number(!!b.seat) - Number(!!a.seat),
+    );
+    for (const entry of ordered) {
+      const { id: entryId, traitIds, seat: copiedSeat, ...fields } = entry;
       let studentId = entryId;
       if (studentId) {
         await tx.query(
@@ -128,7 +136,14 @@ export async function saveSchoolClass(
         await tx.query(db.insert(studentTraits).values({ studentId, traitId }));
       }
       if (!memberIds.has(studentId)) {
-        const seat = seats.next().value ?? { x: null, y: null };
+        const useCopiedSeat =
+          keepsCopiedSeats &&
+          copiedSeat &&
+          !occupied.some((seat) => seatsOverlap(seat, copiedSeat));
+        if (useCopiedSeat) occupied.push(copiedSeat);
+        const seat = useCopiedSeat
+          ? copiedSeat
+          : (seats.next().value ?? { x: null, y: null });
         await tx.query(
           db.insert(classStudents).values({ classId, studentId, ...seat }),
         );

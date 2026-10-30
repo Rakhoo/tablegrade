@@ -29,7 +29,13 @@ import {
 } from "../../db";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import {
+  filterCopyClasses,
+  getCopyLabel,
+  sortCopyClasses,
+} from "../../lib/classCopy";
+import {
   fillNicknames,
+  getImportNickname,
   mergeStudents,
   parseStudentList,
   toRosterEntry,
@@ -49,8 +55,8 @@ import {
   getSchoolYear,
   getSchoolYearPart,
   LESSONS_PER_DAY,
+  LEVELS_WITHOUT_LETTER,
   SCHOOL_YEAR_PART_LABELS,
-  UPPER_SCHOOL_LEVELS,
   WEEKDAY_NAMES,
 } from "../../lib/schoolYear";
 
@@ -73,6 +79,78 @@ type ClassEditDialogProps = {
   onCancel: () => void;
 };
 
+type LessonTime = Pick<SchoolClass, "day" | "hour" | "double">;
+
+/** First weekday (1 = Monday) other than the given one. */
+const firstOtherDay = (day: number) => (day == 1 ? 2 : 1);
+
+type LessonFieldsProps = LessonTime & {
+  /** Weekday that cannot be chosen, as it already has the other lesson of the class. */
+  excludedDay?: number;
+  onChange: (lesson: LessonTime) => void;
+};
+
+/** Weekday, lesson and double lesson of one weekly lesson. */
+function LessonFields({
+  day,
+  hour,
+  double,
+  excludedDay,
+  onChange,
+}: LessonFieldsProps) {
+  return (
+    <>
+      <TextField
+        select
+        label="Wochentag"
+        value={day}
+        onChange={(event) =>
+          onChange({ day: Number(event.target.value), hour, double })
+        }
+      >
+        {WEEKDAY_NAMES.map((weekday, index) =>
+          index + 1 == excludedDay ? null : (
+            <MenuItem key={weekday} value={index + 1}>
+              {weekday}
+            </MenuItem>
+          ),
+        )}
+      </TextField>
+      <TextField
+        select
+        label="Schulstunde"
+        value={hour}
+        onChange={(event) => {
+          const newHour = Number(event.target.value);
+          onChange({
+            day,
+            hour: newHour,
+            double: double && newHour < LESSONS_PER_DAY,
+          });
+        }}
+      >
+        {Array.from({ length: LESSONS_PER_DAY }, (_, index) => (
+          <MenuItem key={index} value={index + 1}>
+            {index + 1}. Stunde
+          </MenuItem>
+        ))}
+      </TextField>
+      <FormControlLabel
+        label="Doppelstunde"
+        control={
+          <Switch
+            checked={double}
+            disabled={hour >= LESSONS_PER_DAY}
+            onChange={(event) =>
+              onChange({ day, hour, double: event.target.checked })
+            }
+          />
+        }
+      />
+    </>
+  );
+}
+
 /** Initial form values for a new class in the school year half of the preset date. */
 function emptyForm(
   holidays: Holiday[],
@@ -87,6 +165,9 @@ function emptyForm(
     day: preset.day ?? 1,
     hour: preset.hour ?? 1,
     double: false,
+    day2: null,
+    hour2: null,
+    double2: false,
   };
 }
 
@@ -123,6 +204,7 @@ export function ClassEditDialog({
   const [editingStudent, setEditingStudent] = useState<
     RosterRow | "new" | null
   >(null);
+  const [copySearch, setCopySearch] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
     text: string;
@@ -131,7 +213,10 @@ export function ClassEditDialog({
 
   const update = (changes: Partial<ClassForm>) =>
     setForm((prev) => ({ ...prev, ...changes }));
-  const isUpperSchool = UPPER_SCHOOL_LEVELS.includes(form.number);
+  // "Ganzes Jahr" only stays visible for classes that were created with it
+  const parts: SchoolYearPart[] =
+    form.part == "full" ? ["1", "2", "full"] : ["1", "2"];
+  const hasNoLetter = LEVELS_WITHOUT_LETTER.includes(form.number);
   const thisYear = getSchoolYear(new Date(), holidays);
   const years = [thisYear - 1, thisYear, thisYear + 1].filter(
     (year) => year >= FIRST_SCHOOL_YEAR,
@@ -143,6 +228,7 @@ export function ClassEditDialog({
       other.id != cls?.id && doSchoolClassesCollide(draft, other, holidays),
   );
   const otherClasses = allClasses.filter((other) => other.id != cls?.id);
+  const copyOptions = sortCopyClasses(otherClasses);
 
   const createRow = (entry: RosterEntry): RosterRow => ({
     ...entry,
@@ -183,7 +269,14 @@ export function ClassEditDialog({
         });
         return;
       }
-      const result = mergeStudents(roster, incoming, createRow);
+      const result = mergeStudents(
+        roster,
+        incoming.map((student) => ({
+          ...student,
+          nickname: getImportNickname(student.firstName),
+        })),
+        createRow,
+      );
       setRoster(fillNicknames(result.rows));
       setImportResult({
         text:
@@ -217,7 +310,7 @@ export function ClassEditDialog({
         {
           ...form,
           subject: form.subject.trim(),
-          letter: isUpperSchool ? null : (form.letter ?? CLASS_LETTERS[0]),
+          letter: hasNoLetter ? null : (form.letter ?? CLASS_LETTERS[0]),
         },
         // A pasted list that was not applied yet is saved as well
         mergeList(roster, pasteText ?? "").map(toRosterEntry),
@@ -256,13 +349,11 @@ export function ClassEditDialog({
             }
             className="landscape:col-span-2"
           >
-            {(Object.keys(SCHOOL_YEAR_PART_LABELS) as SchoolYearPart[]).map(
-              (part) => (
-                <ToggleButton key={part} value={part} className="flex-1">
-                  {SCHOOL_YEAR_PART_LABELS[part]}
-                </ToggleButton>
-              ),
-            )}
+            {parts.map((part) => (
+              <ToggleButton key={part} value={part} className="flex-1">
+                {SCHOOL_YEAR_PART_LABELS[part]}
+              </ToggleButton>
+            ))}
           </ToggleButtonGroup>
 
           <TextField
@@ -280,8 +371,8 @@ export function ClassEditDialog({
           <TextField
             select
             label="Buchstabe"
-            disabled={isUpperSchool}
-            value={isUpperSchool ? "" : (form.letter ?? CLASS_LETTERS[0])}
+            disabled={hasNoLetter}
+            value={hasNoLetter ? "" : (form.letter ?? CLASS_LETTERS[0])}
             onChange={(event) => update({ letter: event.target.value })}
           >
             {CLASS_LETTERS.map((letter) => (
@@ -300,43 +391,50 @@ export function ClassEditDialog({
             )}
           />
 
-          <TextField
-            select
-            label="Wochentag"
-            value={form.day}
-            onChange={(event) => update({ day: Number(event.target.value) })}
-          >
-            {WEEKDAY_NAMES.map((weekday, index) => (
-              <MenuItem key={weekday} value={index + 1}>
-                {weekday}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Schulstunde"
-            value={form.hour}
-            onChange={(event) => {
-              const hour = Number(event.target.value);
-              update({ hour, double: form.double && hour < LESSONS_PER_DAY });
+          <LessonFields
+            day={form.day}
+            hour={form.hour}
+            double={form.double}
+            onChange={(lesson) => {
+              // The second lesson has to stay on another weekday
+              const isSameDay = lesson.day == form.day2;
+              update({
+                ...lesson,
+                day2: isSameDay ? firstOtherDay(lesson.day) : form.day2,
+              });
             }}
-          >
-            {Array.from({ length: LESSONS_PER_DAY }, (_, index) => (
-              <MenuItem key={index} value={index + 1}>
-                {index + 1}. Stunde
-              </MenuItem>
-            ))}
-          </TextField>
+          />
           <FormControlLabel
-            label="Doppelstunde"
+            className="landscape:col-span-3"
+            label="Zweite Stunde pro Woche"
             control={
               <Switch
-                checked={form.double}
-                disabled={form.hour >= LESSONS_PER_DAY}
-                onChange={(event) => update({ double: event.target.checked })}
+                checked={form.day2 != null}
+                onChange={(event) =>
+                  update(
+                    event.target.checked
+                      ? {
+                          day2: firstOtherDay(form.day),
+                          hour2: form.hour,
+                          double2: false,
+                        }
+                      : { day2: null, hour2: null, double2: false },
+                  )
+                }
               />
             }
           />
+          {form.day2 != null && form.hour2 != null && (
+            <LessonFields
+              day={form.day2}
+              hour={form.hour2}
+              double={form.double2}
+              excludedDay={form.day}
+              onChange={({ day, hour, double }) =>
+                update({ day2: day, hour2: hour, double2: double })
+              }
+            />
+          )}
         </div>
 
         {collisions.length > 0 && (
@@ -354,26 +452,41 @@ export function ClassEditDialog({
           </h3>
           <div className="flex flex-wrap gap-2">
             {otherClasses.length > 0 && (
-              <TextField
-                select
+              <Autocomplete
                 size="small"
-                label="Aus Klasse übernehmen"
-                value=""
-                className="w-60"
-                onChange={async (event) => {
-                  const source = await getClassStudents(
-                    Number(event.target.value),
-                  );
-                  copyStudents(source.map(toRosterEntry));
+                className="w-72"
+                options={copyOptions}
+                value={null}
+                inputValue={copySearch}
+                onInputChange={(_, value, reason) => {
+                  if (reason != "reset") setCopySearch(value);
                 }}
-              >
-                {otherClasses.map((other) => (
-                  <MenuItem key={other.id} value={other.id}>
-                    {formatClassName(other)} {other.subject} (
-                    {formatSchoolYear(other.year)})
-                  </MenuItem>
-                ))}
-              </TextField>
+                getOptionLabel={getCopyLabel}
+                filterOptions={(options, { inputValue }) =>
+                  filterCopyClasses(options, inputValue, {
+                    ...form,
+                    letter: hasNoLetter ? null : form.letter,
+                  })
+                }
+                noOptionsText="Keine Klasse gefunden"
+                onChange={async (_, selected) => {
+                  if (!selected) return;
+                  setCopySearch("");
+                  const source = await getClassStudents(selected.id);
+                  copyStudents(
+                    source.map((student) => ({
+                      ...toRosterEntry(student),
+                      seat:
+                        student.x != null && student.y != null
+                          ? { x: student.x, y: student.y }
+                          : undefined,
+                    })),
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Aus Klasse übernehmen" />
+                )}
+              />
             )}
             <Button component="label" variant="outlined" disabled={importing}>
               {importing ? "Wird gelesen …" : "WebUntis-PDF"}

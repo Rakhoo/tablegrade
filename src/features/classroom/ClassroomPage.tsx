@@ -318,7 +318,9 @@ export function ClassroomPage() {
             if (cls) return leave(`/classes/${id}?date=${date}`);
             // Keep the lesson date from the timetable only if it fits the chosen weekday
             const keepDate =
-              searchParams.has("date") && lessonDate.getDay() == form.day;
+              searchParams.has("date") &&
+              (lessonDate.getDay() == form.day ||
+                lessonDate.getDay() == form.day2);
             navigate(`/classes/${id}${keepDate ? `?date=${date}` : ""}`, {
               replace: true,
             });

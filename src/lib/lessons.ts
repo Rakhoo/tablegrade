@@ -1,7 +1,11 @@
 import { addDays } from "date-fns";
 import type { Holiday, SchoolClass } from "../db";
 import { toIsoDate } from "./dates";
-import { isHoliday, isSchoolClassActive } from "./schoolYear";
+import {
+  getClassOccurrences,
+  isHoliday,
+  isSchoolClassActive,
+} from "./schoolYear";
 
 /** A single lesson: a class on a specific date (`YYYY-MM-DD`). */
 export type Lesson = { id: number; date: string };
@@ -28,6 +32,7 @@ export function getLessonsOn(
   )
     return [];
   return classList
+    .flatMap(getClassOccurrences)
     .filter(
       (cls) => cls.day == day && isSchoolClassActive(cls, date, holidayList),
     )
@@ -46,8 +51,11 @@ export function getAdjacentLesson(
   cancelledDays: string[],
   direction: 1 | -1,
 ): Lesson | null {
+  const current =
+    getClassOccurrences(cls).find((lesson) => lesson.day == date.getDay()) ??
+    cls;
   const compare = (other: SchoolClass) =>
-    (other.hour - cls.hour || other.id - cls.id) * direction;
+    (other.hour - current.hour || other.id - current.id) * direction;
   const sameDay = getLessonsOn(
     date,
     classList,

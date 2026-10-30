@@ -1,5 +1,5 @@
 import type { SchoolClass } from "../db";
-import { CLASS_LEVELS } from "./schoolYear";
+import { CLASS_LEVELS, MIXED } from "./schoolYear";
 
 /** Pastel tile colors of the lowest level per hue: background, accent bar and text. */
 const PALETTE = [
@@ -12,6 +12,10 @@ const PALETTE = [
   { background: "#fff8d6", accent: "#d9b632", text: "#75611a" },
   { background: "#e5f5f8", accent: "#47aebf", text: "#1e6571" },
 ];
+
+/** Levels from lightest to darkest; mixed offers sit in the middle, between 7 and 8. */
+const SHADED_LEVELS = CLASS_LEVELS.filter((level) => level != MIXED);
+const MIXED_LEVEL = 2.5;
 
 /** How far the highest level is shifted from the palette color towards its darker shades. */
 const MAX_LEVEL_SHIFT = 0.7;
@@ -46,8 +50,9 @@ export function getClassColor({
     hash = (hash * 31 + char.charCodeAt(0)) | 0;
   }
   const { background, accent, text } = PALETTE[Math.abs(hash) % PALETTE.length];
-  const level = Math.max(CLASS_LEVELS.indexOf(number), 0);
-  const shade = level / (CLASS_LEVELS.length - 1);
+  const level =
+    number == MIXED ? MIXED_LEVEL : Math.max(SHADED_LEVELS.indexOf(number), 0);
+  const shade = level / (SHADED_LEVELS.length - 1);
   return {
     background: mixColors(background, accent, shade * MAX_LEVEL_SHIFT),
     accent: mixColors(accent, "#000000", shade * MAX_TEXT_DARKENING),

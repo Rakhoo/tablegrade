@@ -85,4 +85,12 @@ export const MIGRATIONS: string[][] = [
   ],
   // Class letters are lowercase ("5a")
   ["UPDATE Classes SET letter = lower(letter) WHERE letter IS NOT NULL"],
+  // Optional second weekly lesson
+  [
+    "ALTER TABLE Classes ADD COLUMN day2 INTEGER",
+    "ALTER TABLE Classes ADD COLUMN hour2 INTEGER",
+    "ALTER TABLE Classes ADD COLUMN double2 INTEGER NOT NULL DEFAULT 0",
+  ],
+  // The mixed class letter is lowercase like all letters
+  ["UPDATE Classes SET letter = 'mix' WHERE letter = 'Mix'"],
 ];
