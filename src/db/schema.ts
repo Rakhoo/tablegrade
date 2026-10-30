@@ -148,6 +148,19 @@ export const cancelledDays = sqliteTable("CancelledDays", {
   date: text("date").primaryKey(),
 });
 
+/** Single lessons marked as "Ausfall": nothing is graded for that class on that date. */
+export const cancelledLessons = sqliteTable(
+  "CancelledLessons",
+  {
+    classId: int("classId")
+      .notNull()
+      .references(() => schoolClasses.id, { onDelete: "cascade" }),
+    /** Date as `YYYY-MM-DD`. */
+    date: text("date").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.classId, table.date] })],
+);
+
 export type Holiday = typeof holidays.$inferSelect;
 export type SchoolClass = typeof schoolClasses.$inferSelect;
 export type SchoolYearPart = SchoolClass["part"];

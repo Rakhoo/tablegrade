@@ -3,6 +3,12 @@ import { App } from "./App";
 import { ErrorPage } from "./features/errors/ErrorPage";
 import { ClassroomPage } from "./features/classroom/ClassroomPage";
 import { classroomLoader } from "./features/classroom/classroomLoader";
+import { EvaluationPage } from "./features/evaluation/EvaluationPage";
+import { EvaluationsPage } from "./features/evaluation/EvaluationsPage";
+import {
+  evaluationLoader,
+  evaluationsLoader,
+} from "./features/evaluation/evaluationLoader";
 import { TimetablePage } from "./features/timetable/TimetablePage";
 import { timetableLoader } from "./features/timetable/timetableLoader";
 
@@ -50,6 +56,16 @@ export const createAppRouter = () =>
               path: "classes/:id/edit",
               loader: (args) => classroomLoader(args, "edit"),
               Component: ClassroomPage,
+            },
+            {
+              path: "evaluations",
+              loader: evaluationsLoader,
+              Component: EvaluationsPage,
+            },
+            {
+              path: "evaluations/:id",
+              loader: evaluationLoader,
+              Component: EvaluationPage,
             },
             { path: "404", Component: ErrorPage },
             { path: "*", loader: () => redirect("/404") },

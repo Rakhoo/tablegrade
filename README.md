@@ -19,14 +19,17 @@ The only network request fetches school holidays from
     dark); double lessons span two rows.
   - Lesson-free hours show `FREI` with dashed slots that create a new class for that slot;
     vacations show `FERIEN`, public holidays `FEIERTAG`.
-  - Long press on a day header marks the day as `AUSFALL` (illness, bridge day, …) or makes
-    it regular again. Existing entries of that day must be confirmed and are then deleted.
+  - Long press on a day header or a lesson marks it as `AUSFALL` (illness, bridge day, …) or
+    makes it regular again. Existing entries must be confirmed and are then deleted.
+  - Complete lessons (every student has a symbol) show a check mark, here and in the classroom.
   - Week arrows and month switching in the calendar select whole weeks; "Heute" removes
     the `date` parameter and returns to the clean start state (current week).
   - "⋯" menu: export / import a backup of the whole database, "Neu laden" (reload and
     activate a waiting update) and "App installieren" (install instructions per platform).
 - **Classroom** (`/classes/:id?date=YYYY-MM-DD`): seating plan of one lesson.
   - *Ermahnung* (default mode): each tap cycles a student through yellow → red → none.
+  - *Bewertung starten*: a grading mode showing only the open tool bar (seven grade symbols,
+    "entschuldigt", delete, comment) and the seats; tapping a student applies the tool.
   - *Bewerten*: choose a tool (grade symbol, delete, comment) and tap students to apply it.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
@@ -55,6 +58,10 @@ The only network request fetches school holidays from
   moment the app was added instead of the manifest's `start_url`. Reloads keep the current page.
 - New versions wait until the user confirms the update banner (or uses "Neu laden"). The app
   checks for updates hourly and whenever it comes back to the foreground.
+
+- **Evaluation** (`/evaluations`, `/evaluations/:id`): one table per class and school year
+  half with students in rows, lesson dates in columns and the symbols at the intersections.
+  Reachable from the timetable and from a lesson; editable through the same grading mode.
 
 ## Stack
 
@@ -94,10 +101,11 @@ repository needs the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 src/
 ├── main.tsx, router.tsx, App.tsx   entry point, routes, root layout (theme, German locale)
 ├── theme.ts, index.css             MUI theme and CSS design tokens
-├── components/                     shared UI: ConfirmDialog, GradeIcon, icons
+├── components/                     shared UI: ConfirmDialog, GradeIcon, GradeToolBar, icons
 ├── features/
 │   ├── timetable/                  timetable page, grid, Ausfall dialog, app menu
-│   ├── classroom/                  classroom page, seat grid, tools, dialogs
+│   ├── classroom/                  classroom page, seat grid, dialogs
+│   ├── evaluation/                 class selection and evaluation table
 │   └── errors/                     404 and error page with a way back
 ├── db/
 │   ├── schema.ts                   Drizzle tables and row types
@@ -128,6 +136,7 @@ else in camelCase files; JSDoc on exported functions and components.
 | `Grades`           | per class, student and date: symbol, comment, warnings (0–2)            |
 | `Holidays`         | cached holiday periods, flagged as summer vacation / public holiday     |
 | `CancelledDays`    | dates marked as "Ausfall"; nothing is graded on these days              |
+| `CancelledLessons` | single lessons (class + date) marked as "Ausfall"                       |
 
 The SQL table names are kept for compatibility; the TypeScript names differ (e.g.
 `schoolClasses`, `classStudents`).
@@ -148,9 +157,11 @@ also the way to move data to another device.
 
 ## Domain rules
 
-- **Grade symbols** ([src/lib/grades.ts](src/lib/grades.ts)): ✪ sehr gut, ⊕ gut,
-  ○ befriedigend (default tool), ⊖ ausreichend, ⊗ mangelhaft, ⦸ entschuldigt. "entschuldigt"
-  has `isGrade: false` and must not count in evaluations.
+- **Grade symbols** ([src/lib/grades.ts](src/lib/grades.ts)): star (1), plus (2), arrow up
+  (3+), ring (3, default tool), arrow down (3−), minus (about 4.5), cross (6) and
+  "entschuldigt", which has `isGrade: false` and must not count in evaluations.
+- **New students** added to a class get "entschuldigt" in all lessons that were complete
+  before, so these stay complete; other lessons stay untouched.
 - **School year**: starts the day after the summer holidays (fallback August 1st). The
   second half starts on the dates in `SECOND_HALF_STARTS`
   ([src/lib/schoolYear.ts](src/lib/schoolYear.ts)), taken from the NRW Ferienordnung

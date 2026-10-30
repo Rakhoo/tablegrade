@@ -14,6 +14,10 @@ type StudentName = { firstName: string; lastName: string };
 export const formatStudentName = ({ firstName, lastName }: StudentName) =>
   `${firstName} ${lastName}`.trim();
 
+/** Sorts students alphabetically by "Vorname Nachname". */
+export const compareStudents = (a: StudentName, b: StudentName) =>
+  formatStudentName(a).localeCompare(formatStudentName(b), "de");
+
 /** Short name shown on the seating plan: the nickname if set, otherwise the first name. */
 export const getStudentLabel = (
   student: StudentName & { nickname: string | null },

@@ -27,6 +27,27 @@ const GLYPHS: Record<GradeKey, ReactNode> = {
       strokeWidth="2.5"
     />
   ),
+  // Neutral with a tendency: arrows up and down
+  "3+": (
+    <path
+      fill="none"
+      stroke="white"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 16l8-8M10 8h6v6"
+    />
+  ),
+  "3-": (
+    <path
+      fill="none"
+      stroke="white"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M8 8l8 8M16 10v6h-6"
+    />
+  ),
   "4": (
     <path stroke="white" strokeWidth="2.5" strokeLinecap="round" d="M7 12h10" />
   ),

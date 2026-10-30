@@ -21,14 +21,17 @@ import {
   useRevalidator,
   useSearchParams,
 } from "react-router";
+import type { SchoolClass } from "../../db";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
+  TableIcon,
 } from "../../components/icons";
 import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
+import { lessonKey } from "../../lib/lessons";
 import { AppMenu } from "./AppMenu";
-import { CancelDayDialog } from "./CancelDayDialog";
+import { CancelDialog } from "./CancelDialog";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
 import "./TimetablePage.css";
@@ -37,11 +40,19 @@ const MIN_DATE = new Date(2026, 7, 2);
 
 /** Start page: week picker and the timetable of the selected week. */
 export function TimetablePage() {
-  const { holidays, cancelledDays, schoolClasses } =
-    useLoaderData<TimetableLoaderData>();
+  const {
+    holidays,
+    cancelledDays,
+    cancelledLessons,
+    completedLessons,
+    schoolClasses,
+  } = useLoaderData<TimetableLoaderData>();
   const { revalidate } = useRevalidator();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [cancelTarget, setCancelTarget] = useState<Date | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<{
+    date: Date;
+    schoolClass?: SchoolClass;
+  } | null>(null);
 
   const today = new Date();
   const thisWeek = getWeekStart(nextSchoolDay(today));
@@ -180,6 +191,15 @@ export function TimetablePage() {
           >
             Neue Klasse
           </Button>
+          <Button
+            component={Link}
+            to="/evaluations"
+            variant="outlined"
+            size="large"
+            startIcon={<TableIcon />}
+          >
+            Auswertung
+          </Button>
         </div>
 
         <StaticDatePicker
@@ -205,14 +225,29 @@ export function TimetablePage() {
           schoolClasses={schoolClasses}
           holidays={holidays}
           cancelledDays={cancelledDays}
-          onDayLongPress={setCancelTarget}
+          cancelledLessons={cancelledLessons}
+          completedLessons={completedLessons}
+          onDayLongPress={(date) => setCancelTarget({ date })}
+          onLessonLongPress={(date, schoolClass) =>
+            setCancelTarget({ date, schoolClass })
+          }
         />
       </section>
 
       {cancelTarget && (
-        <CancelDayDialog
-          date={cancelTarget}
-          isCancelled={cancelledDays.includes(toIsoDate(cancelTarget))}
+        <CancelDialog
+          date={cancelTarget.date}
+          schoolClass={cancelTarget.schoolClass}
+          isCancelled={
+            cancelTarget.schoolClass
+              ? cancelledLessons.includes(
+                  lessonKey(
+                    cancelTarget.schoolClass.id,
+                    toIsoDate(cancelTarget.date),
+                  ),
+                )
+              : cancelledDays.includes(toIsoDate(cancelTarget.date))
+          }
           onClose={() => setCancelTarget(null)}
           onChanged={revalidate}
         />

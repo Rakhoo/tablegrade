@@ -1,4 +1,6 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
+import { ABSENT_GRADE } from "../../lib/grades";
+import { lessonDateOf } from "../../lib/lessons";
 import { freeSeats, seatsOverlap, type Seat } from "../../lib/seating";
 import { client, db } from "../client";
 import {
@@ -9,6 +11,7 @@ import {
   studentTraits,
   type SchoolClass,
 } from "../schema";
+import { getCompletedLessons } from "./grades";
 import { deleteOrphanStudents, getClassStudents } from "./students";
 
 export type SchoolClassInput = Omit<SchoolClass, "id"> & { id?: number };
@@ -51,7 +54,8 @@ export async function getSubjects() {
 
 /**
  * Creates or updates a class and synchronizes its roster in one transaction.
- * New members are placed on the first free seats; grades of removed members are deleted.
+ * New members are placed on the first free seats and marked as excused in complete lessons;
+ * grades of removed members are deleted.
  * @returns The id of the saved class.
  */
 export async function saveSchoolClass(
@@ -66,6 +70,11 @@ export async function saveSchoolClass(
   const removedIds = existing
     .map((s) => s.id)
     .filter((sid) => !keptIds.has(sid));
+
+  // Complete lessons stay complete: new members are marked as excused there
+  const completedDates = id
+    ? (await getCompletedLessons(id)).map(lessonDateOf)
+    : [];
 
   const occupied: Seat[] = existing.filter((s) => keptIds.has(s.id));
   const seats = freeSeats(occupied);
@@ -147,6 +156,21 @@ export async function saveSchoolClass(
         await tx.query(
           db.insert(classStudents).values({ classId, studentId, ...seat }),
         );
+        if (completedDates.length > 0) {
+          await tx.query(
+            db
+              .insert(grades)
+              .values(
+                completedDates.map((date) => ({
+                  classId,
+                  studentId,
+                  date,
+                  grade: ABSENT_GRADE,
+                })),
+              )
+              .onConflictDoNothing(),
+          );
+        }
       }
     }
     return classId;

@@ -2,9 +2,11 @@ import { addDays, format, isToday } from "date-fns";
 import { de } from "date-fns/locale/de";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
+import { CheckIcon } from "../../components/icons";
 import type { Holiday, SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
+import { lessonKey } from "../../lib/lessons";
 import {
   getClassOccurrences,
   getHoliday,
@@ -23,8 +25,14 @@ type TimetableGridProps = {
   holidays: Holiday[];
   /** Days marked as "Ausfall", as `YYYY-MM-DD`. */
   cancelledDays: string[];
+  /** Keys (see `lessonKey`) of single lessons marked as "Ausfall". */
+  cancelledLessons: string[];
+  /** Keys (see `lessonKey`) of lessons where every student has a symbol. */
+  completedLessons: string[];
   /** Long press on the header of a non-holiday day, to toggle "Ausfall". */
   onDayLongPress: (date: Date) => void;
+  /** Long press on a lesson, to toggle "Ausfall" for it. */
+  onLessonLongPress: (date: Date, schoolClass: SchoolClass) => void;
 };
 
 type Slot = { day: number; weekday: string; date: Date };
@@ -71,6 +79,81 @@ function freeBlock(
     }
   }
   return nodes;
+}
+
+type LessonTileProps = {
+  schoolClass: SchoolClass;
+  date: Date;
+  isComplete: boolean;
+  isCancelled: boolean;
+  onLongPress: () => void;
+};
+
+/**
+ * Timetable entry of a lesson, opening its classroom. Complete lessons show a check mark,
+ * cancelled ones are grayed out and can only be restored by another long press.
+ */
+function LessonTile({
+  schoolClass,
+  date,
+  isComplete,
+  isCancelled,
+  onLongPress,
+}: LessonTileProps) {
+  const pressHandlers = useLongPress(onLongPress);
+  const className =
+    "relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-xl border-l-4 px-3 py-1 select-none ";
+  const texts = (
+    <>
+      <span className="truncate text-base leading-tight font-bold">
+        {formatClassName(schoolClass)}
+      </span>
+      <span className="truncate text-sm leading-tight opacity-80">
+        {schoolClass.subject}
+      </span>
+    </>
+  );
+
+  if (isCancelled) {
+    return (
+      <div
+        className={`${className} border-gray-300 bg-gray-100 text-gray-400 line-through`}
+        style={{ WebkitTouchCallout: "none" }}
+        {...pressHandlers}
+      >
+        {texts}
+        <span className="absolute right-2 bottom-1 text-[10px] font-semibold tracking-wider no-underline">
+          AUSFALL
+        </span>
+      </div>
+    );
+  }
+  const color = getClassColor(schoolClass);
+  return (
+    <Link
+      to={`/classes/${schoolClass.id}?date=${toIsoDate(date)}`}
+      draggable={false}
+      className={`${className} shadow-tile transition-transform active:scale-[0.97]`}
+      style={{
+        background: color.background,
+        borderColor: color.accent,
+        color: color.text,
+        WebkitTouchCallout: "none",
+      }}
+      {...pressHandlers}
+    >
+      {texts}
+      {isComplete && (
+        <span
+          className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full text-white"
+          style={{ background: "#15803d" }}
+          aria-label="Vollständig bewertet"
+        >
+          <CheckIcon size={13} strokeWidth={3} />
+        </span>
+      )}
+    </Link>
+  );
 }
 
 type DayHeaderProps = {
@@ -125,7 +208,10 @@ export function TimetableGrid({
   schoolClasses,
   holidays,
   cancelledDays,
+  cancelledLessons,
+  completedLessons,
   onDayLongPress,
+  onLessonLongPress,
 }: TimetableGridProps) {
   const cells: ReactNode[] = [<div key="corner" className="bg-surface" />];
 
@@ -211,25 +297,16 @@ export function TimetableGrid({
             }}
           >
             {block.schoolClasses.map((cls) => {
-              const color = getClassColor(cls);
+              const key = lessonKey(cls.id, toIsoDate(date));
               return (
-                <Link
+                <LessonTile
                   key={cls.id}
-                  to={`/classes/${cls.id}?date=${toIsoDate(date)}`}
-                  className="flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-xl border-l-4 px-3 py-1 shadow-tile transition-transform active:scale-[0.97]"
-                  style={{
-                    background: color.background,
-                    borderColor: color.accent,
-                    color: color.text,
-                  }}
-                >
-                  <span className="truncate text-base leading-tight font-bold">
-                    {formatClassName(cls)}
-                  </span>
-                  <span className="truncate text-sm leading-tight opacity-80">
-                    {cls.subject}
-                  </span>
-                </Link>
+                  schoolClass={cls}
+                  date={date}
+                  isComplete={completedLessons.includes(key)}
+                  isCancelled={cancelledLessons.includes(key)}
+                  onLongPress={() => onLessonLongPress(date, cls)}
+                />
               );
             })}
           </div>,

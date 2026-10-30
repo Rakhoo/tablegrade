@@ -2,6 +2,7 @@ import { isValid, parseISO } from "date-fns";
 import { redirect, type LoaderFunctionArgs } from "react-router";
 import {
   getCancelledDays,
+  getCancelledLessons,
   getClassStudents,
   getGrades,
   getHolidays,
@@ -35,14 +36,21 @@ export async function classroomLoader(
   const dateParam = parseISO(
     new URL(request.url).searchParams.get("date") ?? "",
   );
-  const [holidays, cancelledDays, allClasses, subjects, traits] =
-    await Promise.all([
-      getHolidays(),
-      getCancelledDays(),
-      getSchoolClasses(),
-      getSubjects(),
-      getTraits(),
-    ]);
+  const [
+    holidays,
+    cancelledDays,
+    cancelledLessons,
+    allClasses,
+    subjects,
+    traits,
+  ] = await Promise.all([
+    getHolidays(),
+    getCancelledDays(),
+    getCancelledLessons(),
+    getSchoolClasses(),
+    getSubjects(),
+    getTraits(),
+  ]);
   const base = {
     holidays,
     allClasses,
@@ -77,6 +85,7 @@ export async function classroomLoader(
     getGrades(cls.id, date),
   ]);
   const lessonDate = parseISO(date);
+  const cancelled = { days: cancelledDays, lessons: cancelledLessons };
   return {
     ...base,
     class: cls as SchoolClass | undefined,
@@ -88,7 +97,7 @@ export async function classroomLoader(
       lessonDate,
       allClasses,
       holidays,
-      cancelledDays,
+      cancelled,
       -1,
     ),
     next: getAdjacentLesson(
@@ -96,7 +105,7 @@ export async function classroomLoader(
       lessonDate,
       allClasses,
       holidays,
-      cancelledDays,
+      cancelled,
       1,
     ),
   };

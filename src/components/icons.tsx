@@ -102,3 +102,16 @@ export const InfoIcon = (props: IconProps) => (
     <path d="M12 11v5M12 8h.01" />
   </Icon>
 );
+
+export const CheckIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
+  </Icon>
+);
+
+export const TableIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <path d="M3 10h18M9 10v10" />
+  </Icon>
+);

@@ -43,6 +43,7 @@ import {
 import { StudentDialog } from "./StudentDialog";
 import { TrashIcon } from "../../components/icons";
 import {
+  compareStudents,
   formatClassName,
   formatSchoolYear,
   formatStudentName,
@@ -543,7 +544,7 @@ export function ClassEditDialog({
         )}
 
         <div className="mt-3 grid grid-cols-1 gap-2 landscape:grid-cols-2">
-          {roster.map((row) => (
+          {[...roster].sort(compareStudents).map((row) => (
             <div key={row.key} className="flex items-center gap-1">
               <ButtonBase
                 onClick={() => setEditingStudent(row)}

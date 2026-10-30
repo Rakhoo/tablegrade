@@ -1,6 +1,7 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNotNull, isNull } from "drizzle-orm";
+import { lessonKey } from "../../lib/lessons";
 import { db } from "../client";
-import { grades, type GradeEntry } from "../schema";
+import { classStudents, grades, type GradeEntry } from "../schema";
 
 /** Returns the grades, comments and warnings of a class for one lesson date. */
 export const getGrades = (classId: number, date: string) =>
@@ -8,6 +9,35 @@ export const getGrades = (classId: number, date: string) =>
     .select()
     .from(grades)
     .where(and(eq(grades.classId, classId), eq(grades.date, date)));
+
+/** Returns all grades, comments and warnings of a class, for the evaluation table. */
+export const getClassGrades = (classId: number) =>
+  db.select().from(grades).where(eq(grades.classId, classId));
+
+/**
+ * Returns the keys (see `lessonKey`) of all complete lessons: every student of the class has
+ * a symbol, which includes "excused".
+ */
+export async function getCompletedLessons(classId?: number) {
+  const graded = await db
+    .select({ classId: grades.classId, date: grades.date, total: count() })
+    .from(grades)
+    .where(
+      and(
+        isNotNull(grades.grade),
+        classId ? eq(grades.classId, classId) : undefined,
+      ),
+    )
+    .groupBy(grades.classId, grades.date);
+  const sizes = await db
+    .select({ classId: classStudents.classId, total: count() })
+    .from(classStudents)
+    .groupBy(classStudents.classId);
+  const sizeOf = new Map(sizes.map((row) => [row.classId, row.total]));
+  return graded
+    .filter((row) => row.total >= (sizeOf.get(row.classId) ?? Infinity))
+    .map((row) => lessonKey(row.classId, row.date));
+}
 
 /** Inserts or updates the grade entry of a student and drops entries that became empty. */
 async function upsertGrade(

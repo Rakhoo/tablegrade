@@ -93,4 +93,12 @@ export const MIGRATIONS: string[][] = [
   ],
   // The mixed class letter is lowercase like all letters
   ["UPDATE Classes SET letter = 'mix' WHERE letter = 'Mix'"],
+  // Single cancelled lessons
+  [
+    `CREATE TABLE CancelledLessons (
+      classId INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      PRIMARY KEY (classId, date)
+    )`,
+  ],
 ];
