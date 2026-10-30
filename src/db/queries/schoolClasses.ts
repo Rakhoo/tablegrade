@@ -6,13 +6,21 @@ import {
   grades,
   schoolClasses,
   students,
+  studentTraits,
   type SchoolClass,
 } from "../schema";
 import { deleteOrphanStudents, getClassStudents } from "./students";
 
 export type SchoolClassInput = Omit<SchoolClass, "id"> & { id?: number };
 /** A roster entry from the edit dialog; entries without `id` are new students. */
-export type RosterEntry = { id?: number; name: string };
+export type RosterEntry = {
+  id?: number;
+  firstName: string;
+  lastName: string;
+  nickname: string | null;
+  image: string | null;
+  traitIds: number[];
+};
 
 /** Returns all classes, ordered by weekday and lesson. */
 export const getSchoolClasses = () =>
@@ -99,22 +107,25 @@ export async function saveSchoolClass(
 
     const memberIds = new Set(existing.map((s) => s.id));
     for (const entry of roster) {
-      let studentId = entry.id;
+      const { id: entryId, traitIds, ...fields } = entry;
+      let studentId = entryId;
       if (studentId) {
         await tx.query(
+          db.update(students).set(fields).where(eq(students.id, studentId)),
+        );
+        await tx.query(
           db
-            .update(students)
-            .set({ name: entry.name })
-            .where(eq(students.id, studentId)),
+            .delete(studentTraits)
+            .where(eq(studentTraits.studentId, studentId)),
         );
       } else {
         const [row] = await tx.query(
-          db
-            .insert(students)
-            .values({ name: entry.name })
-            .returning({ id: students.id }),
+          db.insert(students).values(fields).returning({ id: students.id }),
         );
         studentId = row.id as number;
+      }
+      for (const traitId of traitIds) {
+        await tx.query(db.insert(studentTraits).values({ studentId, traitId }));
       }
       if (!memberIds.has(studentId)) {
         const seat = seats.next().value ?? { x: null, y: null };

@@ -15,7 +15,8 @@ The only network request fetches school holidays from
 
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
   selected week, one row per lesson.
-  - Lessons are colored tiles per subject; double lessons span two rows.
+  - Lessons are colored tiles: the subject sets the hue, the level the shade (5 light, Q2
+    dark); double lessons span two rows.
   - Lesson-free hours show `FREI` with dashed slots that create a new class for that slot;
     vacations show `FERIEN`, public holidays `FEIERTAG`.
   - Long press on a day header marks the day as `AUSFALL` (illness, bridge day, …) or makes
@@ -28,11 +29,19 @@ The only network request fetches school holidays from
   - *Ermahnung* (default mode): each tap cycles a student through yellow → red → none.
   - *Bewerten*: choose a tool (grade symbol, delete, comment) and tap students to apply it.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
+  - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
+    colors in `src/lib/traits.ts`); "Eigenschaften" explains the colors, counts them and hides the dots.
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
 - **Class edit dialog** (`/classes/new`, `/classes/:id/edit`): school year, half, level and
-  letter, weekday, lesson, double lesson, subject and the student list (paste a list, or copy
-  the students of another class).
+  letter, weekday, lesson, double lesson, subject and the student list:
+  - **WebUntis PDF**: reads last name, first name and photo from all pages (first import and
+    later updates). Students are matched per class by first + last name; nickname and traits
+    stay, students missing in the file stay in the list. Processed on the device only.
+  - **Paste a list**: one student per line, split into first and last name at the first space.
+  - **Copy** the students of another class.
+  - **Student dialog**: first and last name, nickname, photo and traits per student.
+  - The nickname "Vorname N." is prefilled when several students share a first name.
 
 ### Installed app (PWA)
 
@@ -90,7 +99,7 @@ src/
 │   ├── migrations.ts               ordered SQL migrations
 │   ├── client.ts                   SQLocal connection, migrations, import/export
 │   └── queries/                    data access per entity
-├── services/                       holiday API, backup files, PWA (install, reload, launch URL)
+├── services/                       holiday API, backup files, PWA, WebUntis PDF reader
 ├── hooks/                          useLongPress
 └── lib/                            pure helpers: dates, school year, lessons, seating,
                                     grades, warnings, subject colors, formatters
@@ -106,7 +115,9 @@ else in camelCase files; JSDoc on exported functions and components.
 | Table              | Content                                                                 |
 | ------------------ | ----------------------------------------------------------------------- |
 | `Classes`          | recurring lesson: subject, level/letter, school year + half, day, hour  |
-| `Students`         | names; shared between classes when copied from another class            |
+| `Students`         | names, nickname, photo (base64); shared when copied to another class    |
+| `Traits`           | selectable properties (ADS, ADHS, ESE, Lernen, Autismus, Diabetes, LRS) |
+| `Students2Traits`  | traits assigned to students                                             |
 | `Classes2Students` | class membership and seat (`x`, `y` in half-seat cells)                 |
 | `Grades`           | per class, student and date: symbol, comment, warnings (0–2)            |
 | `Holidays`         | cached holiday periods, flagged as summer vacation / public holiday     |
@@ -144,6 +155,9 @@ also the way to move data to another device.
   students). New students get the first free seat of a default layout
   ([src/lib/seating.ts](src/lib/seating.ts)), then any free whole seat.
 - **Lessons per day**: 9 (`LESSONS_PER_DAY`).
+- **WebUntis PDF** ([src/lib/rosterPdf.ts](src/lib/rosterPdf.ts)): columns are located by the
+  header texts `Familienname`, `Vorname` and `Klasse`, rows by the number in the first column.
+  Photos are cut from the rendered page at the position of the image in that row.
 
 ## Yearly maintenance
 

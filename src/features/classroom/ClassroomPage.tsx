@@ -30,9 +30,10 @@ import {
   PencilIcon,
   TrashIcon,
 } from "../../components/icons";
-import { formatClassName } from "../../lib/formatters";
+import { useStoredBoolean } from "../../hooks/useStoredBoolean";
+import { formatClassName, formatStudentName } from "../../lib/formatters";
 import type { Lesson } from "../../lib/lessons";
-import { getSubjectColor } from "../../lib/subjectColors";
+import { getClassColor } from "../../lib/subjectColors";
 import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
 import { ClassEditDialog } from "./ClassEditDialog";
 import type { ClassroomLoaderData } from "./classroomLoader";
@@ -40,6 +41,7 @@ import { ClearLessonDialog } from "./ClearLessonDialog";
 import { CommentDialog } from "./CommentDialog";
 import { GradeToolSelect, type GradeTool } from "./GradeToolSelect";
 import { SeatGrid } from "./SeatGrid";
+import { TraitsMenu } from "./TraitsMenu";
 import "./ClassroomPage.css";
 
 /** Interaction mode of the seating plan. */
@@ -59,6 +61,7 @@ export function ClassroomPage() {
     allClasses,
     subjects,
     holidays,
+    traits,
     previous,
     next,
   } = useLoaderData<ClassroomLoaderData>();
@@ -68,6 +71,7 @@ export function ClassroomPage() {
   const [mode, setMode] = useState<ClassroomMode>("warn");
   const [tool, setTool] = useState<GradeTool>(DEFAULT_TOOL);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [showTraits, setShowTraits] = useStoredBoolean("showTraits", true);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
 
   const gradeMap = new Map(grades.map((entry) => [entry.studentId, entry]));
@@ -81,7 +85,7 @@ export function ClassroomPage() {
     else navigate(fallback, { replace: true });
   };
 
-  const accent = cls ? getSubjectColor(cls.subject).accent : undefined;
+  const accent = cls ? getClassColor(cls).accent : undefined;
 
   /** Applies the current mode (and grading tool) to a tapped student. */
   const handleTap = async (student: SeatedStudent) => {
@@ -243,6 +247,7 @@ export function ClassroomPage() {
         )}
         <SeatGrid
           students={students}
+          traits={showTraits ? traits : []}
           grades={gradeMap}
           arranging={mode == "arrange"}
           onTap={handleTap}
@@ -251,6 +256,16 @@ export function ClassroomPage() {
             revalidate();
           }}
         />
+        {students.some((student) => student.traitIds.length > 0) && (
+          <div className="absolute -bottom-2 -left-2 z-20">
+            <TraitsMenu
+              traits={traits}
+              students={students}
+              visible={showTraits}
+              onVisibleChange={setShowTraits}
+            />
+          </div>
+        )}
       </main>
 
       {confirmClear && (
@@ -267,7 +282,7 @@ export function ClassroomPage() {
 
       {commenting && (
         <CommentDialog
-          studentName={commenting.name}
+          studentName={formatStudentName(commenting)}
           initial={gradeMap.get(commenting.id)?.comment ?? ""}
           onClose={() => setCommenting(null)}
           onSave={async (comment) => {
@@ -285,6 +300,7 @@ export function ClassroomPage() {
           allClasses={allClasses}
           subjects={subjects}
           holidays={holidays}
+          traits={traits}
           preset={{
             day: Number(searchParams.get("day")) || undefined,
             hour: Number(searchParams.get("hour")) || undefined,

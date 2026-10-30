@@ -13,11 +13,7 @@ export default defineConfig({
     VitePWA({
       // New versions wait for the user to confirm the update banner (see UpdateBanner.tsx)
       registerType: "prompt",
-      includeAssets: [
-        "favicon.svg",
-        "apple-touch-icon.png",
-        "mask-icon.svg",
-      ],
+      includeAssets: ["favicon.svg", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
         name: "Sitzordnung & Noten",
         short_name: "Noten",
@@ -46,6 +42,10 @@ export default defineConfig({
         ],
         display: "standalone",
         display_override: ["window-controls-overlay"],
+      },
+      workbox: {
+        // Includes the PDF worker (.mjs), so the student import also works offline
+        globPatterns: ["**/*.{js,mjs,css,html,wasm}"],
       },
       devOptions: {
         enabled: true,

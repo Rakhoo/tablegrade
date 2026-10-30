@@ -19,7 +19,7 @@ export const CLASS_LEVELS = ["5", "6", "7", "8", "9", "10", "EF", "Q1", "Q2"];
 export const UPPER_SCHOOL_LEVELS = ["EF", "Q1", "Q2"];
 
 /** Selectable class letters for levels 5–10. */
-export const CLASS_LETTERS = ["A", "B", "C", "D", "E", "F"];
+export const CLASS_LETTERS = ["a", "b", "c", "d", "e", "f"];
 
 /** Earliest selectable school year (start year). */
 export const FIRST_SCHOOL_YEAR = 2026;

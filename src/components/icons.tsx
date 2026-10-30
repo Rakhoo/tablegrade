@@ -95,3 +95,10 @@ export const ShareIcon = (props: IconProps) => (
     <path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1" />
   </Icon>
 );
+
+export const InfoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 11v5M12 8h.01" />
+  </Icon>
+);

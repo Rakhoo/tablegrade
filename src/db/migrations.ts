@@ -61,4 +61,28 @@ export const MIGRATIONS: string[][] = [
   ["ALTER TABLE Grades ADD COLUMN warnings INTEGER NOT NULL DEFAULT 0"],
   // Days without lessons marked by the teacher (illness, bridge days, …)
   ["CREATE TABLE CancelledDays (date TEXT PRIMARY KEY)"],
+  // Separate first and last name (split at the first space) and selectable student traits
+  [
+    "ALTER TABLE Students ADD COLUMN firstName TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE Students ADD COLUMN lastName TEXT NOT NULL DEFAULT ''",
+    `UPDATE Students SET
+      firstName = CASE WHEN instr(trim(name), ' ') > 0
+        THEN substr(trim(name), 1, instr(trim(name), ' ') - 1) ELSE trim(name) END,
+      lastName = CASE WHEN instr(trim(name), ' ') > 0
+        THEN trim(substr(trim(name), instr(trim(name), ' ') + 1)) ELSE '' END`,
+    "ALTER TABLE Students DROP COLUMN name",
+    `CREATE TABLE Traits (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    )`,
+    `INSERT INTO Traits (name) VALUES
+      ('ADS'), ('ADHS'), ('ESE'), ('Lernen'), ('Autismus'), ('Diabetes'), ('LRS')`,
+    `CREATE TABLE Students2Traits (
+      studentId INTEGER NOT NULL REFERENCES Students(id) ON DELETE CASCADE,
+      traitId INTEGER NOT NULL REFERENCES Traits(id) ON DELETE CASCADE,
+      PRIMARY KEY (studentId, traitId)
+    )`,
+  ],
+  // Class letters are lowercase ("5a")
+  ["UPDATE Classes SET letter = lower(letter) WHERE letter IS NOT NULL"],
 ];

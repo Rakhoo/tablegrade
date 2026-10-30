@@ -11,7 +11,7 @@ import {
   LESSONS_PER_DAY,
   WEEKDAY_NAMES,
 } from "../../lib/schoolYear";
-import { getSubjectColor } from "../../lib/subjectColors";
+import { getClassColor } from "../../lib/subjectColors";
 import { useLongPress } from "../../hooks/useLongPress";
 import "./TimetableGrid.css";
 
@@ -208,7 +208,7 @@ export function TimetableGrid({
             }}
           >
             {block.schoolClasses.map((cls) => {
-              const color = getSubjectColor(cls.subject);
+              const color = getClassColor(cls);
               return (
                 <Link
                   key={cls.id}

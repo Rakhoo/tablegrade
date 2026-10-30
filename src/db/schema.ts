@@ -42,8 +42,11 @@ export const schoolClassesRelations = relations(schoolClasses, ({ many }) => ({
 
 export const students = sqliteTable("Students", {
   id: int("id").primaryKey({ autoIncrement: true }),
-  name: text("name").notNull(),
+  firstName: text("firstName").notNull(),
+  lastName: text("lastName").notNull(),
+  /** Name to show instead of the first name. */
   nickname: text("nickname"),
+  /** Photo as base64 data URL. */
   image: text("image"),
 });
 
@@ -115,6 +118,26 @@ export const gradesRelations = relations(grades, ({ one }) => ({
   }),
 }));
 
+/** Selectable student properties (ADHS, LRS, …), seeded by the migrations. */
+export const traits = sqliteTable("Traits", {
+  id: int("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+});
+
+/** Assignment of traits to students. */
+export const studentTraits = sqliteTable(
+  "Students2Traits",
+  {
+    studentId: int("studentId")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    traitId: int("traitId")
+      .notNull()
+      .references(() => traits.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.studentId, table.traitId] })],
+);
+
 /** Days marked as "Ausfall" by the teacher: no lessons take place and nothing is graded. */
 export const cancelledDays = sqliteTable("CancelledDays", {
   /** Date as `YYYY-MM-DD`. */
@@ -126,3 +149,4 @@ export type SchoolClass = typeof schoolClasses.$inferSelect;
 export type SchoolYearPart = SchoolClass["part"];
 export type Student = typeof students.$inferSelect;
 export type GradeEntry = typeof grades.$inferSelect;
+export type Trait = typeof traits.$inferSelect;

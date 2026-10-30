@@ -8,6 +8,7 @@ import {
   getSchoolClass,
   getSchoolClasses,
   getSubjects,
+  getTraits,
   waitForDatabase,
   type GradeEntry,
   type SchoolClass,
@@ -33,16 +34,19 @@ export async function classroomLoader(
   const dateParam = parseISO(
     new URL(request.url).searchParams.get("date") ?? "",
   );
-  const [holidays, cancelledDays, allClasses, subjects] = await Promise.all([
-    getHolidays(),
-    getCancelledDays(),
-    getSchoolClasses(),
-    getSubjects(),
-  ]);
+  const [holidays, cancelledDays, allClasses, subjects, traits] =
+    await Promise.all([
+      getHolidays(),
+      getCancelledDays(),
+      getSchoolClasses(),
+      getSubjects(),
+      getTraits(),
+    ]);
   const base = {
     holidays,
     allClasses,
     subjects,
+    traits,
     editing: mode != "view",
   };
 

@@ -1,7 +1,9 @@
 import {
   Alert,
   Autocomplete,
+  Avatar,
   Button,
+  ButtonBase,
   Dialog,
   DialogActions,
   DialogContent,
@@ -23,10 +25,22 @@ import {
   type SchoolClassInput,
   type SchoolYearPart,
   type SeatedStudent,
+  type Trait,
 } from "../../db";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import {
+  fillNicknames,
+  mergeStudents,
+  parseStudentList,
+  toRosterEntry,
+} from "../../lib/studentRoster";
+import { StudentDialog } from "./StudentDialog";
 import { TrashIcon } from "../../components/icons";
-import { formatClassName, formatSchoolYear } from "../../lib/formatters";
+import {
+  formatClassName,
+  formatSchoolYear,
+  formatStudentName,
+} from "../../lib/formatters";
 import {
   CLASS_LETTERS,
   CLASS_LEVELS,
@@ -51,6 +65,7 @@ type ClassEditDialogProps = {
   allClasses: SchoolClass[];
   subjects: string[];
   holidays: Holiday[];
+  traits: Trait[];
   /** Preset weekday and lesson for new classes (from the timetable cell). */
   preset: { day?: number; hour?: number; date: Date };
   onSave: (form: ClassForm, roster: RosterEntry[]) => Promise<void>;
@@ -85,6 +100,7 @@ export function ClassEditDialog({
   allClasses,
   subjects,
   holidays,
+  traits,
   preset,
   onSave,
   onDelete,
@@ -94,14 +110,24 @@ export function ClassEditDialog({
     () => cls ?? emptyForm(holidays, preset),
   );
   const [roster, setRoster] = useState<RosterRow[]>(() =>
-    students.map((s) => ({ key: `s${s.id}`, id: s.id, name: s.name })),
+    students.map((student) => ({
+      ...toRosterEntry(student),
+      key: `s${student.id}`,
+    })),
   );
   const [pasteText, setPasteText] = useState<string | null>(null);
   const [removing, setRemoving] = useState<RosterRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
   const nextKey = useRef(0);
-  const [focusKey, setFocusKey] = useState<string>();
+  const [editingStudent, setEditingStudent] = useState<
+    RosterRow | "new" | null
+  >(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    text: string;
+    error?: boolean;
+  } | null>(null);
 
   const update = (changes: Partial<ClassForm>) =>
     setForm((prev) => ({ ...prev, ...changes }));
@@ -118,23 +144,60 @@ export function ClassEditDialog({
   );
   const otherClasses = allClasses.filter((other) => other.id != cls?.id);
 
-  /** Appends names to the roster, skipping students that are already part of it. */
-  const addStudents = (entries: RosterEntry[]) => {
-    setRoster((prev) => [
-      ...prev,
-      ...entries
-        .filter((entry) => !entry.id || !prev.some((row) => row.id == entry.id))
-        .map((entry) => ({ ...entry, key: `n${nextKey.current++}` })),
-    ]);
-  };
+  const createRow = (entry: RosterEntry): RosterRow => ({
+    ...entry,
+    key: `n${nextKey.current++}`,
+  });
 
-  /** Splits the pasted list into one roster entry per non-empty line. */
-  const parsePaste = (text: string): RosterEntry[] =>
-    text
-      .split("\n")
-      .map((name) => name.trim())
-      .filter(Boolean)
-      .map((name) => ({ name }));
+  /** Merges a pasted list into the roster and prefills nicknames of equal first names. */
+  const mergeList = (rows: RosterRow[], text: string) =>
+    fillNicknames(mergeStudents(rows, parseStudentList(text), createRow).rows);
+
+  /** Adds the students of another class, skipping students already in the roster. */
+  const copyStudents = (entries: RosterEntry[]) =>
+    setRoster((prev) =>
+      fillNicknames([
+        ...prev,
+        ...entries
+          .filter((entry) => !prev.some((row) => row.id == entry.id))
+          .map(createRow),
+      ]),
+    );
+
+  /** Reads a WebUntis PDF and matches it with the roster by first and last name. */
+  const importPdf = async (file: File) => {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      // Loaded on demand, as the PDF library is large
+      const { readRosterPdf } = await import("../../services/rosterPdf");
+      const incoming = await readRosterPdf(file);
+      if (!incoming?.length) {
+        setImportResult({
+          error: true,
+          text: "In dieser Datei wurde keine Schülerliste gefunden.",
+        });
+        return;
+      }
+      const result = mergeStudents(roster, incoming, createRow);
+      setRoster(fillNicknames(result.rows));
+      setImportResult({
+        text:
+          `${result.added} neu, ${result.matched} abgeglichen` +
+          (result.missing
+            ? `, ${result.missing} nicht in der Datei (bleiben in der Liste)`
+            : ""),
+      });
+    } catch (error) {
+      console.error(error);
+      setImportResult({
+        error: true,
+        text: "Die Datei konnte nicht gelesen werden.",
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const removeRow = (row: RosterRow) =>
     setRoster((prev) => prev.filter((r) => r.key != row.key));
@@ -149,9 +212,7 @@ export function ClassEditDialog({
           letter: isUpperSchool ? null : (form.letter ?? CLASS_LETTERS[0]),
         },
         // A pasted list that was not applied yet is saved as well
-        [...roster, ...parsePaste(pasteText ?? "")]
-          .map(({ id, name }) => ({ id, name: name.trim() }))
-          .filter((entry) => entry.name),
+        mergeList(roster, pasteText ?? "").map(toRosterEntry),
       );
     } finally {
       setSaving(false);
@@ -295,7 +356,7 @@ export function ClassEditDialog({
                   const source = await getClassStudents(
                     Number(event.target.value),
                   );
-                  addStudents(source.map(({ id, name }) => ({ id, name })));
+                  copyStudents(source.map(toRosterEntry));
                 }}
               >
                 {otherClasses.map((other) => (
@@ -306,20 +367,26 @@ export function ClassEditDialog({
                 ))}
               </TextField>
             )}
+            <Button component="label" variant="outlined" disabled={importing}>
+              {importing ? "Wird gelesen …" : "WebUntis-PDF"}
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) importPdf(file);
+                  event.target.value = "";
+                }}
+              />
+            </Button>
             <Button
               variant="outlined"
               onClick={() => setPasteText(pasteText == null ? "" : null)}
             >
               Liste einfügen
             </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                const key = `n${nextKey.current++}`;
-                setRoster((prev) => [...prev, { key, name: "" }]);
-                setFocusKey(key);
-              }}
-            >
+            <Button variant="outlined" onClick={() => setEditingStudent("new")}>
               Schüler hinzufügen
             </Button>
           </div>
@@ -331,7 +398,7 @@ export function ClassEditDialog({
               multiline
               minRows={4}
               autoFocus
-              label="Ein Name pro Zeile"
+              label="Ein Schüler pro Zeile: Vorname oder Vorname Nachname"
               value={pasteText}
               onChange={(event) => setPasteText(event.target.value)}
             />
@@ -339,7 +406,7 @@ export function ClassEditDialog({
               className="self-end"
               variant="contained"
               onClick={() => {
-                addStudents(parsePaste(pasteText));
+                setRoster(mergeList(roster, pasteText));
                 setPasteText(null);
               }}
             >
@@ -348,26 +415,47 @@ export function ClassEditDialog({
           </div>
         )}
 
-        <div className="mt-2 grid grid-cols-1 gap-2 landscape:grid-cols-2">
+        {importResult && (
+          <Alert
+            severity={importResult.error ? "error" : "success"}
+            className="mt-3"
+            onClose={() => setImportResult(null)}
+          >
+            {importResult.text}
+          </Alert>
+        )}
+
+        <div className="mt-3 grid grid-cols-1 gap-2 landscape:grid-cols-2">
           {roster.map((row) => (
             <div key={row.key} className="flex items-center gap-1">
-              <TextField
-                size="small"
-                fullWidth
-                placeholder="Name"
-                autoFocus={row.key == focusKey}
-                value={row.name}
-                onChange={(event) =>
-                  setRoster((prev) =>
-                    prev.map((r) =>
-                      r.key == row.key ? { ...r, name: event.target.value } : r,
-                    ),
-                  )
-                }
-              />
+              <ButtonBase
+                onClick={() => setEditingStudent(row)}
+                className="flex min-w-0 flex-1 items-center justify-start gap-3 rounded-2xl border border-line p-2 text-left"
+              >
+                <Avatar
+                  src={row.image ?? undefined}
+                  alt=""
+                  sx={{ width: 40, height: 40 }}
+                />
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">
+                    {formatStudentName(row)}
+                  </span>
+                  <span className="block truncate text-xs text-muted">
+                    {[
+                      row.nickname,
+                      ...traits
+                        .filter((trait) => row.traitIds.includes(trait.id))
+                        .map((trait) => trait.name),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "\u00a0"}
+                  </span>
+                </span>
+              </ButtonBase>
               <IconButton
                 color="error"
-                aria-label={`${row.name} entfernen`}
+                aria-label={`${formatStudentName(row)} entfernen`}
                 onClick={() => (row.id ? setRemoving(row) : removeRow(row))}
               >
                 <TrashIcon size={18} />
@@ -399,9 +487,29 @@ export function ClassEditDialog({
         </Button>
       </DialogActions>
 
+      {editingStudent && (
+        <StudentDialog
+          student={editingStudent == "new" ? undefined : editingStudent}
+          traits={traits}
+          onClose={() => setEditingStudent(null)}
+          onSave={(student) => {
+            setRoster((prev) =>
+              editingStudent == "new"
+                ? [...prev, createRow(student)]
+                : prev.map((row) =>
+                    row.key == editingStudent.key
+                      ? { ...student, key: row.key }
+                      : row,
+                  ),
+            );
+            setEditingStudent(null);
+          }}
+        />
+      )}
+
       <ConfirmDialog
         open={!!removing}
-        title={`${removing?.name} entfernen?`}
+        title={`${removing ? formatStudentName(removing) : ""} entfernen?`}
         confirmLabel="Entfernen"
         onClose={() => setRemoving(null)}
         onConfirm={() => removing && removeRow(removing)}

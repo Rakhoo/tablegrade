@@ -1,17 +1,32 @@
-import { and, asc, eq, getTableColumns } from "drizzle-orm";
+import { and, asc, eq, getTableColumns, inArray } from "drizzle-orm";
 import { seatsOverlap } from "../../lib/seating";
 import { client, db } from "../client";
-import { classStudents, students, type Student } from "../schema";
+import {
+  classStudents,
+  students,
+  studentTraits,
+  traits,
+  type Student,
+} from "../schema";
 
-/** A student together with the seat in a specific class. */
+/** A student with the seat in a specific class and the ids of the assigned traits. */
 export type SeatedStudent = Student & {
   x: number | null;
   y: number | null;
+  traitIds: number[];
 };
 
-/** Returns all students of a class with their seats, ordered by name. */
-export function getClassStudents(classId: number): Promise<SeatedStudent[]> {
-  return db
+/** Returns all selectable traits, sorted alphabetically (ignoring case). */
+export async function getTraits() {
+  const rows = await db.select().from(traits);
+  return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
+}
+
+/** Returns all students of a class with seats and traits, ordered by name. */
+export async function getClassStudents(
+  classId: number,
+): Promise<SeatedStudent[]> {
+  const members = await db
     .select({
       ...getTableColumns(students),
       x: classStudents.x,
@@ -20,7 +35,22 @@ export function getClassStudents(classId: number): Promise<SeatedStudent[]> {
     .from(classStudents)
     .innerJoin(students, eq(students.id, classStudents.studentId))
     .where(eq(classStudents.classId, classId))
-    .orderBy(asc(students.name));
+    .orderBy(asc(students.lastName), asc(students.firstName));
+  const assigned = await db
+    .select()
+    .from(studentTraits)
+    .where(
+      inArray(
+        studentTraits.studentId,
+        members.map((member) => member.id),
+      ),
+    );
+  return members.map((member) => ({
+    ...member,
+    traitIds: assigned
+      .filter((entry) => entry.studentId == member.id)
+      .map((entry) => entry.traitId),
+  }));
 }
 
 /** Removes students that are no longer part of any class. */
