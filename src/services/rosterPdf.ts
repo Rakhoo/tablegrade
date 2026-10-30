@@ -22,14 +22,26 @@ const IMAGE_QUALITY = 0.85;
 
 type Matrix = [number, number, number, number, number, number];
 
-/** Reads all text fragments of a page with their positions. */
+/**
+ * Reads all text fragments of a page with their positions. Uses the stream's reader, as
+ * `page.getTextContent()` iterates a ReadableStream asynchronously, which Safari cannot do.
+ */
 async function readTexts(page: PDFPageProxy): Promise<PdfText[]> {
-  const { items } = await page.getTextContent();
-  return items.flatMap((item) =>
-    "str" in item && item.str.trim()
-      ? [{ text: item.str, x: item.transform[4], y: item.transform[5] }]
-      : [],
-  );
+  const reader = page.streamTextContent().getReader();
+  const texts: PdfText[] = [];
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) return texts;
+    for (const item of value.items) {
+      if ("str" in item && item.str.trim()) {
+        texts.push({
+          text: item.str,
+          x: item.transform[4],
+          y: item.transform[5],
+        });
+      }
+    }
+  }
 }
 
 /** Locates all images of a page by following the transformations of its drawing operations. */
