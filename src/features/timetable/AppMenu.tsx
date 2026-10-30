@@ -44,10 +44,21 @@ export function AppMenu() {
     }
   };
 
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
-    if (await isSqliteFile(file)) setPendingImport(file);
-    else setMessage("Die Datei ist keine gültige Tablegrade-Sicherung.");
+  const handleFile = async (input: HTMLInputElement) => {
+    const picked = input.files?.[0];
+    if (!picked) return;
+    try {
+      // Kept in memory: iOS may discard the picked file once the input is reset
+      const file = new File([await picked.arrayBuffer()], picked.name);
+      if (await isSqliteFile(file)) setPendingImport(file);
+      else setMessage("Die Datei ist keine gültige Tablegrade-Sicherung.");
+    } catch (error) {
+      console.error(error);
+      setMessage("Die Datei konnte nicht gelesen werden.");
+    } finally {
+      // Allow choosing the same file again
+      input.value = "";
+    }
   };
 
   return (
@@ -125,11 +136,7 @@ export function AppMenu() {
         type="file"
         accept=".sqlite3,.sqlite,.db,application/x-sqlite3,application/octet-stream"
         hidden
-        onChange={(event) => {
-          handleFile(event.target.files?.[0]);
-          // Allow choosing the same file again
-          event.target.value = "";
-        }}
+        onChange={(event) => handleFile(event.target)}
       />
 
       <ConfirmDialog

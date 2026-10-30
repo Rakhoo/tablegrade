@@ -165,13 +165,17 @@ export function ClassEditDialog({
     );
 
   /** Reads a WebUntis PDF and matches it with the roster by first and last name. */
-  const importPdf = async (file: File) => {
+  const importPdf = async (input: HTMLInputElement) => {
+    const file = input.files?.[0];
+    if (!file) return;
     setImporting(true);
     setImportResult(null);
     try {
+      // Read first: iOS may discard the picked file once the input is reset
+      const data = await file.arrayBuffer();
       // Loaded on demand, as the PDF library is large
       const { readRosterPdf } = await import("../../services/rosterPdf");
-      const incoming = await readRosterPdf(file);
+      const incoming = await readRosterPdf(data);
       if (!incoming?.length) {
         setImportResult({
           error: true,
@@ -190,11 +194,15 @@ export function ClassEditDialog({
       });
     } catch (error) {
       console.error(error);
+      // The technical details help with diagnosing, as the iPad has no visible console
+      const { name, message } = error as Error;
       setImportResult({
         error: true,
-        text: "Die Datei konnte nicht gelesen werden.",
+        text: `Die Datei konnte nicht gelesen werden (${name}: ${message}).`,
       });
     } finally {
+      // Allow choosing the same file again
+      input.value = "";
       setImporting(false);
     }
   };
@@ -373,11 +381,7 @@ export function ClassEditDialog({
                 type="file"
                 accept="application/pdf,.pdf"
                 hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) importPdf(file);
-                  event.target.value = "";
-                }}
+                onChange={(event) => importPdf(event.target)}
               />
             </Button>
             <Button

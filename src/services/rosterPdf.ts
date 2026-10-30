@@ -105,9 +105,9 @@ async function cropImages(page: PDFPageProxy, boxes: PdfBox[]) {
  * @returns The students, or `null` if the file has no matching table header.
  */
 export async function readRosterPdf(
-  file: File,
+  data: ArrayBuffer,
 ): Promise<IncomingStudent[] | null> {
-  const loadingTask = getDocument({ data: await file.arrayBuffer() });
+  const loadingTask = getDocument({ data });
   const pdf = await loadingTask.promise;
   const students: IncomingStudent[] = [];
   let columns: RosterColumns | null = null;
