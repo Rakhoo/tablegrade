@@ -22,6 +22,12 @@ export default defineConfig({
         name: "Sitzordnung & Noten",
         short_name: "Noten",
         description: "App für Sitzordnung und Notenverteilung",
+        lang: "de",
+        // Always launch on the timetable without URL parameters ("/" redirects there)
+        start_url: "/",
+        scope: "/",
+        // Stable app identity, equal to the previous default, so installs stay the same app
+        id: "/",
         theme_color: "#f5f2fb",
         background_color: "#f5f2fb",
         icons: [

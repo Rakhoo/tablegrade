@@ -27,7 +27,7 @@ import {
   PlusIcon,
 } from "../../components/icons";
 import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
-import { BackupMenu } from "./BackupMenu";
+import { AppMenu } from "./AppMenu";
 import { CancelDayDialog } from "./CancelDayDialog";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
@@ -108,11 +108,12 @@ export function TimetablePage() {
               <Button
                 variant="outlined"
                 size="small"
-                onClick={() => selectDate(nextSchoolDay(today))}
+                // Without a date the current week is shown, the clean start state
+                onClick={() => setSearchParams({}, { replace: true })}
               >
                 Heute
               </Button>
-              <BackupMenu />
+              <AppMenu />
             </div>
           </div>
 

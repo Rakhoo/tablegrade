@@ -20,8 +20,10 @@ The only network request fetches school holidays from
     vacations show `FERIEN`, public holidays `FEIERTAG`.
   - Long press on a day header marks the day as `AUSFALL` (illness, bridge day, …) or makes
     it regular again. Existing entries of that day must be confirmed and are then deleted.
-  - Week arrows, "Heute" and month switching in the calendar select whole weeks.
-  - "⋯" menu: export / import a backup of the whole database.
+  - Week arrows and month switching in the calendar select whole weeks; "Heute" removes
+    the `date` parameter and returns to the clean start state (current week).
+  - "⋯" menu: export / import a backup of the whole database, "Neu laden" (reload and
+    activate a waiting update) and "App installieren" (install instructions per platform).
 - **Classroom** (`/classes/:id?date=YYYY-MM-DD`): seating plan of one lesson.
   - *Ermahnung* (default mode): each tap cycles a student through yellow → red → none.
   - *Bewerten*: choose a tool (grade symbol, delete, comment) and tap students to apply it.
@@ -31,6 +33,14 @@ The only network request fetches school holidays from
 - **Class edit dialog** (`/classes/new`, `/classes/:id/edit`): school year, half, level and
   letter, weekday, lesson, double lesson, subject and the student list (paste a list, or copy
   the students of another class).
+
+### Installed app (PWA)
+
+- A cold start of the installed app always opens `/#/timetable` without parameters
+  (`resetLaunchUrl` in `src/services/pwa.ts`), because iPadOS may keep the URL from the
+  moment the app was added instead of the manifest's `start_url`. Reloads keep the current page.
+- New versions wait until the user confirms the update banner (or uses "Neu laden"). The app
+  checks for updates hourly and whenever it comes back to the foreground.
 
 ## Stack
 
@@ -72,14 +82,15 @@ src/
 ├── theme.ts, index.css             MUI theme and CSS design tokens
 ├── components/                     shared UI: ConfirmDialog, GradeIcon, icons
 ├── features/
-│   ├── timetable/                  timetable page, grid, Ausfall dialog, backup menu
-│   └── classroom/                  classroom page, seat grid, tools, dialogs
+│   ├── timetable/                  timetable page, grid, Ausfall dialog, app menu
+│   ├── classroom/                  classroom page, seat grid, tools, dialogs
+│   └── errors/                     404 and error page with a way back
 ├── db/
 │   ├── schema.ts                   Drizzle tables and row types
 │   ├── migrations.ts               ordered SQL migrations
 │   ├── client.ts                   SQLocal connection, migrations, import/export
 │   └── queries/                    data access per entity
-├── services/                       holiday API, backup file handling
+├── services/                       holiday API, backup files, PWA (install, reload, launch URL)
 ├── hooks/                          useLongPress
 └── lib/                            pure helpers: dates, school year, lessons, seating,
                                     grades, warnings, subject colors, formatters

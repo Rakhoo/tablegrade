@@ -1,4 +1,5 @@
 import {
+  Divider,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -8,16 +9,27 @@ import {
 } from "@mui/material";
 import { useRef, useState } from "react";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { DownloadIcon, MoreIcon, UploadIcon } from "../../components/icons";
+import {
+  DownloadIcon,
+  InstallIcon,
+  MoreIcon,
+  RefreshIcon,
+  UploadIcon,
+} from "../../components/icons";
 import { importDatabase } from "../../db";
+import { useSearchParams } from "react-router";
 import { isSqliteFile, saveBackup } from "../../services/backup";
+import { reloadApp } from "../../services/pwa";
+import { InstallDialog } from "./InstallDialog";
 
 /**
- * "⋯" menu for backing up the on-device database and restoring it from a file,
- * e.g. to move all data to another iPad.
+ * "⋯" menu of the timetable: backup and restore of the on-device database (e.g. to move
+ * to another iPad), manual reload for updates and installation instructions.
  */
-export function BackupMenu() {
+export function AppMenu() {
+  const [, setSearchParams] = useSearchParams();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [showInstall, setShowInstall] = useState(false);
   const [pendingImport, setPendingImport] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -41,7 +53,7 @@ export function BackupMenu() {
   return (
     <>
       <IconButton
-        aria-label="Daten sichern oder wiederherstellen"
+        aria-label="Weitere Funktionen"
         onClick={(event) => setAnchor(event.currentTarget)}
         className="bg-brand-50"
       >
@@ -78,7 +90,35 @@ export function BackupMenu() {
             secondary="Daten aus einer Datei wiederherstellen"
           />
         </MenuItem>
+        <Divider />
+        <MenuItem onClick={reloadApp}>
+          <ListItemIcon>
+            <RefreshIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Neu laden"
+            secondary="App neu starten und Updates übernehmen"
+          />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchor(null);
+            // iPadOS installs the current URL as start page, so it must be clean
+            setSearchParams({}, { replace: true });
+            setShowInstall(true);
+          }}
+        >
+          <ListItemIcon>
+            <InstallIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="App installieren"
+            secondary="Anleitung für den Home-Bildschirm"
+          />
+        </MenuItem>
       </Menu>
+
+      {showInstall && <InstallDialog onClose={() => setShowInstall(false)} />}
 
       <input
         ref={fileInput}

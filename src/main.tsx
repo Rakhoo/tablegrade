@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router/dom";
-import { router } from "./router";
+import { createAppRouter } from "./router";
+import { resetLaunchUrl } from "./services/pwa";
 import "./index.css";
 
 // iOS Safari ignores `user-scalable=no` for pinch gestures, its gesture events can be blocked
@@ -10,6 +11,8 @@ for (const type of ["gesturestart", "gesturechange"]) {
   });
 }
 
+resetLaunchUrl();
+
 createRoot(document.getElementById("root")!).render(
-  <RouterProvider router={router} />,
+  <RouterProvider router={createAppRouter()} />,
 );

@@ -75,3 +75,23 @@ export const UploadIcon = (props: IconProps) => (
     <path d="M12 20V9M7 14l5-5 5 5M5 4h14" />
   </Icon>
 );
+
+export const RefreshIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" />
+  </Icon>
+);
+
+export const InstallIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="5" y="2" width="14" height="20" rx="3" />
+    <path d="M12 7v7M9 11l3 3 3-3M10 18h4" />
+  </Icon>
+);
+
+/** Safari's share symbol, used in the install instructions. */
+export const ShareIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 3v12M8 7l4-4 4 4M6 11H5v10h14V11h-1" />
+  </Icon>
+);
