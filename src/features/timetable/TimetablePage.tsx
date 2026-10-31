@@ -2,8 +2,10 @@ import { Button, IconButton } from "@mui/material";
 import { StaticDatePicker } from "@mui/x-date-pickers";
 import {
   addDays,
+  addMonths,
   addWeeks,
   addYears,
+  endOfMonth,
   endOfYear,
   format,
   getISOWeek,
@@ -12,6 +14,7 @@ import {
   isToday,
   isValid,
   parseISO,
+  startOfMonth,
 } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { useMemo, useState } from "react";
@@ -28,6 +31,7 @@ import {
   PlusIcon,
   TableIcon,
 } from "../../components/icons";
+import { useSwipe } from "../../hooks/useSwipe";
 import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
 import { lessonKey } from "../../lib/lessons";
 import { CancelDialog } from "../../components/CancelDialog";
@@ -100,6 +104,25 @@ export function TimetablePage() {
       .find((weekday) => isSameMonth(weekday, anchor));
     selectDate(inVisibleMonth ?? day);
   };
+
+  /** Switches to the previous or next week, within the calendar's limits. */
+  const switchWeek = (direction: 1 | -1) => {
+    const target = addWeeks(monday, direction);
+    if (addDays(target, 4) >= MIN_DATE && target <= maxDate) {
+      selectWeekAround(target);
+    }
+  };
+
+  /** Switches to the previous or next month, within the calendar's limits. */
+  const switchMonth = (direction: 1 | -1) => {
+    const target = addMonths(startOfMonth(anchor), direction);
+    if (endOfMonth(target) >= MIN_DATE && target <= maxDate) {
+      handleMonthChange(target);
+    }
+  };
+
+  const timetableSwipe = useSwipe(switchWeek);
+  const calendarSwipe = useSwipe(switchMonth);
 
   /**
    * Marks all days of the selected week as one continuous pill. Today is highlighted softly,
@@ -203,24 +226,29 @@ export function TimetablePage() {
           </Button>
         </div>
 
-        <StaticDatePicker
-          displayStaticWrapperAs="desktop"
-          value={anchor}
-          onChange={(value) => value && handleDayChange(value)}
-          showDaysOutsideCurrentMonth
-          onMonthChange={handleMonthChange}
-          slotProps={{
-            day: ({ day, isDayOutsideMonth }) => ({
-              className: weekDayClass(day, isDayOutsideMonth),
-            }),
-          }}
-          shouldDisableDate={(day) => day.getDay() == 6 || day.getDay() == 0}
-          minDate={MIN_DATE}
-          maxDate={maxDate}
-        />
+        <div {...calendarSwipe} className="touch-pan-y">
+          <StaticDatePicker
+            displayStaticWrapperAs="desktop"
+            value={anchor}
+            onChange={(value) => value && handleDayChange(value)}
+            showDaysOutsideCurrentMonth
+            onMonthChange={handleMonthChange}
+            slotProps={{
+              day: ({ day, isDayOutsideMonth }) => ({
+                className: weekDayClass(day, isDayOutsideMonth),
+              }),
+            }}
+            shouldDisableDate={(day) => day.getDay() == 6 || day.getDay() == 0}
+            minDate={MIN_DATE}
+            maxDate={maxDate}
+          />
+        </div>
       </aside>
 
-      <section className="card relative min-h-0 flex-1 p-3">
+      <section
+        {...timetableSwipe}
+        className="card relative min-h-0 flex-1 touch-pan-y p-3"
+      >
         <TimetableGrid
           monday={monday}
           schoolClasses={schoolClasses}

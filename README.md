@@ -22,6 +22,7 @@ The only network request fetches school holidays from
   - Long press on a day header or a lesson marks it as `AUSFALL` (illness, bridge day, …) or
     makes it regular again. Existing entries must be confirmed and are then deleted.
   - Complete lessons (every student has a symbol) show a check mark, here and in the classroom.
+  - Swiping the timetable switches weeks, swiping the calendar switches months.
   - Week arrows and month switching in the calendar select whole weeks; "Heute" removes
     the `date` parameter and returns to the clean start state (current week).
   - "⋯" menu: export / import a backup of the whole database, "Neu laden" (reload and
