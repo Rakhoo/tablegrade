@@ -3,6 +3,7 @@ const TRAIT_COLORS: Record<string, string> = {
   ADHS: "#4f46e5",
   ADS: "#38bdf8",
   Autismus: "#14b8a6",
+  DAZ: "#475569",
   Diabetes: "#ec4899",
   ESE: "#a855f7",
   Lernen: "#84cc16",

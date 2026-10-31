@@ -115,4 +115,6 @@ export const MIGRATIONS: string[][] = [
   ["UPDATE Grades SET mark = '1' WHERE mark = '1+'"],
   // Students can be hidden from a class without losing their grades
   ["ALTER TABLE Classes2Students ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0"],
+  // New trait "DaZ" (Deutsch als Zweitsprache)
+  ["INSERT INTO Traits (name) VALUES ('DAZ')"],
 ];

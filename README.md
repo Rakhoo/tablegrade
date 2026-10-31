@@ -139,7 +139,7 @@ else in camelCase files; JSDoc on exported functions and components.
 | `Classes`          | recurring lessons: subject, level/letter, school year + half, one or    |
 |                    | two weekly lessons (day, hour, double)                                  |
 | `Students`         | names, nickname, photo (base64); shared when copied to another class    |
-| `Traits`           | selectable properties (ADS, ADHS, ESE, Lernen, Autismus, Diabetes, LRS) |
+| `Traits`           | selectable properties (ADS, ADHS, DAZ, ESE, Lernen, …)    |
 | `Students2Traits`  | traits assigned to students                                             |
 | `Classes2Students` | class membership and seat (`x`, `y` in half-seat cells)                 |
 | `Grades`           | per class, student and date: symbol, mark, comment, warnings (0–2)      |
