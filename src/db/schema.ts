@@ -95,6 +95,8 @@ export const grades = sqliteTable(
     /** Key of a symbol from `GRADES` in `src/lib/grades.ts`. */
     grade: text("grade"),
     comment: text("comment"),
+    /** Classic mark like "2+", used in exams and projects. */
+    mark: text("mark"),
     /** Number of warnings in this lesson: 0 = none, 1 = first, 2 = second warning. */
     warnings: int("warnings").notNull().default(0),
     /** Lesson date as `YYYY-MM-DD`. */
@@ -147,6 +149,20 @@ export const cancelledDays = sqliteTable("CancelledDays", {
   /** Date as `YYYY-MM-DD`. */
   date: text("date").primaryKey(),
 });
+
+/** Lessons that are an exam or carry a project; regular lessons have no entry. */
+export const lessonTypes = sqliteTable(
+  "LessonTypes",
+  {
+    classId: int("classId")
+      .notNull()
+      .references(() => schoolClasses.id, { onDelete: "cascade" }),
+    /** Date as `YYYY-MM-DD`. */
+    date: text("date").notNull(),
+    type: text("type").$type<"exam" | "project">().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.classId, table.date] })],
+);
 
 /** Single lessons marked as "Ausfall": nothing is graded for that class on that date. */
 export const cancelledLessons = sqliteTable(

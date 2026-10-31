@@ -1,6 +1,7 @@
 import { addDays } from "date-fns";
 import type { Holiday, SchoolClass } from "../db";
 import { toIsoDate } from "./dates";
+import type { LessonType } from "./grades";
 import {
   getClassOccurrences,
   getSchoolYearRange,
@@ -10,6 +11,13 @@ import {
 
 /** A single lesson: a class on a specific date (`YYYY-MM-DD`). */
 export type Lesson = { id: number; date: string };
+
+/** Display names of the lesson types. */
+export const LESSON_TYPE_LABELS: Record<LessonType, string> = {
+  normal: "Normal",
+  exam: "Klausur",
+  project: "Projekt",
+};
 
 /** Everything marked as "Ausfall": dates of whole days and keys of single lessons. */
 export type CancelledDates = { days: string[]; lessons: string[] };

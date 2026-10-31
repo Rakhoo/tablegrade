@@ -19,18 +19,3 @@
     linear-gradient(to right, rgb(255 255 255 / 0.25) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(255 255 255 / 0.25) 1px, transparent 1px);
 }
-
-/* Segmented control: the active mode is a filled lavender pill */
-@layer components {
-  .toggle-pill {
-    border: 0;
-    border-radius: 999px;
-    padding-inline: calc(var(--spacing) * 4);
-    color: var(--color-muted);
-  }
-
-  .toggle-pill[aria-pressed="true"] {
-    background-color: var(--color-brand-600);
-    color: white;
-  }
-}

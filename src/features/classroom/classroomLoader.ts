@@ -5,6 +5,7 @@ import {
   getCancelledLessons,
   getClassStudents,
   getGrades,
+  getLessonTypes,
   getHolidays,
   getSchoolClass,
   getSchoolClasses,
@@ -17,7 +18,8 @@ import {
 } from "../../db";
 import { getLastOccurrence, toIsoDate } from "../../lib/dates";
 import { getClassOccurrences } from "../../lib/schoolYear";
-import { getAdjacentLesson, type Lesson } from "../../lib/lessons";
+import type { LessonType } from "../../lib/grades";
+import { getAdjacentLesson, lessonKey, type Lesson } from "../../lib/lessons";
 
 /** How the classroom page was opened: creating, viewing or editing a class. */
 export type ClassroomMode = "new" | "view" | "edit";
@@ -66,6 +68,7 @@ export async function classroomLoader(
       students: [] as SeatedStudent[],
       grades: [] as GradeEntry[],
       date: toIsoDate(isValid(dateParam) ? dateParam : new Date()),
+      lessonType: "normal" as LessonType,
       previous: null as Lesson | null,
       next: null as Lesson | null,
     };
@@ -80,9 +83,10 @@ export async function classroomLoader(
           .map((lesson) => getLastOccurrence(lesson.day))
           .sort((a, b) => b.getTime() - a.getTime())[0],
   );
-  const [students, grades] = await Promise.all([
+  const [students, grades, lessonTypes] = await Promise.all([
     getClassStudents(cls.id),
     getGrades(cls.id, date),
+    getLessonTypes(),
   ]);
   const lessonDate = parseISO(date);
   const cancelled = { days: cancelledDays, lessons: cancelledLessons };
@@ -92,6 +96,8 @@ export async function classroomLoader(
     students,
     grades,
     date,
+    lessonType: (lessonTypes[lessonKey(cls.id, date)] ??
+      "normal") as LessonType,
     previous: getAdjacentLesson(
       cls,
       lessonDate,

@@ -115,3 +115,22 @@ export const TableIcon = (props: IconProps) => (
     <path d="M3 10h18M9 10v10" />
   </Icon>
 );
+
+export const CloseIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M6 6l12 12M18 6L6 18" />
+  </Icon>
+);
+
+export const StarIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 4l2.4 5 5.6.7-4.1 3.8 1.1 5.5-5-2.8-5 2.8 1.1-5.5L4 9.7 9.6 9z" />
+  </Icon>
+);
+
+export const CardsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="7" width="13" height="14" rx="2" />
+    <path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3" />
+  </Icon>
+);

@@ -2,15 +2,15 @@ import { Checkbox, FormControlLabel } from "@mui/material";
 import { format } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { useEffect, useState } from "react";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { ConfirmDialog } from "./ConfirmDialog";
 import {
   countEntriesOn,
   setDayCancelled,
   setLessonCancelled,
   type SchoolClass,
-} from "../../db";
-import { toIsoDate } from "../../lib/dates";
-import { formatClassName } from "../../lib/formatters";
+} from "../db";
+import { toIsoDate } from "../lib/dates";
+import { formatClassName } from "../lib/formatters";
 
 type CancelDialogProps = {
   date: Date;

@@ -1,8 +1,38 @@
 /** Key of a grade symbol as stored in `Grades.grade`. */
 export type GradeKey = "1" | "2" | "3+" | "3" | "3-" | "4" | "5" | "E";
 
-/** What a tap on a student does while grading: set a symbol, remove it, or edit the comment. */
-export type GradeTool = GradeKey | "erase" | "comment";
+/** Classic mark, e.g. "2+", stored in `Grades.mark`. */
+export type Mark = (typeof MARKS)[number];
+
+/** Kind of a lesson: a regular one, an exam ("Klausur") or one with a project. */
+export type LessonType = "normal" | "exam" | "project";
+
+/** Marks from best to worst. */
+export const MARKS = [
+  "1+",
+  "1",
+  "1-",
+  "2+",
+  "2",
+  "2-",
+  "3+",
+  "3",
+  "3-",
+  "4+",
+  "4",
+  "4-",
+  "5+",
+  "5",
+  "5-",
+  "6",
+] as const;
+
+/**
+ * What a tap on a student does while grading: set a symbol or a mark, remove one of them, or
+ * edit the comment. Marks are prefixed, as their values overlap with the symbol keys.
+ */
+export type GradeTool =
+  GradeKey | `mark:${Mark}` | "erase" | "eraseMark" | "comment";
 
 /** Symbol for students who were excused; it does not count as a grade. */
 export const ABSENT_GRADE: GradeKey = "E";
@@ -36,3 +66,49 @@ export const GRADES: GradeDefinition[] = [
 /** Looks up the definition of a stored grade key. */
 export const getGradeDefinition = (key: string | null | undefined) =>
   GRADES.find((grade) => grade.key == key);
+
+const MARK_COLORS = [
+  "#15803d",
+  "#65a30d",
+  "#64748b",
+  "#ca8a04",
+  "#ea580c",
+  "#dc2626",
+];
+
+/** Color of a mark, by its whole number. */
+export const getMarkColor = (mark: string) => MARK_COLORS[Number(mark[0]) - 1];
+
+/** Whether a lesson counts as complete for a student: exams need a mark or "excused". */
+export const isEntryComplete = (
+  entry: { grade: string | null; mark: string | null } | undefined,
+  type: LessonType,
+) => !!(entry?.grade || (type == "exam" && entry?.mark));
+
+/** Symbol entries an exam replaces: all but "excused". */
+export const isReplacedByExam = (grade: string | null) =>
+  !!grade && grade != ABSENT_GRADE;
+
+/** The tools available for a lesson type; without a type all of them (overview table). */
+export function getGradeTools(type?: LessonType) {
+  const symbols: GradeKey[] =
+    type == "exam" ? [ABSENT_GRADE] : GRADES.map((grade) => grade.key);
+  const marks: GradeTool[] =
+    type == "normal"
+      ? []
+      : [
+          ...MARKS.map((mark) => `mark:${mark}` as const),
+          ...(type == "exam" ? [] : (["eraseMark"] as const)),
+        ];
+  return { symbols, marks };
+}
+
+/** Keeps a tool if it fits the lesson type, otherwise returns the type's neutral default. */
+export function getValidGradeTool(
+  tool: GradeTool,
+  type: LessonType,
+): GradeTool {
+  const { symbols, marks } = getGradeTools(type);
+  if ([...symbols, ...marks, "erase", "comment"].includes(tool)) return tool;
+  return type == "exam" ? "mark:3" : DEFAULT_GRADE_TOOL;
+}

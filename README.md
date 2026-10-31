@@ -59,9 +59,15 @@ The only network request fetches school holidays from
 - New versions wait until the user confirms the update banner (or uses "Neu laden"). The app
   checks for updates hourly and whenever it comes back to the foreground.
 
-- **Evaluation** (`/evaluations`, `/evaluations/:id`): one table per class and school year
+- **Overview** (`/overview`, `/overview/:id`): one table per class and school year
   half with students in rows, lesson dates in columns and the symbols at the intersections.
   Reachable from the timetable and from a lesson; editable through the same grading mode.
+  Rows and columns are tinted, names can switch to nicknames, a long press on a date cancels
+  that lesson, and "Namen lernen" offers flash cards for classes with photos.
+- **Exams and projects**: in the grading mode a lesson can become a *Klausur* (classic marks 1
+  to 6 with tendencies instead of symbols, plus "entschuldigt") or a *Projekt* (symbols and
+  marks). In the overview a tap on a date sets this for the column; marks only appear in its tool
+  bar once a column is an exam or project.
 
 ## Stack
 
@@ -105,7 +111,7 @@ src/
 ├── features/
 │   ├── timetable/                  timetable page, grid, Ausfall dialog, app menu
 │   ├── classroom/                  classroom page, seat grid, dialogs
-│   ├── evaluation/                 class selection and evaluation table
+│   ├── overview/                   class selection and overview table
 │   └── errors/                     404 and error page with a way back
 ├── db/
 │   ├── schema.ts                   Drizzle tables and row types
@@ -133,10 +139,11 @@ else in camelCase files; JSDoc on exported functions and components.
 | `Traits`           | selectable properties (ADS, ADHS, ESE, Lernen, Autismus, Diabetes, LRS) |
 | `Students2Traits`  | traits assigned to students                                             |
 | `Classes2Students` | class membership and seat (`x`, `y` in half-seat cells)                 |
-| `Grades`           | per class, student and date: symbol, comment, warnings (0–2)            |
+| `Grades`           | per class, student and date: symbol, mark, comment, warnings (0–2)      |
 | `Holidays`         | cached holiday periods, flagged as summer vacation / public holiday     |
 | `CancelledDays`    | dates marked as "Ausfall"; nothing is graded on these days              |
 | `CancelledLessons` | single lessons (class + date) marked as "Ausfall"                       |
+| `LessonTypes`      | lessons that are an exam or carry a project                             |
 
 The SQL table names are kept for compatibility; the TypeScript names differ (e.g.
 `schoolClasses`, `classStudents`).

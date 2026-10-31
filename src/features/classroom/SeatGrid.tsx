@@ -1,5 +1,6 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { GradeIcon } from "../../components/GradeIcon";
+import { MarkBadge } from "../../components/MarkBadge";
 import { CommentIcon } from "../../components/icons";
 import type { GradeEntry, SeatedStudent, Trait } from "../../db";
 import { getStudentLabel } from "../../lib/formatters";
@@ -235,6 +236,12 @@ function Seat({
         >
           <GradeIcon grade={grade.key} size={24} />
         </span>
+      )}
+      {entry?.mark && (
+        <MarkBadge
+          mark={entry.mark}
+          className="absolute -bottom-1 -left-1 z-10 border-2 shadow-tile"
+        />
       )}
       {entry?.comment && (
         <span

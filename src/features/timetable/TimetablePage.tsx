@@ -30,8 +30,8 @@ import {
 } from "../../components/icons";
 import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
 import { lessonKey } from "../../lib/lessons";
+import { CancelDialog } from "../../components/CancelDialog";
 import { AppMenu } from "./AppMenu";
-import { CancelDialog } from "./CancelDialog";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
 import "./TimetablePage.css";
@@ -45,6 +45,7 @@ export function TimetablePage() {
     cancelledDays,
     cancelledLessons,
     completedLessons,
+    lessonTypes,
     schoolClasses,
   } = useLoaderData<TimetableLoaderData>();
   const { revalidate } = useRevalidator();
@@ -193,12 +194,12 @@ export function TimetablePage() {
           </Button>
           <Button
             component={Link}
-            to="/evaluations"
+            to="/overview"
             variant="outlined"
             size="large"
             startIcon={<TableIcon />}
           >
-            Auswertung
+            Übersicht
           </Button>
         </div>
 
@@ -227,6 +228,7 @@ export function TimetablePage() {
           cancelledDays={cancelledDays}
           cancelledLessons={cancelledLessons}
           completedLessons={completedLessons}
+          lessonTypes={lessonTypes}
           onDayLongPress={(date) => setCancelTarget({ date })}
           onLessonLongPress={(date, schoolClass) =>
             setCancelTarget({ date, schoolClass })

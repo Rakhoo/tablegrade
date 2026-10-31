@@ -2,6 +2,7 @@ import {
   getCancelledDays,
   getCancelledLessons,
   getCompletedLessons,
+  getLessonTypes,
   getSchoolClasses,
   waitForDatabase,
 } from "../../db";
@@ -15,12 +16,14 @@ export async function timetableLoader() {
     cancelledDays,
     cancelledLessons,
     completedLessons,
+    lessonTypes,
     schoolClasses,
   ] = await Promise.all([
     loadHolidays(),
     getCancelledDays(),
     getCancelledLessons(),
     getCompletedLessons(),
+    getLessonTypes(),
     getSchoolClasses(),
   ]);
   return {
@@ -28,6 +31,7 @@ export async function timetableLoader() {
     cancelledDays,
     cancelledLessons,
     completedLessons,
+    lessonTypes,
     schoolClasses,
   };
 }

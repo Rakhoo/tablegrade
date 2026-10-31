@@ -20,21 +20,28 @@ import {
   moveStudentSeat,
   saveSchoolClass,
   setComment,
-  setGrade,
   setWarnings,
   type SeatedStudent,
 } from "../../db";
-import { GradeIcon } from "../../components/GradeIcon";
+import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import { GradeToolBar } from "../../components/GradeToolBar";
 import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   PencilIcon,
+  StarIcon,
   TableIcon,
   TrashIcon,
 } from "../../components/icons";
-import { DEFAULT_GRADE_TOOL, type GradeTool } from "../../lib/grades";
+import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
+import {
+  DEFAULT_GRADE_TOOL,
+  getValidGradeTool,
+  isEntryComplete,
+  type GradeTool,
+} from "../../lib/grades";
+import { applyGradeTool } from "../../services/grading";
 import { useStoredBoolean } from "../../hooks/useStoredBoolean";
 import { formatClassName, formatStudentName } from "../../lib/formatters";
 import type { Lesson } from "../../lib/lessons";
@@ -63,6 +70,7 @@ export function ClassroomPage() {
     subjects,
     holidays,
     traits,
+    lessonType,
     previous,
     next,
   } = useLoaderData<ClassroomLoaderData>();
@@ -89,7 +97,14 @@ export function ClassroomPage() {
   const accent = cls ? getClassColor(cls).accent : undefined;
   const isComplete =
     students.length > 0 &&
-    students.every((student) => gradeMap.get(student.id)?.grade);
+    students.every((student) =>
+      isEntryComplete(gradeMap.get(student.id), lessonType),
+    );
+  const activeTool = getValidGradeTool(tool, lessonType);
+  const { requestLessonType, lessonTypeDialog } = useLessonTypeChange(
+    cls?.id,
+    revalidate,
+  );
 
   /** Applies the current mode (and grading tool) to a tapped student. */
   const handleTap = async (student: SeatedStudent) => {
@@ -101,10 +116,10 @@ export function ClassroomPage() {
         date,
         nextWarningLevel(entry?.warnings ?? 0),
       );
-    } else if (tool == "comment") {
+    } else if (activeTool == "comment") {
       return setCommenting(student);
     } else {
-      await setGrade(cls!.id, student.id, date, tool == "erase" ? null : tool);
+      await applyGradeTool(activeTool, lessonType, cls!.id, student.id, date);
     }
     revalidate();
   };
@@ -113,9 +128,11 @@ export function ClassroomPage() {
     <div className="flex h-full flex-col gap-3 p-4">
       {mode == "grade" ? (
         <GradeToolBar
-          tool={tool}
+          tool={activeTool}
           onChange={setTool}
           onExit={() => setMode("warn")}
+          lessonType={lessonType}
+          onLessonTypeChange={(type) => requestLessonType(date, type, grades)}
         />
       ) : (
         <>
@@ -154,6 +171,7 @@ export function ClassroomPage() {
                   {cls
                     ? `${formatClassName(cls)} · ${cls.subject}`
                     : "Neue Klasse"}
+                  <LessonTypeBadge type={lessonType} />
                   {isComplete && (
                     <span
                       className="flex h-6 w-6 items-center justify-center rounded-full text-white"
@@ -187,12 +205,12 @@ export function ClassroomPage() {
                 <Button
                   variant="outlined"
                   component={Link}
-                  to={`/evaluations/${cls.id}?date=${date}`}
-                  aria-label="Auswertung"
+                  to={`/overview/${cls.id}?date=${date}`}
+                  aria-label="Übersicht"
                   startIcon={<TableIcon size={18} />}
                   className="portrait:min-w-0 portrait:px-3 portrait:[&_.MuiButton-startIcon]:m-0"
                 >
-                  <span className="portrait:hidden">Auswertung</span>
+                  <span className="portrait:hidden">Übersicht</span>
                 </Button>
               )}
               {cls && (
@@ -251,10 +269,11 @@ export function ClassroomPage() {
               {cls && (
                 <Button
                   variant="contained"
-                  startIcon={<GradeIcon grade={DEFAULT_GRADE_TOOL} size={20} />}
+                  startIcon={<StarIcon size={18} />}
                   onClick={() => setMode("grade")}
+                  className="whitespace-nowrap"
                 >
-                  Bewertung starten
+                  Bewerten
                 </Button>
               )}
               <ToggleButtonGroup
@@ -322,6 +341,8 @@ export function ClassroomPage() {
           }}
         />
       )}
+
+      {lessonTypeDialog}
 
       {commenting && (
         <CommentDialog

@@ -3,12 +3,12 @@ import { App } from "./App";
 import { ErrorPage } from "./features/errors/ErrorPage";
 import { ClassroomPage } from "./features/classroom/ClassroomPage";
 import { classroomLoader } from "./features/classroom/classroomLoader";
-import { EvaluationPage } from "./features/evaluation/EvaluationPage";
-import { EvaluationsPage } from "./features/evaluation/EvaluationsPage";
+import { OverviewPage } from "./features/overview/OverviewPage";
+import { OverviewListPage } from "./features/overview/OverviewListPage";
 import {
-  evaluationLoader,
-  evaluationsLoader,
-} from "./features/evaluation/evaluationLoader";
+  overviewLoader,
+  overviewListLoader,
+} from "./features/overview/overviewLoader";
 import { TimetablePage } from "./features/timetable/TimetablePage";
 import { timetableLoader } from "./features/timetable/timetableLoader";
 
@@ -58,14 +58,14 @@ export const createAppRouter = () =>
               Component: ClassroomPage,
             },
             {
-              path: "evaluations",
-              loader: evaluationsLoader,
-              Component: EvaluationsPage,
+              path: "overview",
+              loader: overviewListLoader,
+              Component: OverviewListPage,
             },
             {
-              path: "evaluations/:id",
-              loader: evaluationLoader,
-              Component: EvaluationPage,
+              path: "overview/:id",
+              loader: overviewLoader,
+              Component: OverviewPage,
             },
             { path: "404", Component: ErrorPage },
             { path: "*", loader: () => redirect("/404") },

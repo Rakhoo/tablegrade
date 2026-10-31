@@ -1,7 +1,12 @@
 import { and, eq } from "drizzle-orm";
 import { lessonKey } from "../../lib/lessons";
 import { client, db } from "../client";
-import { cancelledDays, cancelledLessons, grades } from "../schema";
+import {
+  cancelledDays,
+  cancelledLessons,
+  grades,
+  lessonTypes,
+} from "../schema";
 
 /** Returns the dates (`YYYY-MM-DD`) of all days marked as cancelled. */
 export async function getCancelledDays() {
@@ -43,6 +48,7 @@ export async function setDayCancelled(date: string, cancelled: boolean) {
   }
   await client.transaction(async (tx) => {
     await tx.query(db.delete(grades).where(eq(grades.date, date)));
+    await tx.query(db.delete(lessonTypes).where(eq(lessonTypes.date, date)));
     await tx.query(
       db.insert(cancelledDays).values({ date }).onConflictDoNothing(),
     );
@@ -71,6 +77,13 @@ export async function setLessonCancelled(
       db
         .delete(grades)
         .where(and(eq(grades.classId, classId), eq(grades.date, date))),
+    );
+    await tx.query(
+      db
+        .delete(lessonTypes)
+        .where(
+          and(eq(lessonTypes.classId, classId), eq(lessonTypes.date, date)),
+        ),
     );
     await tx.query(
       db

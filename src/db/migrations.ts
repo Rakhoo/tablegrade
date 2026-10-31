@@ -101,4 +101,14 @@ export const MIGRATIONS: string[][] = [
       PRIMARY KEY (classId, date)
     )`,
   ],
+  // Exams and projects with classic marks
+  [
+    "ALTER TABLE Grades ADD COLUMN mark TEXT",
+    `CREATE TABLE LessonTypes (
+      classId INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL,
+      PRIMARY KEY (classId, date)
+    )`,
+  ],
 ];

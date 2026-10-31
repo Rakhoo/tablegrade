@@ -3,9 +3,11 @@ import { de } from "date-fns/locale/de";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { CheckIcon } from "../../components/icons";
+import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import type { Holiday, SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
+import type { LessonType } from "../../lib/grades";
 import { lessonKey } from "../../lib/lessons";
 import {
   getClassOccurrences,
@@ -29,6 +31,8 @@ type TimetableGridProps = {
   cancelledLessons: string[];
   /** Keys (see `lessonKey`) of lessons where every student has a symbol. */
   completedLessons: string[];
+  /** Types of the special lessons (exam, project), by lesson key. */
+  lessonTypes: Record<string, LessonType>;
   /** Long press on the header of a non-holiday day, to toggle "Ausfall". */
   onDayLongPress: (date: Date) => void;
   /** Long press on a lesson, to toggle "Ausfall" for it. */
@@ -85,6 +89,7 @@ type LessonTileProps = {
   schoolClass: SchoolClass;
   date: Date;
   isComplete: boolean;
+  lessonType: LessonType;
   isCancelled: boolean;
   onLongPress: () => void;
 };
@@ -97,6 +102,7 @@ function LessonTile({
   schoolClass,
   date,
   isComplete,
+  lessonType,
   isCancelled,
   onLongPress,
 }: LessonTileProps) {
@@ -143,6 +149,9 @@ function LessonTile({
       {...pressHandlers}
     >
       {texts}
+      <span className="absolute right-1 bottom-1 flex">
+        <LessonTypeBadge type={lessonType} />
+      </span>
       {isComplete && (
         <span
           className="absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full text-white"
@@ -210,6 +219,7 @@ export function TimetableGrid({
   cancelledDays,
   cancelledLessons,
   completedLessons,
+  lessonTypes,
   onDayLongPress,
   onLessonLongPress,
 }: TimetableGridProps) {
@@ -304,6 +314,7 @@ export function TimetableGrid({
                   schoolClass={cls}
                   date={date}
                   isComplete={completedLessons.includes(key)}
+                  lessonType={lessonTypes[key] ?? "normal"}
                   isCancelled={cancelledLessons.includes(key)}
                   onLongPress={() => onLessonLongPress(date, cls)}
                 />

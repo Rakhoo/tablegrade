@@ -5,7 +5,7 @@ import type { SchoolClass } from "../../db";
 import { formatClassName, formatSchoolYear } from "../../lib/formatters";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getClassColor } from "../../lib/subjectColors";
-import type { EvaluationsLoaderData } from "./evaluationLoader";
+import type { OverviewListLoaderData } from "./overviewLoader";
 
 /** Groups classes by school year and half, newest first, sorted by name within a group. */
 function groupClasses(classes: SchoolClass[]) {
@@ -26,9 +26,9 @@ function groupClasses(classes: SchoolClass[]) {
   return [...groups];
 }
 
-/** Start page of the evaluation: one tile per class and school year half. */
-export function EvaluationsPage() {
-  const { schoolClasses } = useLoaderData<EvaluationsLoaderData>();
+/** Start page of the overview: one tile per class and school year half. */
+export function OverviewListPage() {
+  const { schoolClasses } = useLoaderData<OverviewListLoaderData>();
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
@@ -41,7 +41,7 @@ export function EvaluationsPage() {
         >
           Stundenplan
         </Button>
-        <h1 className="text-xl font-bold tracking-tight">Auswertung</h1>
+        <h1 className="text-xl font-bold tracking-tight">Übersicht</h1>
       </header>
 
       <main className="card min-h-0 flex-1 overflow-auto p-5">
@@ -59,7 +59,7 @@ export function EvaluationsPage() {
                 return (
                   <Link
                     key={cls.id}
-                    to={`/evaluations/${cls.id}`}
+                    to={`/overview/${cls.id}`}
                     className="flex flex-col overflow-hidden rounded-xl border-l-4 px-3 py-2 shadow-tile transition-transform active:scale-[0.97]"
                     style={{
                       background: color.background,
