@@ -19,7 +19,6 @@ import {
   deleteSchoolClass,
   moveStudentSeat,
   saveSchoolClass,
-  setComment,
   setWarnings,
   type SeatedStudent,
 } from "../../db";
@@ -34,15 +33,18 @@ import {
   TableIcon,
   TrashIcon,
 } from "../../components/icons";
+import { useGradingHistory } from "../../hooks/useGradingHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import {
   DEFAULT_GRADE_TOOL,
   getValidGradeTool,
   isEntryComplete,
+  type GradeKey,
   type GradeTool,
 } from "../../lib/grades";
-import { applyGradeTool } from "../../services/grading";
+import { getToolValues } from "../../services/grading";
 import { useStoredBoolean } from "../../hooks/useStoredBoolean";
+import { suggestGrade } from "../../lib/assessment";
 import { formatClassName, formatStudentName } from "../../lib/formatters";
 import type { Lesson } from "../../lib/lessons";
 import { getClassColor } from "../../lib/subjectColors";
@@ -64,6 +66,7 @@ export function ClassroomPage() {
     class: cls,
     students,
     grades,
+    classGrades,
     date,
     editing,
     allClasses,
@@ -101,9 +104,27 @@ export function ClassroomPage() {
       isEntryComplete(gradeMap.get(student.id), lessonType),
     );
   const activeTool = getValidGradeTool(tool, lessonType);
+  // While grading, students without a symbol show what their previous ones suggest
+  const suggestions = new Map<number, GradeKey>(
+    mode == "grade" && lessonType != "exam"
+      ? students
+          .filter((student) => !gradeMap.get(student.id)?.grade)
+          .map((student) => [
+            student.id,
+            suggestGrade(
+              classGrades.filter((entry) => entry.studentId == student.id),
+              date,
+            ),
+          ])
+      : [],
+  );
+  const history = useGradingHistory(cls?.id, revalidate);
   const { requestLessonType, lessonTypeDialog } = useLessonTypeChange(
     cls?.id,
-    revalidate,
+    () => {
+      history.reset();
+      revalidate();
+    },
   );
 
   /** Applies the current mode (and grading tool) to a tapped student. */
@@ -119,7 +140,11 @@ export function ClassroomPage() {
     } else if (activeTool == "comment") {
       return setCommenting(student);
     } else {
-      await applyGradeTool(activeTool, lessonType, cls!.id, student.id, date);
+      const tool =
+        activeTool == "suggestion" ? suggestions.get(student.id) : activeTool;
+      const values = tool && getToolValues(tool, lessonType);
+      if (values) await history.change(student.id, date, entry, values);
+      return;
     }
     revalidate();
   };
@@ -130,7 +155,11 @@ export function ClassroomPage() {
         <GradeToolBar
           tool={activeTool}
           onChange={setTool}
-          onExit={() => setMode("warn")}
+          onExit={() => {
+            history.reset();
+            setMode("warn");
+          }}
+          history={history}
           lessonType={lessonType}
           onLessonTypeChange={(type) => requestLessonType(date, type, grades)}
         />
@@ -311,6 +340,7 @@ export function ClassroomPage() {
           students={students}
           traits={showTraits ? traits : []}
           grades={gradeMap}
+          suggestions={suggestions}
           arranging={mode == "arrange"}
           onTap={handleTap}
           onMove={async (student, x, y) => {
@@ -351,8 +381,12 @@ export function ClassroomPage() {
           onClose={() => setCommenting(null)}
           onSave={async (comment) => {
             setCommenting(null);
-            await setComment(cls!.id, commenting.id, date, comment);
-            revalidate();
+            await history.change(
+              commenting.id,
+              date,
+              gradeMap.get(commenting.id),
+              { comment: comment.trim() || null },
+            );
           }}
         />
       )}

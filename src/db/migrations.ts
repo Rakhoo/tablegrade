@@ -111,4 +111,6 @@ export const MIGRATIONS: string[][] = [
       PRIMARY KEY (classId, date)
     )`,
   ],
+  // The mark "1+" does not exist in German schools
+  ["UPDATE Grades SET mark = '1' WHERE mark = '1+'"],
 ];

@@ -120,25 +120,13 @@ async function upsertGrade(
     );
 }
 
-/** Sets the symbol and/or mark of a student for a lesson date; `null` removes them. */
+/** Changes the symbol, mark or comment of a student for a lesson date; `null` removes them. */
 export const setAssessment = (
   classId: number,
   studentId: number,
   date: string,
-  values: { grade?: string | null; mark?: string | null },
+  values: Partial<Pick<GradeEntry, "grade" | "mark" | "comment">>,
 ) => upsertGrade({ classId, studentId, date }, values);
-
-/** Sets (or with an empty text removes) the comment of a student for a lesson date. */
-export const setComment = (
-  classId: number,
-  studentId: number,
-  date: string,
-  comment: string,
-) =>
-  upsertGrade(
-    { classId, studentId, date },
-    { comment: comment.trim() || null },
-  );
 
 /** Sets the number of warnings (0–2) of a student for a lesson date. */
 export const setWarnings = (

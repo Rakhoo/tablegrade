@@ -134,3 +134,25 @@ export const CardsIcon = (props: IconProps) => (
     <path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3" />
   </Icon>
 );
+
+export const WandIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 20L15 9" strokeWidth={2.5} />
+    <path
+      d="M16 3v3M14.5 4.5h3M20 9v3M18.5 10.5h3M9 4v2M8 5h2"
+      strokeWidth={1.5}
+    />
+  </Icon>
+);
+
+export const UndoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M9 7L4 12l5 5M4 12h11a5 5 0 0 1 5 5v1" />
+  </Icon>
+);
+
+export const RedoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M15 7l5 5-5 5M20 12H9a5 5 0 0 0-5 5v1" />
+  </Icon>
+);

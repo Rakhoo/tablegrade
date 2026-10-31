@@ -21,13 +21,17 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   StarIcon,
+  TableIcon,
 } from "../../components/icons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import { MarkBadge } from "../../components/MarkBadge";
-import { setComment, type GradeEntry, type SeatedStudent } from "../../db";
+import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
+import type { GradeEntry, SeatedStudent } from "../../db";
+import { useGradingHistory } from "../../hooks/useGradingHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useStoredBoolean } from "../../hooks/useStoredBoolean";
+import { suggestGrade } from "../../lib/assessment";
 import {
   formatClassName,
   formatSchoolYear,
@@ -44,8 +48,9 @@ import {
 } from "../../lib/grades";
 import { LESSON_TYPE_LABELS, lessonKey } from "../../lib/lessons";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
-import { applyGradeTool } from "../../services/grading";
+import { getToolValues } from "../../services/grading";
 import { CommentDialog } from "../classroom/CommentDialog";
+import { GradeResultsDialog } from "./GradeResultsDialog";
 import { NameTrainerDialog } from "./NameTrainerDialog";
 import type { OverviewLoaderData } from "./overviewLoader";
 
@@ -149,6 +154,7 @@ export function OverviewPage() {
     false,
   );
   const [trainingNames, setTrainingNames] = useState(false);
+  const [showResults, setShowResults] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [typeMenu, setTypeMenu] = useState<{
@@ -159,9 +165,14 @@ export function OverviewPage() {
     student: SeatedStudent;
     date: string;
   } | null>(null);
+  const history = useGradingHistory(cls.id, revalidate);
+  const handleLessonChanged = () => {
+    history.reset();
+    revalidate();
+  };
   const { requestLessonType, lessonTypeDialog } = useLessonTypeChange(
     cls.id,
-    revalidate,
+    handleLessonChanged,
   );
 
   const entryMap = new Map<string, GradeEntry>(
@@ -192,12 +203,23 @@ export function OverviewPage() {
   );
   const withPhotos = students.filter((student) => student.image);
 
+  const suggestionFor = (student: SeatedStudent, date: string) =>
+    suggestGrade(
+      entries.filter((entry) => entry.studentId == student.id),
+      date,
+    );
+
   const handleTap = async (student: SeatedStudent, date: string) => {
     if (activeTool == "comment") return setCommenting({ student, date });
+    const entry = entryMap.get(entryKey(student.id, date));
+    if (activeTool == "suggestion" && entry?.grade) return;
     const type = typeOf(date);
-    if (await applyGradeTool(activeTool, type, cls.id, student.id, date)) {
-      revalidate();
-    } else {
+    const values = getToolValues(
+      activeTool == "suggestion" ? suggestionFor(student, date) : activeTool,
+      type,
+    );
+    if (values) await history.change(student.id, date, entry, values);
+    else {
       setMessage(
         `Dieses Werkzeug passt nicht zu dieser Stunde (${LESSON_TYPE_LABELS[type]}).`,
       );
@@ -210,7 +232,11 @@ export function OverviewPage() {
         <GradeToolBar
           tool={activeTool}
           onChange={setTool}
-          onExit={() => setGrading(false)}
+          onExit={() => {
+            history.reset();
+            setGrading(false);
+          }}
+          history={history}
           hideMarks={!hasSpecialLessons}
         />
       ) : (
@@ -253,6 +279,13 @@ export function OverviewPage() {
               Namen lernen
             </Button>
           )}
+          <Button
+            variant="outlined"
+            startIcon={<TableIcon size={18} />}
+            onClick={() => setShowResults(true)}
+          >
+            Noten
+          </Button>
           <Button
             variant="contained"
             disabled={dates.length == 0}
@@ -330,6 +363,15 @@ export function OverviewPage() {
                           onClick={() => handleTap(student, date)}
                         >
                           {grade && <GradeIcon grade={grade.key} size={26} />}
+                          {!grade &&
+                            grading &&
+                            !cancelled &&
+                            typeOf(date) != "exam" && (
+                              <SuggestedGradeIcon
+                                grade={suggestionFor(student, date)}
+                                size={26}
+                              />
+                            )}
                           {entry?.mark && <MarkBadge mark={entry.mark} />}
                           {entry?.comment && (
                             <span className="absolute right-0.5 bottom-0.5 h-2 w-2 rounded-full bg-brand-500" />
@@ -384,7 +426,18 @@ export function OverviewPage() {
           schoolClass={cls}
           isCancelled={isCancelled(cancelTarget)}
           onClose={() => setCancelTarget(null)}
-          onChanged={revalidate}
+          onChanged={handleLessonChanged}
+        />
+      )}
+
+      {showResults && (
+        <GradeResultsDialog
+          students={rows}
+          entries={entries}
+          dates={dates.filter((date) => !isCancelled(date))}
+          nameOf={nameOf}
+          typeOf={typeOf}
+          onClose={() => setShowResults(false)}
         />
       )}
 
@@ -405,13 +458,12 @@ export function OverviewPage() {
           onClose={() => setCommenting(null)}
           onSave={async (comment) => {
             setCommenting(null);
-            await setComment(
-              cls.id,
+            await history.change(
               commenting.student.id,
               commenting.date,
-              comment,
+              entryMap.get(entryKey(commenting.student.id, commenting.date)),
+              { comment: comment.trim() || null },
             );
-            revalidate();
           }}
         />
       )}

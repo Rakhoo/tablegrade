@@ -3,6 +3,7 @@ import { redirect, type LoaderFunctionArgs } from "react-router";
 import {
   getCancelledDays,
   getCancelledLessons,
+  getClassGrades,
   getClassStudents,
   getGrades,
   getLessonTypes,
@@ -67,6 +68,7 @@ export async function classroomLoader(
       class: undefined as SchoolClass | undefined,
       students: [] as SeatedStudent[],
       grades: [] as GradeEntry[],
+      classGrades: [] as GradeEntry[],
       date: toIsoDate(isValid(dateParam) ? dateParam : new Date()),
       lessonType: "normal" as LessonType,
       previous: null as Lesson | null,
@@ -83,9 +85,10 @@ export async function classroomLoader(
           .map((lesson) => getLastOccurrence(lesson.day))
           .sort((a, b) => b.getTime() - a.getTime())[0],
   );
-  const [students, grades, lessonTypes] = await Promise.all([
+  const [students, grades, classGrades, lessonTypes] = await Promise.all([
     getClassStudents(cls.id),
     getGrades(cls.id, date),
+    getClassGrades(cls.id),
     getLessonTypes(),
   ]);
   const lessonDate = parseISO(date);
@@ -95,6 +98,7 @@ export async function classroomLoader(
     class: cls as SchoolClass | undefined,
     students,
     grades,
+    classGrades,
     date,
     lessonType: (lessonTypes[lessonKey(cls.id, date)] ??
       "normal") as LessonType,

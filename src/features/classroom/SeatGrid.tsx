@@ -1,10 +1,11 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { GradeIcon } from "../../components/GradeIcon";
 import { MarkBadge } from "../../components/MarkBadge";
+import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
 import { CommentIcon } from "../../components/icons";
 import type { GradeEntry, SeatedStudent, Trait } from "../../db";
 import { getStudentLabel } from "../../lib/formatters";
-import { getGradeDefinition } from "../../lib/grades";
+import { getGradeDefinition, type GradeKey } from "../../lib/grades";
 import { GRID_COLUMNS, GRID_ROWS, SEAT_SIZE } from "../../lib/seating";
 import { getTraitColor } from "../../lib/traits";
 import { WARNING_LEVELS } from "../../lib/warnings";
@@ -15,6 +16,8 @@ type SeatGridProps = {
   traits: Trait[];
   /** Grade entries of the current lesson, by student id. */
   grades: Map<number, GradeEntry>;
+  /** Suggested symbols for students without one, by student id. */
+  suggestions: Map<number, GradeKey>;
   /** Arrange mode: students are dragged instead of tapped. */
   arranging: boolean;
   /** Called when a student is tapped outside of arrange mode. */
@@ -42,6 +45,7 @@ export function SeatGrid({
   students,
   traits,
   grades,
+  suggestions,
   arranging,
   onTap,
   onMove,
@@ -114,6 +118,7 @@ export function SeatGrid({
               key={student.id}
               student={student}
               entry={grades.get(student.id)}
+              suggestion={suggestions.get(student.id)}
               arranging={arranging}
               traits={traits}
               isDragged={drag?.student.id == student.id}
@@ -142,6 +147,7 @@ export function SeatGrid({
 type SeatProps = {
   student: SeatedStudent;
   entry?: GradeEntry;
+  suggestion?: GradeKey;
   arranging: boolean;
   traits: Trait[];
   isDragged: boolean;
@@ -152,6 +158,7 @@ type SeatProps = {
 function Seat({
   student,
   entry,
+  suggestion,
   arranging,
   traits,
   isDragged,
@@ -235,6 +242,14 @@ function Seat({
           style={{ background: tileColor }}
         >
           <GradeIcon grade={grade.key} size={24} />
+        </span>
+      )}
+      {!grade && suggestion && (
+        <span
+          className="absolute -top-1 -right-1 z-10 flex rounded-full"
+          style={{ background: tileColor }}
+        >
+          <SuggestedGradeIcon grade={suggestion} size={28} />
         </span>
       )}
       {entry?.mark && (

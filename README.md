@@ -28,8 +28,9 @@ The only network request fetches school holidays from
     activate a waiting update) and "App installieren" (install instructions per platform).
 - **Classroom** (`/classes/:id?date=YYYY-MM-DD`): seating plan of one lesson.
   - *Ermahnung* (default mode): each tap cycles a student through yellow → red → none.
-  - *Bewertung starten*: a grading mode showing only the open tool bar (seven grade symbols,
-    "entschuldigt", delete, comment) and the seats; tapping a student applies the tool.
+  - *Bewerten*: a grading mode showing only the open tool bar (seven grade symbols,
+    "entschuldigt", suggestion, delete, comment, undo/redo) and the seats; tapping a student
+    applies the tool. Undo and redo cover the current session, here and in the overview.
   - *Bewerten*: choose a tool (grade symbol, delete, comment) and tap students to apply it.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
@@ -63,7 +64,8 @@ The only network request fetches school holidays from
   half with students in rows, lesson dates in columns and the symbols at the intersections.
   Reachable from the timetable and from a lesson; editable through the same grading mode.
   Rows and columns are tinted, names can switch to nicknames, a long press on a date cancels
-  that lesson, and "Namen lernen" offers flash cards for classes with photos.
+  that lesson, "Noten" shows the calculated grades as of any date, and "Namen lernen" offers
+  flash cards for classes with photos.
 - **Exams and projects**: in the grading mode a lesson can become a *Klausur* (classic marks 1
   to 6 with tendencies instead of symbols, plus "entschuldigt") or a *Projekt* (symbols and
   marks). In the overview a tap on a date sets this for the column; marks only appear in its tool
@@ -167,6 +169,14 @@ also the way to move data to another device.
 - **Grade symbols** ([src/lib/grades.ts](src/lib/grades.ts)): star (1), plus (2), arrow up
   (3+), ring (3, default tool), arrow down (3−), minus (about 4.5), cross (6) and
   "entschuldigt", which has `isGrade: false` and must not count in evaluations.
+- **Grades** ([src/lib/assessment.ts](src/lib/assessment.ts)): each symbol has a value (1, 2,
+  2.7, 3, 3.3, 4.5, 6), a tendency of a mark is worth 0.3. Oral participation is the average of
+  all symbols, weighted linearly (oldest once, newest n times). The final grade is 50 % exams
+  and 50 % the rest, which is half oral and half projects; a missing part leaves its share to
+  the other one. "Entschuldigt" and missing entries do not count, with fewer than three
+  assessments the result is "n.b.".
+- **Suggestions**: while grading, students without a symbol show the symbol closest to their
+  weighted average before that lesson ("befriedigend" without any), faded with a dashed ring.
 - **New students** added to a class get "entschuldigt" in all lessons that were complete
   before, so these stay complete; other lessons stay untouched.
 - **School year**: starts the day after the summer holidays (fallback August 1st). The

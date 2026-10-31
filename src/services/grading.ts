@@ -1,4 +1,4 @@
-import { setAssessment } from "../db";
+import type { GradeEntry } from "../db";
 import {
   ABSENT_GRADE,
   type GradeTool,
@@ -6,37 +6,29 @@ import {
   type Mark,
 } from "../lib/grades";
 
+/** The parts of a student's entry that can be changed while grading. */
+export type EntryValues = Pick<GradeEntry, "grade" | "mark" | "comment">;
+
 /**
- * Applies a grading tool (all but the comment) to a student, if it fits the lesson type:
- * exams take marks and "excused", regular lessons symbols, projects both.
- * @returns Whether the entry was changed.
+ * Returns what a grading tool (all but comment and suggestion) changes on an entry, if it fits
+ * the lesson type: exams take marks and "excused", regular lessons symbols, projects both.
  */
-export async function applyGradeTool(
+export function getToolValues(
   tool: GradeTool,
   type: LessonType,
-  classId: number,
-  studentId: number,
-  date: string,
-) {
-  const save = async (values: {
-    grade?: string | null;
-    mark?: string | null;
-  }) => {
-    await setAssessment(classId, studentId, date, values);
-    return true;
-  };
-  if (tool == "comment") return false;
+): Partial<EntryValues> | null {
+  if (tool == "comment" || tool == "suggestion") return null;
   if (tool == "erase") {
-    return save(type == "exam" ? { grade: null, mark: null } : { grade: null });
+    return type == "exam" ? { grade: null, mark: null } : { grade: null };
   }
-  if (tool == "eraseMark") return type != "normal" && save({ mark: null });
+  if (tool == "eraseMark") return type == "normal" ? null : { mark: null };
   if (tool.startsWith("mark:")) {
     const mark = tool.slice("mark:".length) as Mark;
-    if (type == "normal") return false;
-    return save(type == "exam" ? { mark, grade: null } : { mark });
+    if (type == "normal") return null;
+    return type == "exam" ? { mark, grade: null } : { mark };
   }
   if (tool == ABSENT_GRADE && type == "exam") {
-    return save({ grade: tool, mark: null });
+    return { grade: tool, mark: null };
   }
-  return type != "exam" && save({ grade: tool });
+  return type == "exam" ? null : { grade: tool };
 }
