@@ -113,4 +113,6 @@ export const MIGRATIONS: string[][] = [
   ],
   // The mark "1+" does not exist in German schools
   ["UPDATE Grades SET mark = '1' WHERE mark = '1+'"],
+  // Students can be hidden from a class without losing their grades
+  ["ALTER TABLE Classes2Students ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0"],
 ];

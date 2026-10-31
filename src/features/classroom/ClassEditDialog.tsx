@@ -41,7 +41,7 @@ import {
   toRosterEntry,
 } from "../../lib/studentRoster";
 import { StudentDialog } from "./StudentDialog";
-import { TrashIcon } from "../../components/icons";
+import { EyeIcon, EyeOffIcon, TrashIcon } from "../../components/icons";
 import {
   compareStudents,
   formatClassName,
@@ -474,8 +474,9 @@ export function ClassEditDialog({
                   if (!selected) return;
                   setCopySearch("");
                   const source = await getClassStudents(selected.id);
+                  const visible = source.filter((student) => !student.hidden);
                   copyStudents(
-                    source.map((student) => ({
+                    visible.map((student) => ({
                       ...toRosterEntry(student),
                       seat:
                         student.x != null && student.y != null
@@ -548,7 +549,10 @@ export function ClassEditDialog({
             <div key={row.key} className="flex items-center gap-1">
               <ButtonBase
                 onClick={() => setEditingStudent(row)}
-                className="flex min-w-0 flex-1 items-center justify-start gap-3 rounded-2xl border border-line p-2 text-left"
+                className={
+                  "flex min-w-0 flex-1 items-center justify-start gap-3 rounded-2xl border border-line p-2 text-left " +
+                  (row.hidden ? "opacity-50" : "")
+                }
               >
                 <Avatar
                   src={row.image ?? undefined}
@@ -561,6 +565,7 @@ export function ClassEditDialog({
                   </span>
                   <span className="block truncate text-xs text-muted">
                     {[
+                      row.hidden && "Ausgeblendet",
                       row.nickname,
                       ...traits
                         .filter((trait) => row.traitIds.includes(trait.id))
@@ -571,6 +576,18 @@ export function ClassEditDialog({
                   </span>
                 </span>
               </ButtonBase>
+              <IconButton
+                aria-label={`${formatStudentName(row)} ${row.hidden ? "einblenden" : "ausblenden"}`}
+                onClick={() =>
+                  setRoster((prev) =>
+                    prev.map((r) =>
+                      r.key == row.key ? { ...r, hidden: !r.hidden } : r,
+                    ),
+                  )
+                }
+              >
+                {row.hidden ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+              </IconButton>
               <IconButton
                 color="error"
                 aria-label={`${formatStudentName(row)} entfernen`}

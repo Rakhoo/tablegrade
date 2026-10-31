@@ -35,6 +35,7 @@ export function StudentDialog({
       nickname: null,
       image: null,
       traitIds: [],
+      hidden: false,
     },
   );
   const update = (changes: Partial<RosterEntry>) =>

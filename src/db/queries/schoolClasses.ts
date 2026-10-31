@@ -23,6 +23,8 @@ export type RosterEntry = {
   nickname: string | null;
   image: string | null;
   traitIds: number[];
+  /** Hidden from the seating plan and overview, while the grades stay. */
+  hidden: boolean;
   /** Preferred seat for a new member, taken over from the class it was copied from. */
   seat?: { x: number; y: number };
 };
@@ -76,7 +78,12 @@ export async function saveSchoolClass(
     ? (await getCompletedLessons(id)).map(lessonDateOf)
     : [];
 
-  const occupied: Seat[] = existing.filter((s) => keptIds.has(s.id));
+  const hiddenIds = new Set(
+    roster.flatMap((entry) => (entry.hidden && entry.id ? [entry.id] : [])),
+  );
+  const occupied: Seat[] = existing.filter(
+    (s) => keptIds.has(s.id) && !s.hidden && !hiddenIds.has(s.id),
+  );
   const seats = freeSeats(occupied);
 
   const classId = await client.transaction(async (tx) => {
@@ -116,7 +123,7 @@ export async function saveSchoolClass(
       );
     }
 
-    const memberIds = new Set(existing.map((s) => s.id));
+    const members = new Map(existing.map((s) => [s.id, s]));
     // A copied seating plan is only used for classes without one. Copied seats come first,
     // so the free seats given to the other new members cannot block them.
     const keepsCopiedSeats = occupied.every((seat) => seat.x == null);
@@ -124,7 +131,13 @@ export async function saveSchoolClass(
       (a, b) => Number(!!b.seat) - Number(!!a.seat),
     );
     for (const entry of ordered) {
-      const { id: entryId, traitIds, seat: copiedSeat, ...fields } = entry;
+      const {
+        id: entryId,
+        traitIds,
+        hidden,
+        seat: copiedSeat,
+        ...fields
+      } = entry;
       let studentId = entryId;
       if (studentId) {
         await tx.query(
@@ -144,7 +157,22 @@ export async function saveSchoolClass(
       for (const traitId of traitIds) {
         await tx.query(db.insert(studentTraits).values({ studentId, traitId }));
       }
-      if (!memberIds.has(studentId)) {
+      const member = members.get(studentId);
+      const membership = and(
+        eq(classStudents.classId, classId),
+        eq(classStudents.studentId, studentId),
+      );
+      if (hidden) {
+        const seatless = { hidden, x: null, y: null };
+        await tx.query(
+          member
+            ? db.update(classStudents).set(seatless).where(membership)
+            : db
+                .insert(classStudents)
+                .values({ classId, studentId, ...seatless }),
+        );
+      } else if (!member || member.hidden) {
+        // New in the seating plan, also when shown again: a seat and the complete lessons
         const useCopiedSeat =
           keepsCopiedSeats &&
           copiedSeat &&
@@ -154,7 +182,12 @@ export async function saveSchoolClass(
           ? copiedSeat
           : (seats.next().value ?? { x: null, y: null });
         await tx.query(
-          db.insert(classStudents).values({ classId, studentId, ...seat }),
+          member
+            ? db
+                .update(classStudents)
+                .set({ hidden: false, ...seat })
+                .where(membership)
+            : db.insert(classStudents).values({ classId, studentId, ...seat }),
         );
         if (completedDates.length > 0) {
           await tx.query(

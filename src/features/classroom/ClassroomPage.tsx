@@ -28,6 +28,8 @@ import {
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  EyeIcon,
+  EyeOffIcon,
   PencilIcon,
   StarIcon,
   TableIcon,
@@ -65,6 +67,7 @@ export function ClassroomPage() {
   const {
     class: cls,
     students,
+    roster,
     grades,
     classGrades,
     date,
@@ -84,6 +87,7 @@ export function ClassroomPage() {
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showTraits, setShowTraits] = useStoredBoolean("showTraits", true);
+  const [showPhotos, setShowPhotos] = useStoredBoolean("showPhotos", true);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
 
   const gradeMap = new Map(grades.map((entry) => [entry.studentId, entry]));
@@ -339,6 +343,7 @@ export function ClassroomPage() {
         <SeatGrid
           students={students}
           traits={showTraits ? traits : []}
+          showPhotos={showPhotos}
           grades={gradeMap}
           suggestions={suggestions}
           arranging={mode == "arrange"}
@@ -348,6 +353,19 @@ export function ClassroomPage() {
             revalidate();
           }}
         />
+        {students.some((student) => student.image) && (
+          <div className="absolute -right-2 -bottom-2 z-20">
+            <Button
+              startIcon={
+                showPhotos ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />
+              }
+              onClick={() => setShowPhotos(!showPhotos)}
+              className="bg-brand-100 opacity-75 shadow-tile"
+            >
+              {showPhotos ? "Bilder ausblenden" : "Bilder einblenden"}
+            </Button>
+          </div>
+        )}
         {students.some((student) => student.traitIds.length > 0) && (
           <div className="absolute -bottom-2 -left-2 z-20">
             <TraitsMenu
@@ -394,7 +412,7 @@ export function ClassroomPage() {
       {editing && (
         <ClassEditDialog
           cls={cls}
-          students={students}
+          students={roster}
           allClasses={allClasses}
           subjects={subjects}
           holidays={holidays}

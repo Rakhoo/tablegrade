@@ -35,12 +35,13 @@ export async function overviewLoader({ params }: LoaderFunctionArgs) {
       getCancelledLessons(),
       getLessonTypes(),
     ]);
-  // Cancelled lessons stay as grayed columns, so they can be restored here
-  const lessonDates = getLessonDates(cls, holidays, { days, lessons: [] });
+  // Cancelled lessons and days stay as grayed columns, e.g. for sanctions or to restore them
+  const lessonDates = getLessonDates(cls, holidays, { days: [], lessons: [] });
   return {
     class: cls,
-    students,
+    students: students.filter((student) => !student.hidden),
     entries,
+    days,
     lessons,
     lessonTypes,
     dates: [

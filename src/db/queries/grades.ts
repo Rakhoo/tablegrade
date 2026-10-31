@@ -25,7 +25,8 @@ export async function getLessonTypes() {
 
 /**
  * Returns the keys (see `lessonKey`) of all complete lessons: every student of the class has
- * a symbol, which includes "excused". Exams count marks instead of symbols.
+ * a symbol, which includes "excused". Exams count marks instead of symbols, hidden students
+ * do not count.
  */
 export async function getCompletedLessons(classId?: number) {
   const totals = await db
@@ -36,11 +37,24 @@ export async function getCompletedLessons(classId?: number) {
       marks: count(grades.mark),
     })
     .from(grades)
-    .where(classId ? eq(grades.classId, classId) : undefined)
+    .innerJoin(
+      classStudents,
+      and(
+        eq(classStudents.classId, grades.classId),
+        eq(classStudents.studentId, grades.studentId),
+      ),
+    )
+    .where(
+      and(
+        eq(classStudents.hidden, false),
+        classId ? eq(grades.classId, classId) : undefined,
+      ),
+    )
     .groupBy(grades.classId, grades.date);
   const sizes = await db
     .select({ classId: classStudents.classId, total: count() })
     .from(classStudents)
+    .where(eq(classStudents.hidden, false))
     .groupBy(classStudents.classId);
   const types = await getLessonTypes();
   const sizeOf = new Map(sizes.map((row) => [row.classId, row.total]));

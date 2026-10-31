@@ -156,3 +156,16 @@ export const RedoIcon = (props: IconProps) => (
     <path d="M15 7l5 5-5 5M20 12H9a5 5 0 0 0-5 5v1" />
   </Icon>
 );
+
+export const EyeIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </Icon>
+);
+
+export const EyeOffIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 4l16 16M9.9 5.2A9.9 9.9 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.3 7.4A16.7 16.7 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4.5-1.1M10 10a3 3 0 0 0 4 4" />
+  </Icon>
+);

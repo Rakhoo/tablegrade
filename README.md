@@ -171,12 +171,17 @@ also the way to move data to another device.
   "entschuldigt", which has `isGrade: false` and must not count in evaluations.
 - **Grades** ([src/lib/assessment.ts](src/lib/assessment.ts)): each symbol has a value (1, 2,
   2.7, 3, 3.3, 4.5, 6), a tendency of a mark is worth 0.3. Oral participation is the average of
-  all symbols, weighted linearly (oldest once, newest n times). The final grade is 50 % exams
-  and 50 % the rest, which is half oral and half projects; a missing part leaves its share to
-  the other one. "Entschuldigt" and missing entries do not count, with fewer than three
+  all symbols, the newest counting 1.5 times as much as the oldest. The final grade is 50 %
+  exams and 50 % the rest, which is 60 % oral and 40 % projects; a missing part leaves its
+  share to the other one. "Entschuldigt" and missing entries do not count, with fewer than three
   assessments the result is "n.b.".
 - **Suggestions**: while grading, students without a symbol show the symbol closest to their
-  weighted average before that lesson ("befriedigend" without any), faded with a dashed ring.
+  average before that lesson ("befriedigend" without any), faded with a dashed ring. Their
+  weights rise more steeply than for grades: oldest once, newest n times.
+- **Cancelled lessons** count for nobody, but in the overview single students can still get
+  the X there, e.g. for skipping class; it then counts for them.
+- **Hidden students** stay in a class with their grades, but only show up in its editor. When
+  shown again they get a free seat and "entschuldigt" for lessons completed in the meantime.
 - **New students** added to a class get "entschuldigt" in all lessons that were complete
   before, so these stay complete; other lessons stay untouched.
 - **School year**: starts the day after the summer holidays (fallback August 1st). The

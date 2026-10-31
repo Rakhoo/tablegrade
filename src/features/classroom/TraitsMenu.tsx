@@ -26,7 +26,7 @@ export function TraitsMenu({
       <Button
         startIcon={<InfoIcon size={18} />}
         onClick={(event) => setAnchor(event.currentTarget)}
-        className="bg-surface shadow-tile"
+        className="bg-brand-100 opacity-75 shadow-tile"
       >
         Eigenschaften
       </Button>
@@ -36,7 +36,7 @@ export function TraitsMenu({
         onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: "top", horizontal: "left" }}
         transformOrigin={{ vertical: "bottom", horizontal: "left" }}
-        slotProps={{ paper: { className: "-mt-2" } }}
+        slotProps={{ paper: { className: "-mt-2 bg-brand-100/75" } }}
       >
         <div className="flex min-w-56 flex-col gap-3 p-4">
           <ul className="flex flex-col gap-2">

@@ -14,7 +14,10 @@ const MIN_ASSESSMENTS = 3;
 /** Weight of a student's exams in the final grade; the rest is oral and projects. */
 const EXAM_SHARE = 0.5;
 /** Weight of the projects within the non-exam part, the rest is oral participation. */
-const PROJECT_SHARE = 0.5;
+const PROJECT_SHARE = 0.4;
+
+/** In the grade calculation the newest symbol counts this many times as much as the oldest. */
+const RESULT_RECENCY = 1.5;
 
 /** Parts of a student's result; a part is `null` if it has no assessments. */
 export type StudentResult = {
@@ -30,17 +33,27 @@ const average = (values: number[]) =>
     ? values.reduce((sum, value) => sum + value, 0) / values.length
     : null;
 
+/** Weight of the symbol at `index` (oldest first) for suggestions: 1, 2, 3 … */
+const getSuggestionWeight = (index: number) => index + 1;
+
+/** Weight of the symbol at `index` for grades: rising evenly up to `RESULT_RECENCY`. */
+const getResultWeight = (index: number, total: number) =>
+  total > 1 ? 1 + ((RESULT_RECENCY - 1) * index) / (total - 1) : 1;
+
 /**
- * Average of the symbols, where recent ones count more: the oldest counts once, the second
- * oldest twice and so on. "Excused" and missing entries are not part of it.
+ * Weighted average of the symbols, where `getWeight` gets a symbol's position (oldest first)
+ * and their number. "Excused" and missing entries are not part of it.
  */
-export function getOralAverage(entries: GradeEntry[]) {
+function getOralAverage(
+  entries: GradeEntry[],
+  getWeight: (index: number, total: number) => number,
+) {
   const values = entries
     .filter((entry) => getGradeDefinition(entry.grade)?.value != null)
     .sort((a, b) => a.date.localeCompare(b.date))
     .map((entry) => getGradeDefinition(entry.grade)!.value!);
   if (values.length == 0) return null;
-  const weights = values.map((_, index) => index + 1);
+  const weights = values.map((_, index) => getWeight(index, values.length));
   const total = values.reduce(
     (sum, value, index) => sum + value * weights[index],
     0,
@@ -57,7 +70,7 @@ function combine(first: number | null, second: number | null, share: number) {
 
 /**
  * Calculates a student's result from all entries up to `asOf` (`YYYY-MM-DD`):
- * exams count 50 %, the other 50 % split evenly into projects and oral participation.
+ * exams count 50 %, the other 50 % split into 40 % projects and 60 % oral participation.
  * @param entries The entries of one student in one class.
  * @param typeOf Returns the type of the lesson on a date.
  */
@@ -77,7 +90,7 @@ export function getStudentResult(
     (entry) => getGradeDefinition(entry.grade)?.value != null,
   );
 
-  const oral = getOralAverage(symbols);
+  const oral = getOralAverage(symbols, getResultWeight);
   const project = average(projectMarks);
   const exam = average(examMarks);
   const assessments = symbols.length + examMarks.length + projectMarks.length;
@@ -97,7 +110,10 @@ export function getStudentResult(
  * symbols before that date, or the neutral symbol without any.
  */
 export function suggestGrade(entries: GradeEntry[], date: string): GradeKey {
-  const average = getOralAverage(entries.filter((entry) => entry.date < date));
+  const average = getOralAverage(
+    entries.filter((entry) => entry.date < date),
+    getSuggestionWeight,
+  );
   if (average == null) return DEFAULT_GRADE_TOOL;
   const distance = (value: number | null) => Math.abs(value! - average);
   return GRADES.filter((grade) => grade.value != null).reduce((best, grade) =>

@@ -37,6 +37,9 @@ export type GradeTool =
 /** Symbol for students who were excused; it does not count as a grade. */
 export const ABSENT_GRADE: GradeKey = "E";
 
+/** The only symbol for cancelled lessons: a sanction for students skipping class. */
+export const FAIL_GRADE: GradeKey = "5";
+
 /** Initially selected grading tool: the neutral symbol, the most frequently used one. */
 export const DEFAULT_GRADE_TOOL: GradeKey = "3";
 

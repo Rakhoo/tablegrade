@@ -40,6 +40,7 @@ import {
 } from "../../lib/formatters";
 import {
   DEFAULT_GRADE_TOOL,
+  FAIL_GRADE,
   getGradeDefinition,
   getValidGradeTool,
   isEntryComplete,
@@ -142,6 +143,7 @@ export function OverviewPage() {
     students,
     entries,
     dates,
+    days,
     lessons,
     lessonTypes,
   } = useLoaderData<OverviewLoaderData>();
@@ -181,8 +183,10 @@ export function OverviewPage() {
   const lessonDate = searchParams.get("date");
   const typeOf = (date: string): LessonType =>
     lessonTypes[lessonKey(cls.id, date)] ?? "normal";
-  const isCancelled = (date: string) =>
+  const isLessonCancelled = (date: string) =>
     lessons.includes(lessonKey(cls.id, date));
+  const isCancelled = (date: string) =>
+    days.includes(date) || isLessonCancelled(date);
   const isComplete = (date: string) =>
     students.length > 0 &&
     students.every((student) =>
@@ -210,6 +214,14 @@ export function OverviewPage() {
     );
 
   const handleTap = async (student: SeatedStudent, date: string) => {
+    if (
+      isCancelled(date) &&
+      activeTool != FAIL_GRADE &&
+      activeTool != "erase"
+    ) {
+      setMessage("Bei Ausfall kann nur das X vergeben oder gelöscht werden.");
+      return;
+    }
     if (activeTool == "comment") return setCommenting({ student, date });
     const entry = entryMap.get(entryKey(student.id, date));
     if (activeTool == "suggestion" && entry?.grade) return;
@@ -324,7 +336,10 @@ export function OverviewPage() {
                         ? undefined
                         : (anchor) => setTypeMenu({ date, anchor })
                     }
-                    onLongPress={() => setCancelTarget(date)}
+                    // Whole cancelled days are managed in the timetable
+                    onLongPress={() =>
+                      !days.includes(date) && setCancelTarget(date)
+                    }
                   />
                 ))}
                 {/* Room for the tilted date of the last column */}
@@ -356,7 +371,7 @@ export function OverviewPage() {
                       >
                         <button
                           type="button"
-                          disabled={!grading || cancelled}
+                          disabled={!grading}
                           aria-label={`${formatStudentName(student)}, ${date}`}
                           title={entry?.comment ?? undefined}
                           className="relative flex h-full min-h-11 w-full items-center justify-center gap-0.5 px-0.5 active:bg-brand-100"
@@ -424,7 +439,7 @@ export function OverviewPage() {
         <CancelDialog
           date={parseISO(cancelTarget)}
           schoolClass={cls}
-          isCancelled={isCancelled(cancelTarget)}
+          isCancelled={isLessonCancelled(cancelTarget)}
           onClose={() => setCancelTarget(null)}
           onChanged={handleLessonChanged}
         />

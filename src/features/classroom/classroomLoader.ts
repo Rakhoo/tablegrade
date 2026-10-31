@@ -67,6 +67,7 @@ export async function classroomLoader(
       ...base,
       class: undefined as SchoolClass | undefined,
       students: [] as SeatedStudent[],
+      roster: [] as SeatedStudent[],
       grades: [] as GradeEntry[],
       classGrades: [] as GradeEntry[],
       date: toIsoDate(isValid(dateParam) ? dateParam : new Date()),
@@ -85,7 +86,7 @@ export async function classroomLoader(
           .map((lesson) => getLastOccurrence(lesson.day))
           .sort((a, b) => b.getTime() - a.getTime())[0],
   );
-  const [students, grades, classGrades, lessonTypes] = await Promise.all([
+  const [roster, grades, classGrades, lessonTypes] = await Promise.all([
     getClassStudents(cls.id),
     getGrades(cls.id, date),
     getClassGrades(cls.id),
@@ -96,7 +97,8 @@ export async function classroomLoader(
   return {
     ...base,
     class: cls as SchoolClass | undefined,
-    students,
+    students: roster.filter((student) => !student.hidden),
+    roster,
     grades,
     classGrades,
     date,

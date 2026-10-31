@@ -72,6 +72,8 @@ export const classStudents = sqliteTable(
     x: int("x"),
     /** Row of the seat's top left cell in half seats, `null` if the student has no seat. */
     y: int("y"),
+    /** Hidden students stay in the class with their grades, but only show up in its editor. */
+    hidden: int("hidden", { mode: "boolean" }).notNull().default(false),
   },
   (table) => [primaryKey({ columns: [table.classId, table.studentId] })],
 );

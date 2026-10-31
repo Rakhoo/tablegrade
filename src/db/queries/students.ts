@@ -13,6 +13,7 @@ import {
 export type SeatedStudent = Student & {
   x: number | null;
   y: number | null;
+  hidden: boolean;
   traitIds: number[];
 };
 
@@ -22,7 +23,7 @@ export async function getTraits() {
   return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
-/** Returns all students of a class with seats and traits, ordered by name. */
+/** Returns all students of a class, also hidden ones, with seats and traits, ordered by name. */
 export async function getClassStudents(
   classId: number,
 ): Promise<SeatedStudent[]> {
@@ -31,6 +32,7 @@ export async function getClassStudents(
       ...getTableColumns(students),
       x: classStudents.x,
       y: classStudents.y,
+      hidden: classStudents.hidden,
     })
     .from(classStudents)
     .innerJoin(students, eq(students.id, classStudents.studentId))
@@ -69,7 +71,9 @@ export async function moveStudentSeat(
   x: number,
   y: number,
 ) {
-  const members = await getClassStudents(classId);
+  const members = (await getClassStudents(classId)).filter(
+    (student) => !student.hidden,
+  );
   const mover = members.find((s) => s.id == studentId);
   const overlapped = members.filter(
     (s) => s.id != studentId && seatsOverlap(s, { x, y }),

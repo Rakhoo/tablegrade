@@ -14,6 +14,8 @@ type SeatGridProps = {
   students: SeatedStudent[];
   /** All traits in display order; their position decides the slot around the photo. */
   traits: Trait[];
+  /** Whether the seats show the students' photos. */
+  showPhotos: boolean;
   /** Grade entries of the current lesson, by student id. */
   grades: Map<number, GradeEntry>;
   /** Suggested symbols for students without one, by student id. */
@@ -44,6 +46,7 @@ const seatArea = ({ x, y }: Position) => ({
 export function SeatGrid({
   students,
   traits,
+  showPhotos,
   grades,
   suggestions,
   arranging,
@@ -121,6 +124,7 @@ export function SeatGrid({
               suggestion={suggestions.get(student.id)}
               arranging={arranging}
               traits={traits}
+              showPhoto={showPhotos}
               isDragged={drag?.student.id == student.id}
               onTap={onTap}
             />
@@ -150,6 +154,7 @@ type SeatProps = {
   suggestion?: GradeKey;
   arranging: boolean;
   traits: Trait[];
+  showPhoto: boolean;
   isDragged: boolean;
   onTap: SeatGridProps["onTap"];
 };
@@ -161,6 +166,7 @@ function Seat({
   suggestion,
   arranging,
   traits,
+  showPhoto,
   isDragged,
   onTap,
 }: SeatProps) {
@@ -178,7 +184,7 @@ function Seat({
   return (
     <div
       className={
-        "seat relative m-1 flex flex-col items-center gap-0.5 rounded-2xl bg-surface p-1.5 text-center shadow-tile transition-[transform,opacity,background-color] active:scale-95 " +
+        "seat relative m-1 flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-1.5 text-center shadow-tile transition-[transform,opacity,background-color] active:scale-95 " +
         (arranging ? "cursor-grab " : "") +
         (isDragged ? "opacity-30" : "")
       }
@@ -190,10 +196,15 @@ function Seat({
       data-student={student.id}
       onClick={arranging ? undefined : () => onTap(student)}
     >
-      {/* Photo area: keeps its space without a photo, so all names stay on one level */}
-      <div className="relative min-h-0 w-full flex-1">
+      {/* Photo area: keeps its space without a photo, so all names stay on one level. With
+          photos hidden it only holds the trait dots behind the name, which moves to the center */}
+      <div
+        className={
+          showPhoto ? "relative min-h-0 w-full flex-1" : "absolute inset-1.5"
+        }
+      >
         <div className="absolute top-0 left-1/2 aspect-square h-full -translate-x-1/2">
-          {student.image && (
+          {showPhoto && student.image && (
             <img
               src={student.image}
               alt=""
@@ -210,7 +221,7 @@ function Seat({
               <span
                 key={trait.id}
                 title={trait.name}
-                className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-1 ring-white landscape:h-2 landscape:w-2"
+                className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-70 ring-1 ring-white landscape:h-2 landscape:w-2"
                 style={{
                   left: `${50 + 50 * Math.cos(angle)}%`,
                   top: `${50 + 50 * Math.sin(angle)}%`,
