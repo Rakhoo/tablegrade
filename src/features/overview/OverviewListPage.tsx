@@ -2,6 +2,7 @@ import { Button } from "@mui/material";
 import { Link, useLoaderData } from "react-router";
 import { ChevronLeftIcon } from "../../components/icons";
 import type { SchoolClass } from "../../db";
+import { useSettings } from "../../hooks/useSettings";
 import { formatClassName, formatSchoolYear } from "../../lib/formatters";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getClassColor } from "../../lib/subjectColors";
@@ -29,6 +30,7 @@ function groupClasses(classes: SchoolClass[]) {
 /** Start page of the overview: one tile per class and school year half. */
 export function OverviewListPage() {
   const { schoolClasses } = useLoaderData<OverviewListLoaderData>();
+  const { levels } = useSettings();
 
   return (
     <div className="flex h-full flex-col gap-3 p-4">
@@ -55,7 +57,7 @@ export function OverviewListPage() {
             </h2>
             <div className="grid grid-cols-4 gap-2 portrait:grid-cols-3">
               {classes.map((cls) => {
-                const color = getClassColor(cls);
+                const color = getClassColor(cls, levels);
                 return (
                   <Link
                     key={cls.id}

@@ -2,7 +2,6 @@ import { Button, FormControlLabel, Popover, Switch } from "@mui/material";
 import { useState } from "react";
 import { InfoIcon } from "../../components/icons";
 import type { SeatedStudent, Trait } from "../../db";
-import { getTraitColor } from "../../lib/traits";
 
 type TraitsMenuProps = {
   traits: Trait[];
@@ -48,7 +47,7 @@ export function TraitsMenu({
                 <li key={trait.id} className="flex items-center gap-2.5">
                   <span
                     className="h-3.5 w-3.5 rounded-full"
-                    style={{ background: getTraitColor(trait.name) }}
+                    style={{ background: trait.color }}
                   />
                   <span className="flex-1 font-medium">{trait.name}</span>
                   <span className="text-sm text-muted">{count}</span>

@@ -84,7 +84,7 @@ export function CancelDialog({
       </p>
       {hasEntries && (
         <FormControlLabel
-          className="mt-3 rounded-2xl bg-red-50 py-1 pr-3"
+          className="mt-3 rounded-2xl bg-red-50 py-1 pr-3 text-gray-900"
           control={
             <Checkbox
               color="error"

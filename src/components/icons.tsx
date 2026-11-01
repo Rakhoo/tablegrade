@@ -82,13 +82,6 @@ export const RefreshIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const InstallIcon = (props: IconProps) => (
-  <Icon {...props}>
-    <rect x="5" y="2" width="14" height="20" rx="3" />
-    <path d="M12 7v7M9 11l3 3 3-3M10 18h4" />
-  </Icon>
-);
-
 /** Safari's share symbol, used in the install instructions. */
 export const ShareIcon = (props: IconProps) => (
   <Icon {...props}>
@@ -167,5 +160,13 @@ export const EyeIcon = (props: IconProps) => (
 export const EyeOffIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M4 4l16 16M9.9 5.2A9.9 9.9 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.3 7.4A16.7 16.7 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4.5-1.1M10 10a3 3 0 0 0 4 4" />
+  </Icon>
+);
+
+export const SettingsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 7h10M18 7h2M4 17h2M10 17h10" />
+    <circle cx="16" cy="7" r="2" />
+    <circle cx="8" cy="17" r="2" />
   </Icon>
 );

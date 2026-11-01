@@ -41,11 +41,12 @@ import {
   DEFAULT_GRADE_TOOL,
   getValidGradeTool,
   isEntryComplete,
-  type GradeKey,
   type GradeTool,
 } from "../../lib/grades";
 import { getToolValues } from "../../services/grading";
+import { useSettings } from "../../hooks/useSettings";
 import { useStoredBoolean } from "../../hooks/useStoredBoolean";
+import { getVisibleGrades, type ClassroomMode } from "../../lib/settings";
 import { suggestGrade } from "../../lib/assessment";
 import { formatClassName, formatStudentName } from "../../lib/formatters";
 import type { Lesson } from "../../lib/lessons";
@@ -59,9 +60,6 @@ import { SeatGrid } from "./SeatGrid";
 import { TraitsMenu } from "./TraitsMenu";
 import "./ClassroomPage.css";
 
-/** Interaction mode of the seating plan. */
-type ClassroomMode = "warn" | "grade" | "arrange";
-
 /** Classroom page: seating plan for grading one lesson, warning, arranging seats and editing. */
 export function ClassroomPage() {
   const {
@@ -74,7 +72,8 @@ export function ClassroomPage() {
     editing,
     allClasses,
     subjects,
-    holidays,
+    calendar,
+    schoolYears,
     traits,
     lessonType,
     previous,
@@ -83,7 +82,8 @@ export function ClassroomPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { revalidate } = useRevalidator();
-  const [mode, setMode] = useState<ClassroomMode>("warn");
+  const settings = useSettings();
+  const [mode, setMode] = useState<ClassroomMode>(settings.startMode);
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
   const [confirmClear, setConfirmClear] = useState(false);
   const [showTraits, setShowTraits] = useStoredBoolean("showTraits", true);
@@ -101,23 +101,33 @@ export function ClassroomPage() {
     else navigate(fallback, { replace: true });
   };
 
-  const accent = cls ? getClassColor(cls).accent : undefined;
+  const accent = cls ? getClassColor(cls, settings.levels).accent : undefined;
   const isComplete =
     students.length > 0 &&
     students.every((student) =>
       isEntryComplete(gradeMap.get(student.id), lessonType),
     );
-  const activeTool = getValidGradeTool(tool, lessonType);
+  const visibleGrades = getVisibleGrades(settings);
+  const activeTool = getValidGradeTool(
+    tool,
+    lessonType,
+    visibleGrades,
+    settings.suggestions,
+  );
   // While grading, students without a symbol show what their previous ones suggest
-  const suggestions = new Map<number, GradeKey>(
-    mode == "grade" && lessonType != "exam"
+  const suggestions = new Map<number, number>(
+    mode == "grade" && lessonType != "exam" && settings.suggestions
       ? students
-          .filter((student) => !gradeMap.get(student.id)?.grade)
+          .filter((student) => {
+            const entry = gradeMap.get(student.id);
+            return entry?.grade == null && !entry?.absent;
+          })
           .map((student) => [
             student.id,
             suggestGrade(
               classGrades.filter((entry) => entry.studentId == student.id),
               date,
+              visibleGrades,
             ),
           ])
       : [],
@@ -144,8 +154,13 @@ export function ClassroomPage() {
     } else if (activeTool == "comment") {
       return setCommenting(student);
     } else {
-      const tool =
-        activeTool == "suggestion" ? suggestions.get(student.id) : activeTool;
+      const suggestion = suggestions.get(student.id);
+      const tool: GradeTool | null =
+        activeTool != "suggestion"
+          ? activeTool
+          : suggestion == null
+            ? null
+            : `grade:${suggestion}`;
       const values = tool && getToolValues(tool, lessonType);
       if (values) await history.change(student.id, date, entry, values);
       return;
@@ -283,11 +298,13 @@ export function ClassroomPage() {
                       key={index}
                       className="rounded-full px-2.5 py-1 font-semibold"
                       style={{
-                        background: level?.background ?? "white",
-                        color: level?.accent ?? "var(--color-muted)",
+                        background: level?.background ?? "var(--color-surface)",
+                        color: level
+                          ? "var(--color-ink)"
+                          : "var(--color-muted)",
                       }}
                     >
-                      {level?.label ?? "Zurücksetzen"}
+                      {level?.label ?? "Normal"}
                     </span>
                   ))}
                 </div>
@@ -415,7 +432,8 @@ export function ClassroomPage() {
           students={roster}
           allClasses={allClasses}
           subjects={subjects}
-          holidays={holidays}
+          calendar={calendar}
+          schoolYears={schoolYears}
           traits={traits}
           preset={{
             day: Number(searchParams.get("day")) || undefined,

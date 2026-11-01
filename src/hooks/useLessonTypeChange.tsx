@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { setLessonType, type GradeEntry } from "../db";
-import { isReplacedByExam, type LessonType } from "../lib/grades";
+import type { LessonType } from "../lib/grades";
 import { LESSON_TYPE_LABELS } from "../lib/lessons";
 
 type PendingChange = { date: string; type: LessonType; lost: number };
@@ -24,8 +24,8 @@ export function useLessonTypeChange(
   const request = (date: string, type: LessonType, entries: GradeEntry[]) => {
     const lost = entries.filter((entry) =>
       type == "exam"
-        ? isReplacedByExam(entry.grade)
-        : type == "normal" && entry.mark,
+        ? entry.grade != null
+        : type == "normal" && entry.mark != null,
     ).length;
     if (lost > 0) setPending({ date, type, lost });
     else apply(date, type);

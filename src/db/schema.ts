@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   int,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -94,11 +95,13 @@ export const grades = sqliteTable(
   "Grades",
   {
     id: int("id").primaryKey({ autoIncrement: true }),
-    /** Key of a symbol from `GRADES` in `src/lib/grades.ts`. */
-    grade: text("grade"),
+    /** Oral grade, see `GRADE_VALUES` in `src/lib/grades.ts`. */
+    grade: real("grade"),
     comment: text("comment"),
-    /** Classic mark like "2+", used in exams and projects. */
-    mark: text("mark"),
+    /** Mark of an exam or project, on the same scale as `grade`. */
+    mark: real("mark"),
+    /** Excused: the lesson does not count for this student. */
+    absent: int("absent", { mode: "boolean" }).notNull().default(false),
     /** Number of warnings in this lesson: 0 = none, 1 = first, 2 = second warning. */
     warnings: int("warnings").notNull().default(0),
     /** Lesson date as `YYYY-MM-DD`. */
@@ -126,10 +129,12 @@ export const gradesRelations = relations(grades, ({ one }) => ({
   }),
 }));
 
-/** Selectable student properties (ADHS, LRS, …), seeded by the migrations. */
+/** Student properties, edited in the settings. */
 export const traits = sqliteTable("Traits", {
   id: int("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
+  /** Unique color of the dot on the seating plan. */
+  color: text("color").notNull(),
 });
 
 /** Assignment of traits to students. */
@@ -178,6 +183,20 @@ export const cancelledLessons = sqliteTable(
   },
   (table) => [primaryKey({ columns: [table.classId, table.date] })],
 );
+
+/** School years in use, with the date their second half starts on. */
+export const schoolYears = sqliteTable("SchoolYears", {
+  /** Calendar year in which the school year starts. */
+  year: int("year").primaryKey(),
+  /** First day of the second half as `YYYY-MM-DD`. */
+  secondHalfStart: text("secondHalfStart").notNull(),
+});
+
+/** App settings as JSON per key, see `src/lib/settings.ts`. */
+export const settings = sqliteTable("Settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+});
 
 export type Holiday = typeof holidays.$inferSelect;
 export type SchoolClass = typeof schoolClasses.$inferSelect;

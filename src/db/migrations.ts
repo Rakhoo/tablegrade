@@ -117,4 +117,42 @@ export const MIGRATIONS: string[][] = [
   ["ALTER TABLE Classes2Students ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0"],
   // New trait "DaZ" (Deutsch als Zweitsprache)
   ["INSERT INTO Traits (name) VALUES ('DAZ')"],
+  // Settings, and school years with the second half's start for all years in use
+  [
+    "CREATE TABLE Settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
+    `CREATE TABLE SchoolYears (
+      year INTEGER PRIMARY KEY,
+      secondHalfStart TEXT NOT NULL
+    )`,
+    `INSERT INTO SchoolYears (year, secondHalfStart)
+      SELECT DISTINCT year, (year + 1) || '-02-01' FROM Classes`,
+  ],
+  // Grades as numbers on one scale with an own flag for "excused"; the old minus becomes 4-
+  [
+    "ALTER TABLE Grades RENAME COLUMN grade TO symbolKey",
+    "ALTER TABLE Grades RENAME COLUMN mark TO markKey",
+    "ALTER TABLE Grades ADD COLUMN grade REAL",
+    "ALTER TABLE Grades ADD COLUMN mark REAL",
+    "ALTER TABLE Grades ADD COLUMN absent INTEGER NOT NULL DEFAULT 0",
+    `UPDATE Grades SET
+      absent = symbolKey IS 'E',
+      grade = CASE symbolKey
+        WHEN '1' THEN 1 WHEN '2' THEN 2 WHEN '3+' THEN 2.7 WHEN '3' THEN 3
+        WHEN '3-' THEN 3.3 WHEN '4' THEN 4.3 WHEN '5' THEN 6 END,
+      mark = CASE WHEN markKey IS NOT NULL THEN round(
+        substr(markKey, 1, 1) + CASE substr(markKey, 2)
+          WHEN '+' THEN -0.3 WHEN '-' THEN 0.3 ELSE 0 END, 1) END`,
+    "ALTER TABLE Grades DROP COLUMN symbolKey",
+    "ALTER TABLE Grades DROP COLUMN markKey",
+  ],
+  // Traits are edited freely now; new installations start without any
+  [
+    "ALTER TABLE Traits ADD COLUMN color TEXT NOT NULL DEFAULT '#9ca3af'",
+    `UPDATE Traits SET color = CASE name
+      WHEN 'ADHS' THEN '#4f46e5' WHEN 'ADS' THEN '#38bdf8'
+      WHEN 'Autismus' THEN '#14b8a6' WHEN 'DAZ' THEN '#475569'
+      WHEN 'Diabetes' THEN '#ec4899' WHEN 'ESE' THEN '#a855f7'
+      WHEN 'Lernen' THEN '#84cc16' WHEN 'LRS' THEN '#b45309' ELSE color END`,
+    "DELETE FROM Traits WHERE NOT EXISTS (SELECT 1 FROM Classes)",
+  ],
 ];

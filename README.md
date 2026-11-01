@@ -25,8 +25,8 @@ The only network request fetches school holidays from
   - Swiping the timetable switches weeks, swiping the calendar switches months.
   - Week arrows and month switching in the calendar select whole weeks; "Heute" removes
     the `date` parameter and returns to the clean start state (current week).
-  - "⋯" menu: export / import a backup of the whole database, "Neu laden" (reload and
-    activate a waiting update) and "App installieren" (install instructions per platform).
+  - "⋯" menu: export / import a backup of the whole database, settings and "Neu laden"
+    (reload and activate a waiting update).
 - **Classroom** (`/classes/:id?date=YYYY-MM-DD`): seating plan of one lesson.
   - *Ermahnung* (default mode): each tap cycles a student through yellow → red → none.
   - *Bewerten*: a grading mode showing only the open tool bar (seven grade symbols,
@@ -55,6 +55,13 @@ The only network request fetches school holidays from
 
 ### Installed app (PWA)
 
+- SQLocal silently falls back to an in-memory database if OPFS fails, for example without
+  cross-origin isolation or on a timeout of its storage worker. `rootLoader` detects that,
+  retries once by reloading and otherwise blocks the app with `StorageErrorPage`, as all input
+  would be lost. It also requests persistent storage.
+- The app only runs installed. In a browser tab `/` shows nothing but the install instructions
+  (`src/features/install/InstallPage.tsx`) and the database is never opened; only
+  `npm run dev` runs in a tab.
 - A cold start of the installed app always opens `/#/timetable` without parameters
   (`resetLaunchUrl` in `src/services/pwa.ts`), because iPadOS may keep the URL from the
   moment the app was added instead of the manifest's `start_url`. Reloads keep the current page.
@@ -115,13 +122,14 @@ src/
 │   ├── timetable/                  timetable page, grid, Ausfall dialog, app menu
 │   ├── classroom/                  classroom page, seat grid, dialogs
 │   ├── overview/                   class selection and overview table
+│   ├── settings/                   settings page, one component per topic
 │   └── errors/                     404 and error page with a way back
 ├── db/
 │   ├── schema.ts                   Drizzle tables and row types
 │   ├── migrations.ts               ordered SQL migrations
 │   ├── client.ts                   SQLocal connection, migrations, import/export
 │   └── queries/                    data access per entity
-├── services/                       holiday API, backup files, PWA, WebUntis PDF reader
+├── services/                       holiday API, backups, PWA, WebUntis PDF, overview export
 ├── hooks/                          useLongPress
 └── lib/                            pure helpers: dates, school year, lessons, seating,
                                     grades, warnings, subject colors, formatters
@@ -139,14 +147,16 @@ else in camelCase files; JSDoc on exported functions and components.
 | `Classes`          | recurring lessons: subject, level/letter, school year + half, one or    |
 |                    | two weekly lessons (day, hour, double)                                  |
 | `Students`         | names, nickname, photo (base64); shared when copied to another class    |
-| `Traits`           | selectable properties (ADS, ADHS, DAZ, ESE, Lernen, …)    |
+| `Traits`           | student properties with a unique color, edited in the settings          |
 | `Students2Traits`  | traits assigned to students                                             |
 | `Classes2Students` | class membership and seat (`x`, `y` in half-seat cells)                 |
-| `Grades`           | per class, student and date: symbol, mark, comment, warnings (0–2)      |
+| `Grades`           | per class, student and date: grade, mark, absent, comment, warnings     |
 | `Holidays`         | cached holiday periods, flagged as summer vacation / public holiday     |
 | `CancelledDays`    | dates marked as "Ausfall"; nothing is graded on these days              |
 | `CancelledLessons` | single lessons (class + date) marked as "Ausfall"                       |
 | `LessonTypes`      | lessons that are an exam or carry a project                             |
+| `SchoolYears`      | school years in use with the start of their second half                 |
+| `Settings`         | app settings as JSON per key                                            |
 
 The SQL table names are kept for compatibility; the TypeScript names differ (e.g.
 `schoolClasses`, `classStudents`).
@@ -161,55 +171,67 @@ connect and after importing a backup, so older backups are upgraded automaticall
 ### Backup and restore
 
 The "⋯" menu on the timetable exports the database as `tablegrade-YYYY-MM-DD.sqlite3`
-(share sheet on iPad, download elsewhere). Importing checks the SQLite file signature, asks
+as a direct download, never through the share sheet, so sensitive data cannot be sent by
+accident. Importing checks the SQLite file signature, asks
 for confirmation, replaces the database, runs the migrations and reloads the app. This is
 also the way to move data to another device.
 
 ## Domain rules
 
-- **Grade symbols** ([src/lib/grades.ts](src/lib/grades.ts)): star (1), plus (2), arrow up
-  (3+), ring (3, default tool), arrow down (3−), minus (about 4.5), cross (6) and
-  "entschuldigt", which has `isGrade: false` and must not count in evaluations.
-- **Grades** ([src/lib/assessment.ts](src/lib/assessment.ts)): each symbol has a value (1, 2,
-  2.7, 3, 3.3, 4.5, 6), a tendency of a mark is worth 0.3. Oral participation is the average of
-  all symbols, the newest counting 1.5 times as much as the oldest. The final grade is 50 %
-  exams and 50 % the rest, which is 60 % oral and 40 % projects; a missing part leaves its
-  share to the other one. "Entschuldigt" and missing entries do not count, with fewer than three
-  assessments the result is "n.b.".
-- **Suggestions**: while grading, students without a symbol show the symbol closest to their
-  average before that lesson ("befriedigend" without any), faded with a dashed ring. Their
-  weights rise more steeply than for grades: oldest once, newest n times.
+- **Grades** ([src/lib/grades.ts](src/lib/grades.ts)): oral grades and marks use one scale of
+  16 numbers (1, 1.3, 1.7, … 5.7, 6); a tendency is worth 0.3. "Excused" is an own flag and
+  does not count. Symbols per grade are set in the settings and limited in
+  [src/lib/gradeSymbols.ts](src/lib/gradeSymbols.ts): no minus for good, no plus for bad grades.
+- **Final grade** ([src/lib/assessment.ts](src/lib/assessment.ts)): oral participation is the
+  average of all oral grades, the newest counting 1.5 times as much as the oldest. The final
+  grade is 50 % exams and 50 % the rest, which is 60 % oral and 40 % projects; a missing part
+  leaves its share to the other one. All of these numbers are settings. With too few
+  assessments (below 3) the result is "n.b.".
+- **Suggestions**: while grading, students without a symbol show the offered grade closest to
+  their average before that lesson (3 without any), faded with a dashed ring. Their weights
+  rise more steeply than for final grades: oldest once, newest n times.
 - **Cancelled lessons** count for nobody, but in the overview single students can still get
   the X there, e.g. for skipping class; it then counts for them.
 - **Hidden students** stay in a class with their grades, but only show up in its editor. When
   shown again they get a free seat and "entschuldigt" for lessons completed in the meantime.
 - **New students** added to a class get "entschuldigt" in all lessons that were complete
   before, so these stay complete; other lessons stay untouched.
-- **School year**: starts the day after the summer holidays (fallback August 1st). The
-  second half starts on the dates in `SECOND_HALF_STARTS`
-  ([src/lib/schoolYear.ts](src/lib/schoolYear.ts)), taken from the NRW Ferienordnung
-  (<https://bass.schule.nrw/191.htm>); unknown years fall back to February 1st.
-- **Holidays**: fetched for Ahlen (NRW) for the current and the next two years and cached in
-  the database; offline the cache is used.
+- **School years** are added in the settings, each with the start of its second half (no API
+  exists for these dates; default February 1st). Possible are 2019/20 up to the latest year whose
+  starting summer holidays the API knows, at least the current year + 2. The API lacks the
+  summer holidays 2019 (constants in `src/services/holidays.ts`); summer holidays it does not
+  know yet are estimated from the latest known ones and replaced once it has them. A school year starts the day after the summer
+  holidays, fallback August 1st.
+- **Holidays**: fetched per federal state only for the added school years, including both
+  summer holidays around them, and cached in the database; offline the cache is used. Changing
+  state or years can delete entries outside their lessons, after a double confirmation.
 - **Seating**: the room is a 20 × 20 grid of half seats, a student covers 2 × 2 cells (10 × 10
-  students). New students get the first free seat of a default layout
+  students). New students get the first free seat of a layout, editable in the settings
   ([src/lib/seating.ts](src/lib/seating.ts)), then any free whole seat.
-- **Lessons per day**: 9 (`LESSONS_PER_DAY`).
 - **WebUntis PDF** ([src/lib/rosterPdf.ts](src/lib/rosterPdf.ts)): columns are located by the
   header texts `Familienname`, `Vorname` and `Klasse`, rows by the number in the first column.
   Photos are cut from the rendered page at the position of the image in that row.
 
-## Yearly maintenance
+## Settings
 
-- Add the next school year to `SECOND_HALF_STARTS` in `src/lib/schoolYear.ts`.
-- The calendar's earliest date is `MIN_DATE` in
-  `src/features/timetable/TimetablePage.tsx`, the earliest selectable school year is
-  `FIRST_SCHOOL_YEAR` in `src/lib/schoolYear.ts`.
+`/settings` (via "⋯"): federal state and school years, theme and light/dark mode, symbols per
+grade, grading shares, traits, levels, letters and lessons per day, default seating plan,
+export format and backup reminder. They are stored as JSON in the `Settings` table
+([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
+hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
+
+## Export
+
+The corner of the overview table exports it as CSV or PDF. Projects get two columns, one for
+oral grades and one for marks, here and in the app. Theme colors are never exported; grade
+colors and symbols or numbers are settings. PDFs are built with jsPDF in
+[src/services/overviewExport.ts](src/services/overviewExport.ts).
 
 ## Styling
 
-Design tokens (colors, radii, shadows) live in [src/index.css](src/index.css) and are
-mirrored for MUI in [src/theme.ts](src/theme.ts). MUI styles are placed in the CSS layer
+Colors come from the themes in [src/lib/themes.ts](src/lib/themes.ts), each with a derived dark
+mode. `useAppTheme` writes them as CSS variables over the defaults of
+[src/index.css](src/index.css) and builds the MUI theme from them. MUI styles are placed in the CSS layer
 `mui` (declared before `components` and `utilities`), so Tailwind classes reliably override
 MUI defaults without `!important`.
 

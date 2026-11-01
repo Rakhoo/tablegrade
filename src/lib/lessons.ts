@@ -1,5 +1,5 @@
-import { addDays } from "date-fns";
-import type { Holiday, SchoolClass } from "../db";
+import { addDays, parseISO } from "date-fns";
+import type { GradeEntry, SchoolClass } from "../db";
 import { toIsoDate } from "./dates";
 import type { LessonType } from "./grades";
 import {
@@ -7,6 +7,7 @@ import {
   getSchoolYearRange,
   isHoliday,
   isSchoolClassActive,
+  type SchoolCalendar,
 } from "./schoolYear";
 
 /** A single lesson: a class on a specific date (`YYYY-MM-DD`). */
@@ -39,7 +40,7 @@ const LESSON_SEARCH_DAYS = 366;
 export function getLessonsOn(
   date: Date,
   classList: SchoolClass[],
-  holidayList: Holiday[],
+  calendar: SchoolCalendar,
   cancelled: CancelledDates,
 ) {
   const day = date.getDay();
@@ -47,7 +48,7 @@ export function getLessonsOn(
   if (
     day == 0 ||
     day == 6 ||
-    isHoliday(date, holidayList) ||
+    isHoliday(date, calendar) ||
     cancelled.days.includes(iso)
   )
     return [];
@@ -56,7 +57,7 @@ export function getLessonsOn(
     .filter(
       (cls) =>
         cls.day == day &&
-        isSchoolClassActive(cls, date, holidayList) &&
+        isSchoolClassActive(cls, date, calendar) &&
         !cancelled.lessons.includes(lessonKey(cls.id, iso)),
     )
     .sort((a, b) => a.hour - b.hour || a.id - b.id);
@@ -70,7 +71,7 @@ export function getAdjacentLesson(
   cls: SchoolClass,
   date: Date,
   classList: SchoolClass[],
-  holidayList: Holiday[],
+  calendar: SchoolCalendar,
   cancelled: CancelledDates,
   direction: 1 | -1,
 ): Lesson | null {
@@ -79,7 +80,7 @@ export function getAdjacentLesson(
     cls;
   const compare = (other: SchoolClass) =>
     (other.hour - current.hour || other.id - current.id) * direction;
-  const sameDay = getLessonsOn(date, classList, holidayList, cancelled).filter(
+  const sameDay = getLessonsOn(date, classList, calendar, cancelled).filter(
     (other) => compare(other) > 0,
   );
   if (sameDay.length > 0) {
@@ -88,7 +89,7 @@ export function getAdjacentLesson(
   }
   for (let offset = 1; offset <= LESSON_SEARCH_DAYS; offset++) {
     const day = addDays(date, offset * direction);
-    const lessons = getLessonsOn(day, classList, holidayList, cancelled);
+    const lessons = getLessonsOn(day, classList, calendar, cancelled);
     if (lessons.length > 0) {
       const lesson = direction == 1 ? lessons[0] : lessons[lessons.length - 1];
       return { id: lesson.id, date: toIsoDate(day) };
@@ -103,16 +104,36 @@ export function getAdjacentLesson(
  */
 export function getLessonDates(
   cls: SchoolClass,
-  holidayList: Holiday[],
+  calendar: SchoolCalendar,
   cancelled: CancelledDates,
   until = new Date(),
 ) {
-  const { start, end } = getSchoolYearRange(cls.year, cls.part, holidayList);
+  const { start, end } = getSchoolYearRange(cls.year, cls.part, calendar);
   const dates: string[] = [];
   for (let day = start; day < end && day <= until; day = addDays(day, 1)) {
-    if (getLessonsOn(day, [cls], holidayList, cancelled).length > 0) {
+    if (getLessonsOn(day, [cls], calendar, cancelled).length > 0) {
       dates.push(toIsoDate(day));
     }
   }
   return dates;
+}
+
+/**
+ * Entries that lose their lesson under a calendar: outside the class's school year part or on
+ * a holiday, e.g. after moving the start of the second half.
+ */
+export function getOrphanedEntries(
+  entries: GradeEntry[],
+  classes: SchoolClass[],
+  calendar: SchoolCalendar,
+) {
+  return entries.filter((entry) => {
+    const cls = classes.find((other) => other.id == entry.classId);
+    const date = parseISO(entry.date);
+    return (
+      !cls ||
+      !isSchoolClassActive(cls, date, calendar) ||
+      isHoliday(date, calendar)
+    );
+  });
 }

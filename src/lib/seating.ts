@@ -62,18 +62,22 @@ function defaultLayoutOrder(): Position[] {
   return order;
 }
 
-/** Preferred seats for new students: the default layout, then all whole seats row by row. */
-const PREFERRED_SEATS: Position[] = defaultLayoutOrder();
+/** All whole seats row by row, the fallback once a layout is full. */
+const WHOLE_SEATS: Position[] = [];
 for (let y = 0; y <= GRID_ROWS - SEAT_SIZE; y += SEAT_SIZE)
   for (let x = 0; x <= GRID_COLUMNS - SEAT_SIZE; x += SEAT_SIZE)
-    PREFERRED_SEATS.push({ x, y });
+    WHOLE_SEATS.push({ x, y });
+
+/** The built-in default layout, in seat order. */
+export const DEFAULT_SEAT_LAYOUT = defaultLayoutOrder();
 
 /**
  * Yields free seats in preferred order and marks each yielded seat as taken.
  * @param occupied Seats already in use; the array is extended while iterating.
+ * @param layout Preferred seats; without one the built-in layout.
  */
-export function* freeSeats(occupied: Seat[]) {
-  for (const seat of PREFERRED_SEATS) {
+export function* freeSeats(occupied: Seat[], layout: Position[] | null = null) {
+  for (const seat of [...(layout ?? DEFAULT_SEAT_LAYOUT), ...WHOLE_SEATS]) {
     if (!occupied.some((taken) => seatsOverlap(taken, seat))) {
       occupied.push(seat);
       yield seat;

@@ -4,13 +4,20 @@ import {
   getCompletedLessons,
   getLessonTypes,
   getSchoolClasses,
+  getSchoolYears,
+  getSettings,
   waitForDatabase,
 } from "../../db";
+import { createCalendar } from "../../lib/schoolYear";
 import { loadHolidays } from "../../services/holidays";
 
-/** Loads holidays (refreshing them from the API if needed), classes and the lesson states. */
+/** Loads the calendar (refreshing holidays from the API if needed), classes and lesson states. */
 export async function timetableLoader() {
   await waitForDatabase();
+  const [settings, schoolYears] = await Promise.all([
+    getSettings(),
+    getSchoolYears(),
+  ]);
   const [
     holidays,
     cancelledDays,
@@ -19,7 +26,10 @@ export async function timetableLoader() {
     lessonTypes,
     schoolClasses,
   ] = await Promise.all([
-    loadHolidays(),
+    loadHolidays(
+      settings,
+      schoolYears.map(({ year }) => year),
+    ),
     getCancelledDays(),
     getCancelledLessons(),
     getCompletedLessons(),
@@ -27,7 +37,7 @@ export async function timetableLoader() {
     getSchoolClasses(),
   ]);
   return {
-    holidays,
+    calendar: createCalendar(holidays, schoolYears),
     cancelledDays,
     cancelledLessons,
     completedLessons,

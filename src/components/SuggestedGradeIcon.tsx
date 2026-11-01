@@ -1,16 +1,15 @@
-import { getGradeDefinition, type GradeKey } from "../lib/grades";
+import { formatMark, getGradeColor } from "../lib/grades";
 import { GradeIcon } from "./GradeIcon";
 
-type SuggestedGradeIconProps = { grade: GradeKey; size: number };
+type SuggestedGradeIconProps = { grade: number; size: number };
 
 /** Faded symbol with a dashed ring: only a suggestion, not an entry. */
 export function SuggestedGradeIcon({ grade, size }: SuggestedGradeIconProps) {
-  const { color, label } = getGradeDefinition(grade)!;
   return (
     <span
-      title={`Vorschlag: ${label}`}
+      title={`Vorschlag: ${formatMark(grade)}`}
       className="inline-flex rounded-full border border-dashed p-px"
-      style={{ borderColor: color }}
+      style={{ borderColor: getGradeColor(grade) }}
     >
       <span className="flex opacity-40">
         <GradeIcon grade={grade} size={size - 4} />

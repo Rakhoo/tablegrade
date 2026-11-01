@@ -24,7 +24,9 @@ export function ClearLessonDialog({
 }: ClearLessonDialogProps) {
   const counts: Record<keyof LessonParts, number> = {
     warnings: entries.filter((entry) => entry.warnings > 0).length,
-    grades: entries.filter((entry) => entry.grade || entry.mark).length,
+    grades: entries.filter(
+      (entry) => entry.grade != null || entry.mark != null || entry.absent,
+    ).length,
     comments: entries.filter((entry) => entry.comment).length,
   };
   const options: { part: keyof LessonParts; label: string }[] = [

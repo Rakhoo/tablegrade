@@ -10,11 +10,12 @@ window.addEventListener("appinstalled", () => (installPrompt = null));
 
 /** Whether the app runs as an installed PWA instead of a browser tab. */
 export const isStandalone = () =>
-  window.matchMedia("(display-mode: standalone)").matches ||
-  (navigator as Navigator & { standalone?: boolean }).standalone == true;
+  ["standalone", "window-controls-overlay"].some(
+    (mode) => window.matchMedia(`(display-mode: ${mode})`).matches,
+  ) || (navigator as Navigator & { standalone?: boolean }).standalone == true;
 
 /**
- * Lets a freshly launched installed app always start on the clean timetable. iPadOS may keep
+ * Lets a freshly launched app always start on the clean timetable. iPadOS may keep
  * the URL from the moment the app was added to the home screen instead of the manifest's
  * `start_url`. Reloads (update banner, "Neu laden") keep the current page.
  */
@@ -22,14 +23,13 @@ export function resetLaunchUrl() {
   const [navigation] = performance.getEntriesByType(
     "navigation",
   ) as PerformanceNavigationTiming[];
-  if (isStandalone() && navigation?.type != "reload") {
+  if (navigation?.type != "reload") {
     history.replaceState(null, "", "/#/timetable");
   }
 }
 
 /** Platform the install instructions are written for. */
 export type InstallPlatform =
-  | "installed"
   | "prompt"
   | "ios"
   | "ios-other-browser"
@@ -40,7 +40,6 @@ export type InstallPlatform =
 
 /** Detects how this device can install the app. */
 export function getInstallPlatform(): InstallPlatform {
-  if (isStandalone()) return "installed";
   if (installPrompt) return "prompt";
   const agent = navigator.userAgent;
   // iPadOS reports itself as a Mac, but with touch support

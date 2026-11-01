@@ -17,9 +17,9 @@ import {
   ToggleButtonGroup,
 } from "@mui/material";
 import { useRef, useState } from "react";
+import { Link } from "react-router";
 import {
   getClassStudents,
-  type Holiday,
   type RosterEntry,
   type SchoolClass,
   type SchoolClassInput,
@@ -28,6 +28,7 @@ import {
   type Trait,
 } from "../../db";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { useSettings } from "../../hooks/useSettings";
 import {
   filterCopyClasses,
   getCopyLabel,
@@ -49,17 +50,14 @@ import {
   formatStudentName,
 } from "../../lib/formatters";
 import {
-  CLASS_LETTERS,
-  CLASS_LEVELS,
   doSchoolClassesCollide,
-  FIRST_SCHOOL_YEAR,
   getSchoolYear,
   getSchoolYearPart,
-  LESSONS_PER_DAY,
-  LEVELS_WITHOUT_LETTER,
   SCHOOL_YEAR_PART_LABELS,
   WEEKDAY_NAMES,
+  type SchoolCalendar,
 } from "../../lib/schoolYear";
+import { hasLetters, type AppSettings } from "../../lib/settings";
 
 type ClassForm = Omit<SchoolClassInput, "id">;
 /** Roster row with a stable React key, also for students not saved yet. */
@@ -71,7 +69,9 @@ type ClassEditDialogProps = {
   students: SeatedStudent[];
   allClasses: SchoolClass[];
   subjects: string[];
-  holidays: Holiday[];
+  calendar: SchoolCalendar;
+  /** The school years in use, the only ones a class can belong to. */
+  schoolYears: { year: number }[];
   traits: Trait[];
   /** Preset weekday and lesson for new classes (from the timetable cell). */
   preset: { day?: number; hour?: number; date: Date };
@@ -99,6 +99,7 @@ function LessonFields({
   excludedDay,
   onChange,
 }: LessonFieldsProps) {
+  const { lessonsPerDay } = useSettings();
   return (
     <>
       <TextField
@@ -126,11 +127,11 @@ function LessonFields({
           onChange({
             day,
             hour: newHour,
-            double: double && newHour < LESSONS_PER_DAY,
+            double: double && newHour < lessonsPerDay,
           });
         }}
       >
-        {Array.from({ length: LESSONS_PER_DAY }, (_, index) => (
+        {Array.from({ length: lessonsPerDay }, (_, index) => (
           <MenuItem key={index} value={index + 1}>
             {index + 1}. Stunde
           </MenuItem>
@@ -141,7 +142,7 @@ function LessonFields({
         control={
           <Switch
             checked={double}
-            disabled={hour >= LESSONS_PER_DAY}
+            disabled={hour >= lessonsPerDay}
             onChange={(event) =>
               onChange({ day, hour, double: event.target.checked })
             }
@@ -154,15 +155,18 @@ function LessonFields({
 
 /** Initial form values for a new class in the school year half of the preset date. */
 function emptyForm(
-  holidays: Holiday[],
+  calendar: SchoolCalendar,
+  settings: AppSettings,
+  years: number[],
   preset: ClassEditDialogProps["preset"],
 ): ClassForm {
+  const year = getSchoolYear(preset.date, calendar);
   return {
     subject: "",
-    number: "5",
-    letter: CLASS_LETTERS[0],
-    year: getSchoolYear(preset.date, holidays),
-    part: getSchoolYearPart(preset.date, holidays),
+    number: settings.levels[0],
+    letter: settings.letters[0],
+    year: years.includes(year) ? year : (years.at(-1) ?? year),
+    part: getSchoolYearPart(preset.date, calendar),
     day: preset.day ?? 1,
     hour: preset.hour ?? 1,
     double: false,
@@ -181,15 +185,18 @@ export function ClassEditDialog({
   students,
   allClasses,
   subjects,
-  holidays,
+  calendar,
+  schoolYears,
   traits,
   preset,
   onSave,
   onDelete,
   onCancel,
 }: ClassEditDialogProps) {
+  const settings = useSettings();
+  const years = schoolYears.map(({ year }) => year);
   const [form, setForm] = useState<ClassForm>(
-    () => cls ?? emptyForm(holidays, preset),
+    () => cls ?? emptyForm(calendar, settings, years, preset),
   );
   const [roster, setRoster] = useState<RosterRow[]>(() =>
     students.map((student) => ({
@@ -217,16 +224,12 @@ export function ClassEditDialog({
   // "Ganzes Jahr" only stays visible for classes that were created with it
   const parts: SchoolYearPart[] =
     form.part == "full" ? ["1", "2", "full"] : ["1", "2"];
-  const hasNoLetter = LEVELS_WITHOUT_LETTER.includes(form.number);
-  const thisYear = getSchoolYear(new Date(), holidays);
-  const years = [thisYear - 1, thisYear, thisYear + 1].filter(
-    (year) => year >= FIRST_SCHOOL_YEAR,
-  );
+  const hasNoLetter = !hasLetters(form.number);
 
   const draft = { ...form, id: cls?.id ?? -1 };
   const collisions = allClasses.filter(
     (other) =>
-      other.id != cls?.id && doSchoolClassesCollide(draft, other, holidays),
+      other.id != cls?.id && doSchoolClassesCollide(draft, other, calendar),
   );
   const otherClasses = allClasses.filter((other) => other.id != cls?.id);
   const copyOptions = sortCopyClasses(otherClasses);
@@ -311,7 +314,7 @@ export function ClassEditDialog({
         {
           ...form,
           subject: form.subject.trim(),
-          letter: hasNoLetter ? null : (form.letter ?? CLASS_LETTERS[0]),
+          letter: hasNoLetter ? null : (form.letter ?? settings.letters[0]),
         },
         // A pasted list that was not applied yet is saved as well
         mergeList(roster, pasteText ?? "").map(toRosterEntry),
@@ -325,6 +328,15 @@ export function ClassEditDialog({
     <Dialog open fullWidth maxWidth="md" scroll="paper">
       <DialogTitle>{cls ? "Klasseninformationen" : "Neue Klasse"}</DialogTitle>
       <DialogContent>
+        {years.length == 0 && (
+          <Alert severity="warning" className="mb-3">
+            Es ist noch kein Schuljahr angelegt. Bitte zuerst in den{" "}
+            <Link to="/settings" className="font-semibold underline">
+              Einstellungen
+            </Link>{" "}
+            hinzufügen.
+          </Alert>
+        )}
         <h3 className="mb-3 text-sm font-semibold tracking-wider text-muted uppercase">
           Unterricht
         </h3>
@@ -363,7 +375,7 @@ export function ClassEditDialog({
             value={form.number}
             onChange={(event) => update({ number: event.target.value })}
           >
-            {CLASS_LEVELS.map((level) => (
+            {settings.levels.map((level) => (
               <MenuItem key={level} value={level}>
                 {level}
               </MenuItem>
@@ -373,10 +385,10 @@ export function ClassEditDialog({
             select
             label="Buchstabe"
             disabled={hasNoLetter}
-            value={hasNoLetter ? "" : (form.letter ?? CLASS_LETTERS[0])}
+            value={hasNoLetter ? "" : (form.letter ?? settings.letters[0])}
             onChange={(event) => update({ letter: event.target.value })}
           >
-            {CLASS_LETTERS.map((letter) => (
+            {settings.letters.map((letter) => (
               <MenuItem key={letter} value={letter}>
                 {letter}
               </MenuItem>
@@ -464,10 +476,15 @@ export function ClassEditDialog({
                 }}
                 getOptionLabel={getCopyLabel}
                 filterOptions={(options, { inputValue }) =>
-                  filterCopyClasses(options, inputValue, {
-                    ...form,
-                    letter: hasNoLetter ? null : form.letter,
-                  })
+                  filterCopyClasses(
+                    options,
+                    inputValue,
+                    {
+                      ...form,
+                      letter: hasNoLetter ? null : form.letter,
+                    },
+                    settings.levels,
+                  )
                 }
                 noOptionsText="Keine Klasse gefunden"
                 onChange={async (_, selected) => {
@@ -615,7 +632,7 @@ export function ClassEditDialog({
         </Button>
         <Button
           variant="contained"
-          disabled={!form.subject.trim() || saving}
+          disabled={!form.subject.trim() || saving || years.length == 0}
           onClick={save}
         >
           Speichern

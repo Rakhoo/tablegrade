@@ -12,6 +12,7 @@ import { de } from "date-fns/locale/de";
 import { useState } from "react";
 import type { GradeEntry, SeatedStudent } from "../../db";
 import { formatGrade, getStudentResult } from "../../lib/assessment";
+import { useSettings } from "../../hooks/useSettings";
 import { toIsoDate } from "../../lib/dates";
 import type { LessonType } from "../../lib/grades";
 
@@ -38,6 +39,7 @@ export function GradeResultsDialog({
   typeOf,
   onClose,
 }: GradeResultsDialogProps) {
+  const settings = useSettings();
   const today = toIsoDate(new Date());
   const [date, setDate] = useState(today);
   const lessonDates = dates.filter((lessonDate) => lessonDate != today);
@@ -79,6 +81,7 @@ export function GradeResultsDialog({
                 entries.filter((entry) => entry.studentId == student.id),
                 typeOf,
                 date,
+                settings,
               );
               return (
                 <tr

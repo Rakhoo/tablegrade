@@ -4,6 +4,6 @@
   background-image: repeating-linear-gradient(
     -45deg,
     transparent 0 10px,
-    rgb(138 107 229 / 0.06) 10px 20px
+    color-mix(in oklab, var(--color-brand-500) 8%, transparent) 10px 20px
   );
 }

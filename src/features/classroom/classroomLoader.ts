@@ -7,6 +7,7 @@ import {
   getClassStudents,
   getGrades,
   getLessonTypes,
+  getSchoolYears,
   getHolidays,
   getSchoolClass,
   getSchoolClasses,
@@ -18,7 +19,7 @@ import {
   type SeatedStudent,
 } from "../../db";
 import { getLastOccurrence, toIsoDate } from "../../lib/dates";
-import { getClassOccurrences } from "../../lib/schoolYear";
+import { createCalendar, getClassOccurrences } from "../../lib/schoolYear";
 import type { LessonType } from "../../lib/grades";
 import { getAdjacentLesson, lessonKey, type Lesson } from "../../lib/lessons";
 
@@ -41,6 +42,7 @@ export async function classroomLoader(
   );
   const [
     holidays,
+    schoolYears,
     cancelledDays,
     cancelledLessons,
     allClasses,
@@ -48,14 +50,17 @@ export async function classroomLoader(
     traits,
   ] = await Promise.all([
     getHolidays(),
+    getSchoolYears(),
     getCancelledDays(),
     getCancelledLessons(),
     getSchoolClasses(),
     getSubjects(),
     getTraits(),
   ]);
+  const calendar = createCalendar(holidays, schoolYears);
   const base = {
-    holidays,
+    calendar,
+    schoolYears,
     allClasses,
     subjects,
     traits,
@@ -108,7 +113,7 @@ export async function classroomLoader(
       cls,
       lessonDate,
       allClasses,
-      holidays,
+      calendar,
       cancelled,
       -1,
     ),
@@ -116,7 +121,7 @@ export async function classroomLoader(
       cls,
       lessonDate,
       allClasses,
-      holidays,
+      calendar,
       cancelled,
       1,
     ),

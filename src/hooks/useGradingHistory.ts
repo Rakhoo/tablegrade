@@ -39,6 +39,7 @@ export function useGradingHistory(
     const before: EntryValues = {
       grade: entry?.grade ?? null,
       mark: entry?.mark ?? null,
+      absent: entry?.absent ?? false,
       comment: entry?.comment ?? null,
     };
     const after = { ...before, ...values };

@@ -4,9 +4,7 @@ import {
   addDays,
   addMonths,
   addWeeks,
-  addYears,
   endOfMonth,
-  endOfYear,
   format,
   getISOWeek,
   isSameMonth,
@@ -34,18 +32,18 @@ import {
 import { useSwipe } from "../../hooks/useSwipe";
 import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
 import { lessonKey } from "../../lib/lessons";
+import { CALENDAR_START, getCalendarEnd } from "../../lib/schoolYear";
 import { CancelDialog } from "../../components/CancelDialog";
 import { AppMenu } from "./AppMenu";
+import { BackupReminder } from "./BackupReminder";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
 import "./TimetablePage.css";
 
-const MIN_DATE = new Date(2026, 7, 2);
-
 /** Start page: week picker and the timetable of the selected week. */
 export function TimetablePage() {
   const {
-    holidays,
+    calendar,
     cancelledDays,
     cancelledLessons,
     completedLessons,
@@ -60,7 +58,6 @@ export function TimetablePage() {
   } | null>(null);
 
   const today = new Date();
-  const thisWeek = getWeekStart(nextSchoolDay(today));
   const dateParam = searchParams.get("date") ?? "";
   // The chosen day only anchors the calendar's visible month; the timetable shows its whole week.
   // Memoized: MUI re-syncs the visible month whenever it gets a new Date object.
@@ -77,7 +74,9 @@ export function TimetablePage() {
    */
   const selectWeekAround = (weekStart: Date) =>
     selectDate(addDays(weekStart, 2));
-  const maxDate = endOfYear(addYears(thisWeek, 3));
+  const maxDate = getCalendarEnd(
+    Object.keys(calendar.secondHalfStarts).map(Number),
+  );
   const newClassUrl = `/classes/new?date=${toIsoDate(monday)}`;
 
   /**
@@ -108,7 +107,7 @@ export function TimetablePage() {
   /** Switches to the previous or next week, within the calendar's limits. */
   const switchWeek = (direction: 1 | -1) => {
     const target = addWeeks(monday, direction);
-    if (addDays(target, 4) >= MIN_DATE && target <= maxDate) {
+    if (addDays(target, 4) >= CALENDAR_START && target <= maxDate) {
       selectWeekAround(target);
     }
   };
@@ -116,7 +115,7 @@ export function TimetablePage() {
   /** Switches to the previous or next month, within the calendar's limits. */
   const switchMonth = (direction: 1 | -1) => {
     const target = addMonths(startOfMonth(anchor), direction);
-    if (endOfMonth(target) >= MIN_DATE && target <= maxDate) {
+    if (endOfMonth(target) >= CALENDAR_START && target <= maxDate) {
       handleMonthChange(target);
     }
   };
@@ -183,7 +182,7 @@ export function TimetablePage() {
           <div className="flex items-center justify-between rounded-full bg-brand-50 p-1">
             <IconButton
               aria-label="Vorherige Woche"
-              disabled={addDays(monday, -3) < MIN_DATE}
+              disabled={addDays(monday, -3) < CALENDAR_START}
               onClick={() => selectWeekAround(addWeeks(monday, -1))}
               className="bg-surface shadow-tile"
             >
@@ -239,7 +238,7 @@ export function TimetablePage() {
               }),
             }}
             shouldDisableDate={(day) => day.getDay() == 6 || day.getDay() == 0}
-            minDate={MIN_DATE}
+            minDate={CALENDAR_START}
             maxDate={maxDate}
           />
         </div>
@@ -252,7 +251,7 @@ export function TimetablePage() {
         <TimetableGrid
           monday={monday}
           schoolClasses={schoolClasses}
-          holidays={holidays}
+          calendar={calendar}
           cancelledDays={cancelledDays}
           cancelledLessons={cancelledLessons}
           completedLessons={completedLessons}
@@ -263,6 +262,8 @@ export function TimetablePage() {
           }
         />
       </section>
+
+      <BackupReminder />
 
       {cancelTarget && (
         <CancelDialog

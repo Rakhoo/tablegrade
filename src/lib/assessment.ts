@@ -1,23 +1,12 @@
 import type { GradeEntry } from "../db";
-import {
-  DEFAULT_GRADE_TOOL,
-  getGradeDefinition,
-  getMarkValue,
-  GRADES,
-  type GradeKey,
-  type LessonType,
-} from "./grades";
+import { DEFAULT_GRADE, type LessonType } from "./grades";
+import type { AppSettings } from "./settings";
 
-/** Fewest assessments needed for a result; below that a student counts as "n.b.". */
-const MIN_ASSESSMENTS = 3;
-
-/** Weight of a student's exams in the final grade; the rest is oral and projects. */
-const EXAM_SHARE = 0.5;
-/** Weight of the projects within the non-exam part, the rest is oral participation. */
-const PROJECT_SHARE = 0.4;
-
-/** In the grade calculation the newest symbol counts this many times as much as the oldest. */
-const RESULT_RECENCY = 1.5;
+/** The settings the calculation depends on. */
+type GradingRules = Pick<
+  AppSettings,
+  "examShare" | "projectShare" | "recency" | "minAssessments"
+>;
 
 /** Parts of a student's result; a part is `null` if it has no assessments. */
 export type StudentResult = {
@@ -33,12 +22,8 @@ const average = (values: number[]) =>
     ? values.reduce((sum, value) => sum + value, 0) / values.length
     : null;
 
-/** Weight of the symbol at `index` (oldest first) for suggestions: 1, 2, 3 … */
+/** Weight of the grade at `index` (oldest first) for suggestions: 1, 2, 3 … */
 const getSuggestionWeight = (index: number) => index + 1;
-
-/** Weight of the symbol at `index` for grades: rising evenly up to `RESULT_RECENCY`. */
-const getResultWeight = (index: number, total: number) =>
-  total > 1 ? 1 + ((RESULT_RECENCY - 1) * index) / (total - 1) : 1;
 
 /**
  * Weighted average of the symbols, where `getWeight` gets a symbol's position (oldest first)
@@ -49,9 +34,9 @@ function getOralAverage(
   getWeight: (index: number, total: number) => number,
 ) {
   const values = entries
-    .filter((entry) => getGradeDefinition(entry.grade)?.value != null)
+    .filter((entry) => entry.grade != null)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map((entry) => getGradeDefinition(entry.grade)!.value!);
+    .map((entry) => entry.grade!);
   if (values.length == 0) return null;
   const weights = values.map((_, index) => getWeight(index, values.length));
   const total = values.reduce(
@@ -69,8 +54,8 @@ function combine(first: number | null, second: number | null, share: number) {
 }
 
 /**
- * Calculates a student's result from all entries up to `asOf` (`YYYY-MM-DD`):
- * exams count 50 %, the other 50 % split into 40 % projects and 60 % oral participation.
+ * Calculates a student's result from all entries up to `asOf` (`YYYY-MM-DD`): exams against
+ * the rest, which splits into projects and oral participation, all shares from the rules.
  * @param entries The entries of one student in one class.
  * @param typeOf Returns the type of the lesson on a date.
  */
@@ -78,47 +63,56 @@ export function getStudentResult(
   entries: GradeEntry[],
   typeOf: (date: string) => LessonType,
   asOf: string,
+  rules: GradingRules,
 ): StudentResult {
   const relevant = entries.filter((entry) => entry.date <= asOf);
   const marksOf = (type: LessonType) =>
     relevant
-      .filter((entry) => entry.mark && typeOf(entry.date) == type)
-      .map((entry) => getMarkValue(entry.mark!));
+      .filter((entry) => entry.mark != null && typeOf(entry.date) == type)
+      .map((entry) => entry.mark!);
   const examMarks = marksOf("exam");
   const projectMarks = marksOf("project");
-  const symbols = relevant.filter(
-    (entry) => getGradeDefinition(entry.grade)?.value != null,
-  );
+  const grades = relevant.filter((entry) => entry.grade != null);
 
-  const oral = getOralAverage(symbols, getResultWeight);
+  // The newest grade counts `recency` times as much as the oldest, evenly rising in between
+  const oral = getOralAverage(grades, (index, total) =>
+    total > 1 ? 1 + ((rules.recency - 1) * index) / (total - 1) : 1,
+  );
   const project = average(projectMarks);
   const exam = average(examMarks);
-  const assessments = symbols.length + examMarks.length + projectMarks.length;
+  const assessments = grades.length + examMarks.length + projectMarks.length;
   return {
     oral,
     project,
     exam,
     total:
-      assessments < MIN_ASSESSMENTS
+      assessments < rules.minAssessments
         ? null
-        : combine(exam, combine(project, oral, PROJECT_SHARE), EXAM_SHARE),
+        : combine(
+            exam,
+            combine(project, oral, rules.projectShare),
+            rules.examShare,
+          ),
   };
 }
 
 /**
- * Suggests the symbol for a student's lesson: the one closest to the weighted average of all
- * symbols before that date, or the neutral symbol without any.
+ * Suggests the grade for a student's lesson: the offered one closest to the weighted average
+ * of all grades before that date, or the neutral grade without any.
  */
-export function suggestGrade(entries: GradeEntry[], date: string): GradeKey {
-  const average = getOralAverage(
-    entries.filter((entry) => entry.date < date),
-    getSuggestionWeight,
+export function suggestGrade(
+  entries: GradeEntry[],
+  date: string,
+  visibleGrades: number[],
+) {
+  const average =
+    getOralAverage(
+      entries.filter((entry) => entry.date < date),
+      getSuggestionWeight,
+    ) ?? DEFAULT_GRADE;
+  return visibleGrades.reduce((best, grade) =>
+    Math.abs(grade - average) < Math.abs(best - average) ? grade : best,
   );
-  if (average == null) return DEFAULT_GRADE_TOOL;
-  const distance = (value: number | null) => Math.abs(value! - average);
-  return GRADES.filter((grade) => grade.value != null).reduce((best, grade) =>
-    distance(grade.value) < distance(best.value) ? grade : best,
-  ).key;
 }
 
 /** Formats a grade with one decimal, e.g. "2,4"; `null` is shown as `fallback`. */

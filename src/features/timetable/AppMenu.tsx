@@ -11,25 +11,22 @@ import { useRef, useState } from "react";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import {
   DownloadIcon,
-  InstallIcon,
   MoreIcon,
   RefreshIcon,
+  SettingsIcon,
   UploadIcon,
 } from "../../components/icons";
 import { importDatabase } from "../../db";
-import { useSearchParams } from "react-router";
-import { isSqliteFile, saveBackup } from "../../services/backup";
+import { Link } from "react-router";
+import { describeFile, isSqliteFile, saveBackup } from "../../services/backup";
 import { reloadApp } from "../../services/pwa";
-import { InstallDialog } from "./InstallDialog";
 
 /**
  * "⋯" menu of the timetable: backup and restore of the on-device database (e.g. to move
- * to another iPad), manual reload for updates and installation instructions.
+ * to another iPad), the settings and a manual reload for updates.
  */
 export function AppMenu() {
-  const [, setSearchParams] = useSearchParams();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const [showInstall, setShowInstall] = useState(false);
   const [pendingImport, setPendingImport] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -38,9 +35,11 @@ export function AppMenu() {
     setAnchor(null);
     try {
       await saveBackup();
+      setMessage("Die Sicherung wurde heruntergeladen.");
     } catch (error) {
       console.error(error);
-      setMessage("Die Sicherung konnte nicht erstellt werden.");
+      const { name, message } = error as Error;
+      setMessage(`Die Sicherung ist fehlgeschlagen (${name}: ${message}).`);
     }
   };
 
@@ -51,7 +50,11 @@ export function AppMenu() {
       // Kept in memory: iOS may discard the picked file once the input is reset
       const file = new File([await picked.arrayBuffer()], picked.name);
       if (await isSqliteFile(file)) setPendingImport(file);
-      else setMessage("Die Datei ist keine gültige Tablegrade-Sicherung.");
+      else {
+        setMessage(
+          `Die Datei ist keine gültige Tablegrade-Sicherung (${await describeFile(file)}).`,
+        );
+      }
     } catch (error) {
       console.error(error);
       setMessage("Die Datei konnte nicht gelesen werden.");
@@ -102,6 +105,15 @@ export function AppMenu() {
           />
         </MenuItem>
         <Divider />
+        <MenuItem component={Link} to="/settings">
+          <ListItemIcon>
+            <SettingsIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Einstellungen"
+            secondary="Schuljahre, Darstellung, Benotung und mehr"
+          />
+        </MenuItem>
         <MenuItem onClick={reloadApp}>
           <ListItemIcon>
             <RefreshIcon />
@@ -111,25 +123,7 @@ export function AppMenu() {
             secondary="App neu starten und Updates übernehmen"
           />
         </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setAnchor(null);
-            // iPadOS installs the current URL as start page, so it must be clean
-            setSearchParams({}, { replace: true });
-            setShowInstall(true);
-          }}
-        >
-          <ListItemIcon>
-            <InstallIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="App installieren"
-            secondary="Anleitung für den Home-Bildschirm"
-          />
-        </MenuItem>
       </Menu>
-
-      {showInstall && <InstallDialog onClose={() => setShowInstall(false)} />}
 
       <input
         ref={fileInput}
@@ -162,7 +156,7 @@ export function AppMenu() {
       <Snackbar
         open={!!message}
         message={message}
-        autoHideDuration={5000}
+        autoHideDuration={15000}
         onClose={() => setMessage(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />

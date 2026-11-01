@@ -2,7 +2,7 @@
 @layer theme, base, mui, components, utilities;
 @import "tailwindcss";
 
-/* Design tokens, mirrored in src/theme.ts for MUI */
+/* Design tokens of the default theme; the selected theme overrides them, see useAppTheme */
 @theme {
   --font-sans:
     -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
@@ -23,6 +23,7 @@
   --color-brand-600: #7352d0;
   --color-brand-700: #5c3fae;
 
+  --color-blush-50: #fff6fa;
   --color-blush-100: #fde8f1;
   --color-blush-400: #ec8ab4;
 

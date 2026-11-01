@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { CheckIcon } from "../../components/icons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
-import type { Holiday, SchoolClass } from "../../db";
+import type { SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
 import type { LessonType } from "../../lib/grades";
@@ -13,18 +13,19 @@ import {
   getClassOccurrences,
   getHoliday,
   isSchoolClassActive,
-  LESSONS_PER_DAY,
+  type SchoolCalendar,
   WEEKDAY_NAMES,
 } from "../../lib/schoolYear";
 import { getClassColor } from "../../lib/subjectColors";
 import { useLongPress } from "../../hooks/useLongPress";
+import { useSettings } from "../../hooks/useSettings";
 import "./TimetableGrid.css";
 
 type TimetableGridProps = {
   /** Monday of the displayed week. */
   monday: Date;
   schoolClasses: SchoolClass[];
-  holidays: Holiday[];
+  calendar: SchoolCalendar;
   /** Days marked as "Ausfall", as `YYYY-MM-DD`. */
   cancelledDays: string[];
   /** Keys (see `lessonKey`) of single lessons marked as "Ausfall". */
@@ -106,6 +107,7 @@ function LessonTile({
   isCancelled,
   onLongPress,
 }: LessonTileProps) {
+  const { levels } = useSettings();
   const pressHandlers = useLongPress(onLongPress);
   const className =
     "relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-xl border-l-4 px-3 py-1 select-none ";
@@ -123,7 +125,7 @@ function LessonTile({
   if (isCancelled) {
     return (
       <div
-        className={`${className} border-gray-300 bg-gray-100 text-gray-400 line-through`}
+        className={`${className} border-line bg-line text-muted line-through`}
         style={{ WebkitTouchCallout: "none" }}
         {...pressHandlers}
       >
@@ -134,7 +136,7 @@ function LessonTile({
       </div>
     );
   }
-  const color = getClassColor(schoolClass);
+  const color = getClassColor(schoolClass, levels);
   return (
     <Link
       to={`/classes/${schoolClass.id}?date=${toIsoDate(date)}`}
@@ -215,7 +217,7 @@ function DayHeader({
 export function TimetableGrid({
   monday,
   schoolClasses,
-  holidays,
+  calendar,
   cancelledDays,
   cancelledLessons,
   completedLessons,
@@ -223,9 +225,10 @@ export function TimetableGrid({
   onDayLongPress,
   onLessonLongPress,
 }: TimetableGridProps) {
+  const { lessonsPerDay } = useSettings();
   const cells: ReactNode[] = [<div key="corner" className="bg-surface" />];
 
-  for (let hour = 1; hour <= LESSONS_PER_DAY; hour++) {
+  for (let hour = 1; hour <= lessonsPerDay; hour++) {
     cells.push(
       <div
         key={`hour-${hour}`}
@@ -241,7 +244,7 @@ export function TimetableGrid({
     const day = index + 1;
     const date = addDays(monday, index);
     const column = day + 1;
-    const holiday = getHoliday(date, holidays);
+    const holiday = getHoliday(date, calendar);
     const isCancelled = cancelledDays.includes(toIsoDate(date));
     cells.push(
       <DayHeader
@@ -258,13 +261,13 @@ export function TimetableGrid({
     if (holiday) {
       const label = holiday.publicHoliday ? "FEIERTAG" : "FERIEN";
       cells.push(
-        ...freeBlock(`holiday-${day}`, column, 1, LESSONS_PER_DAY, label),
+        ...freeBlock(`holiday-${day}`, column, 1, lessonsPerDay, label),
       );
       return;
     }
     if (isCancelled) {
       cells.push(
-        ...freeBlock(`cancelled-${day}`, column, 1, LESSONS_PER_DAY, "AUSFALL"),
+        ...freeBlock(`cancelled-${day}`, column, 1, lessonsPerDay, "AUSFALL"),
       );
       return;
     }
@@ -273,18 +276,18 @@ export function TimetableGrid({
     const dayClasses = schoolClasses
       .flatMap(getClassOccurrences)
       .filter(
-        (cls) => cls.day == day && isSchoolClassActive(cls, date, holidays),
+        (cls) => cls.day == day && isSchoolClassActive(cls, date, calendar),
       );
     const blocks = new Map<
       number,
       { span: number; schoolClasses: SchoolClass[] }
     >();
-    for (let hour = 1; hour <= LESSONS_PER_DAY; hour++) {
+    for (let hour = 1; hour <= lessonsPerDay; hour++) {
       const starting = dayClasses.filter((cls) => cls.hour == hour);
       if (starting.length == 0) continue;
       const span = Math.min(
         starting.some((cls) => cls.double) ? 2 : 1,
-        LESSONS_PER_DAY - hour + 1,
+        lessonsPerDay - hour + 1,
       );
       // Classes colliding with the second hour of a double lesson share its cell
       if (span == 2)
@@ -294,7 +297,7 @@ export function TimetableGrid({
     }
     const slot = { day, weekday, date };
 
-    for (let hour = 1; hour <= LESSONS_PER_DAY; hour++) {
+    for (let hour = 1; hour <= lessonsPerDay; hour++) {
       const block = blocks.get(hour);
       if (block) {
         cells.push(
@@ -327,7 +330,7 @@ export function TimetableGrid({
       }
 
       let end = hour;
-      while (end < LESSONS_PER_DAY && !blocks.has(end + 1)) end++;
+      while (end < lessonsPerDay && !blocks.has(end + 1)) end++;
       cells.push(
         ...freeBlock(
           `free-${day}-${hour}`,
@@ -347,7 +350,7 @@ export function TimetableGrid({
       className="grid h-full gap-px overflow-hidden rounded-2xl border border-line bg-line"
       style={{
         gridTemplateColumns: "2.75rem repeat(5, minmax(0, 1fr))",
-        gridTemplateRows: `auto repeat(${LESSONS_PER_DAY}, minmax(2.5rem, 1fr))`,
+        gridTemplateRows: `auto repeat(${lessonsPerDay}, minmax(2.5rem, 1fr))`,
       }}
     >
       {cells}

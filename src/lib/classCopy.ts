@@ -1,6 +1,5 @@
 import type { SchoolClass } from "../db";
 import { formatClassName, formatSchoolYear } from "./formatters";
-import { CLASS_LEVELS } from "./schoolYear";
 
 /** Text of a class in the "copy students from" search. */
 export const getCopyLabel = (cls: SchoolClass) =>
@@ -24,6 +23,7 @@ export function filterCopyClasses(
   classes: SchoolClass[],
   search: string,
   target: Pick<SchoolClass, "number" | "letter" | "year">,
+  levels: string[],
 ) {
   const words = search.toLocaleLowerCase("de").split(/\s+/).filter(Boolean);
   if (words.length > 0) {
@@ -32,7 +32,7 @@ export function filterCopyClasses(
       return words.every((word) => label.includes(word));
     });
   }
-  const previousLevel = CLASS_LEVELS[CLASS_LEVELS.indexOf(target.number) - 1];
+  const previousLevel = levels[levels.indexOf(target.number) - 1];
   const suggestions = classes.filter(
     (cls) =>
       (!target.letter || cls.letter == target.letter) &&

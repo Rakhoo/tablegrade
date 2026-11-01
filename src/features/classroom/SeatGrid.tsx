@@ -5,9 +5,8 @@ import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
 import { CommentIcon } from "../../components/icons";
 import type { GradeEntry, SeatedStudent, Trait } from "../../db";
 import { getStudentLabel } from "../../lib/formatters";
-import { getGradeDefinition, type GradeKey } from "../../lib/grades";
+import { getGradeColor } from "../../lib/grades";
 import { GRID_COLUMNS, GRID_ROWS, SEAT_SIZE } from "../../lib/seating";
-import { getTraitColor } from "../../lib/traits";
 import { WARNING_LEVELS } from "../../lib/warnings";
 
 type SeatGridProps = {
@@ -19,7 +18,7 @@ type SeatGridProps = {
   /** Grade entries of the current lesson, by student id. */
   grades: Map<number, GradeEntry>;
   /** Suggested symbols for students without one, by student id. */
-  suggestions: Map<number, GradeKey>;
+  suggestions: Map<number, number>;
   /** Arrange mode: students are dragged instead of tapped. */
   arranging: boolean;
   /** Called when a student is tapped outside of arrange mode. */
@@ -151,7 +150,7 @@ export function SeatGrid({
 type SeatProps = {
   student: SeatedStudent;
   entry?: GradeEntry;
-  suggestion?: GradeKey;
+  suggestion?: number;
   arranging: boolean;
   traits: Trait[];
   showPhoto: boolean;
@@ -170,13 +169,14 @@ function Seat({
   isDragged,
   onTap,
 }: SeatProps) {
-  const grade = getGradeDefinition(entry?.grade);
+  const grade = entry?.grade ?? null;
+  const hasSymbol = grade != null || !!entry?.absent;
   const warning = WARNING_LEVELS[entry?.warnings ?? 0];
   // Badges are framed in the tile color, so they blend into the tile's edge
   const tileColor = warning?.background ?? "var(--color-surface)";
   // Grades show as an inner ring in the symbol's color, warnings as a colored outer ring
   const rings = [
-    grade && `inset 0 0 0 2px ${grade.color}66`,
+    grade != null && `inset 0 0 0 2px ${getGradeColor(grade)}66`,
     warning && `0 0 0 3px ${warning.accent}`,
     "var(--shadow-tile)",
   ];
@@ -225,7 +225,7 @@ function Seat({
                 style={{
                   left: `${50 + 50 * Math.cos(angle)}%`,
                   top: `${50 + 50 * Math.sin(angle)}%`,
-                  background: getTraitColor(trait.name),
+                  background: trait.color,
                 }}
               />
             );
@@ -247,15 +247,15 @@ function Seat({
           {warning.mark}
         </span>
       )}
-      {grade && (
+      {hasSymbol && (
         <span
           className="absolute -top-1 -right-1 z-10 flex rounded-full p-0.5 shadow-tile"
           style={{ background: tileColor }}
         >
-          <GradeIcon grade={grade.key} size={24} />
+          <GradeIcon grade={grade ?? undefined} size={24} />
         </span>
       )}
-      {!grade && suggestion && (
+      {!hasSymbol && suggestion != null && (
         <span
           className="absolute -top-1 -right-1 z-10 flex rounded-full"
           style={{ background: tileColor }}
@@ -263,7 +263,7 @@ function Seat({
           <SuggestedGradeIcon grade={suggestion} size={28} />
         </span>
       )}
-      {entry?.mark && (
+      {entry?.mark != null && (
         <MarkBadge
           mark={entry.mark}
           className="absolute -bottom-1 -left-1 z-10 border-2 shadow-tile"

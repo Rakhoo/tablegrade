@@ -1,5 +1,5 @@
-import { and, count, eq, isNull, ne } from "drizzle-orm";
-import { ABSENT_GRADE, type LessonType } from "../../lib/grades";
+import { and, count, eq, inArray, isNull, sum } from "drizzle-orm";
+import type { LessonType } from "../../lib/grades";
 import { lessonKey } from "../../lib/lessons";
 import { client, db } from "../client";
 import { classStudents, grades, lessonTypes, type GradeEntry } from "../schema";
@@ -14,6 +14,13 @@ export const getGrades = (classId: number, date: string) =>
 /** Returns all grades, comments and warnings of a class, for the overview table. */
 export const getClassGrades = (classId: number) =>
   db.select().from(grades).where(eq(grades.classId, classId));
+
+/** Returns all entries of all classes, to check them against a new calendar. */
+export const getAllGrades = () => db.select().from(grades);
+
+/** Deletes the given entries. */
+export const deleteEntries = (ids: number[]) =>
+  db.delete(grades).where(inArray(grades.id, ids));
 
 /** Returns the special lessons as a map from lesson key to type. */
 export async function getLessonTypes() {
@@ -35,6 +42,7 @@ export async function getCompletedLessons(classId?: number) {
       date: grades.date,
       symbols: count(grades.grade),
       marks: count(grades.mark),
+      absent: sum(grades.absent),
     })
     .from(grades)
     .innerJoin(
@@ -62,7 +70,8 @@ export async function getCompletedLessons(classId?: number) {
     .map((row) => ({ ...row, key: lessonKey(row.classId, row.date) }))
     .filter(
       (row) =>
-        (types[row.key] == "exam" ? row.symbols + row.marks : row.symbols) >=
+        (types[row.key] == "exam" ? row.marks : row.symbols) +
+          Number(row.absent) >=
         (sizeOf.get(row.classId) ?? Infinity),
     )
     .map((row) => row.key);
@@ -76,6 +85,7 @@ const emptyEntries = (classId: number, date: string) =>
     isNull(grades.grade),
     isNull(grades.mark),
     isNull(grades.comment),
+    eq(grades.absent, false),
     eq(grades.warnings, 0),
   );
 
@@ -95,12 +105,7 @@ export async function setLessonType(
   );
   await client.transaction(async (tx) => {
     if (type == "exam") {
-      await tx.query(
-        db
-          .update(grades)
-          .set({ grade: null })
-          .where(and(lesson, ne(grades.grade, ABSENT_GRADE))),
-      );
+      await tx.query(db.update(grades).set({ grade: null }).where(lesson));
     } else if (type == "normal") {
       await tx.query(db.update(grades).set({ mark: null }).where(lesson));
     }
@@ -115,7 +120,9 @@ export async function setLessonType(
 /** Inserts or updates the grade entry of a student and drops entries that became empty. */
 async function upsertGrade(
   key: { classId: number; studentId: number; date: string },
-  values: Partial<Pick<GradeEntry, "grade" | "mark" | "comment" | "warnings">>,
+  values: Partial<
+    Pick<GradeEntry, "grade" | "mark" | "absent" | "comment" | "warnings">
+  >,
 ) {
   await db
     .insert(grades)
@@ -139,7 +146,7 @@ export const setAssessment = (
   classId: number,
   studentId: number,
   date: string,
-  values: Partial<Pick<GradeEntry, "grade" | "mark" | "comment">>,
+  values: Partial<Pick<GradeEntry, "grade" | "mark" | "absent" | "comment">>,
 ) => upsertGrade({ classId, studentId, date }, values);
 
 /** Sets the number of warnings (0–2) of a student for a lesson date. */
@@ -168,7 +175,7 @@ export async function clearLesson(
   await db
     .update(grades)
     .set({
-      ...(parts.grades && { grade: null, mark: null }),
+      ...(parts.grades && { grade: null, mark: null, absent: false }),
       ...(parts.comments && { comment: null }),
       ...(parts.warnings && { warnings: 0 }),
     })

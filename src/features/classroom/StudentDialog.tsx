@@ -11,7 +11,6 @@ import {
 import { useState, type ChangeEvent } from "react";
 import type { RosterEntry, Trait } from "../../db";
 import { imageFileToDataUrl } from "../../lib/images";
-import { getTraitColor } from "../../lib/traits";
 
 type StudentDialogProps = {
   /** The edited student, `undefined` when adding a new one. */
@@ -126,7 +125,7 @@ export function StudentDialog({
                 icon={
                   <span
                     className="h-3 w-3 rounded-full"
-                    style={{ background: getTraitColor(trait.name) }}
+                    style={{ background: trait.color }}
                   />
                 }
                 onClick={() => toggleTrait(trait.id)}

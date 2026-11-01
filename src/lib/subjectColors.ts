@@ -1,5 +1,6 @@
 import type { SchoolClass } from "../db";
-import { CLASS_LEVELS, MIXED } from "./schoolYear";
+import { mixColors } from "./colors";
+import { MIXED } from "./settings";
 
 /** Pastel tile colors of the lowest level per hue: background, accent bar and text. */
 const PALETTE = [
@@ -13,46 +14,32 @@ const PALETTE = [
   { background: "#e5f5f8", accent: "#47aebf", text: "#1e6571" },
 ];
 
-/** Levels from lightest to darkest; mixed offers sit in the middle, between 7 and 8. */
-const SHADED_LEVELS = CLASS_LEVELS.filter((level) => level != MIXED);
-const MIXED_LEVEL = 2.5;
+/** Position of mixed offers on a scale of nine levels: between 7 and 8. */
+const MIXED_LEVEL = 2.5 / 8;
 
 /** How far the highest level is shifted from the palette color towards its darker shades. */
 const MAX_LEVEL_SHIFT = 0.7;
 /** How far the text and accent of the highest level are darkened for contrast. */
 const MAX_TEXT_DARKENING = 0.45;
 
-/** Mixes two `#rrggbb` colors; `amount` 0 returns `from`, 1 returns `to`. */
-function mixColors(from: string, to: string, amount: number) {
-  const channel = (color: string, index: number) =>
-    parseInt(color.slice(1 + index * 2, 3 + index * 2), 16);
-  const mixed = [0, 1, 2].map((index) =>
-    Math.round(
-      channel(from, index) +
-        (channel(to, index) - channel(from, index)) * amount,
-    )
-      .toString(16)
-      .padStart(2, "0"),
-  );
-  return `#${mixed.join("")}`;
-}
-
 /**
  * Stable color of a class: the subject's name picks the hue, so it never changes between
  * sessions, and the level sets the shade, from light (5) to dark (Q2).
  */
-export function getClassColor({
-  subject,
-  number,
-}: Pick<SchoolClass, "subject" | "number">) {
+export function getClassColor(
+  { subject, number }: Pick<SchoolClass, "subject" | "number">,
+  levels: string[],
+) {
   let hash = 0;
   for (const char of subject.trim().toLowerCase()) {
     hash = (hash * 31 + char.charCodeAt(0)) | 0;
   }
   const { background, accent, text } = PALETTE[Math.abs(hash) % PALETTE.length];
-  const level =
-    number == MIXED ? MIXED_LEVEL : Math.max(SHADED_LEVELS.indexOf(number), 0);
-  const shade = level / (SHADED_LEVELS.length - 1);
+  const shaded = levels.filter((level) => level != MIXED);
+  const shade =
+    number == MIXED
+      ? MIXED_LEVEL
+      : Math.max(shaded.indexOf(number), 0) / Math.max(shaded.length - 1, 1);
   return {
     background: mixColors(background, accent, shade * MAX_LEVEL_SHIFT),
     accent: mixColors(accent, "#000000", shade * MAX_TEXT_DARKENING),

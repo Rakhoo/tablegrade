@@ -6,11 +6,13 @@ import {
   getClassStudents,
   getHolidays,
   getLessonTypes,
+  getSchoolYears,
   getSchoolClass,
   getSchoolClasses,
   waitForDatabase,
 } from "../../db";
 import { getLessonDates } from "../../lib/lessons";
+import { createCalendar } from "../../lib/schoolYear";
 
 /** Loads all classes for the selection page. */
 export async function overviewListLoader() {
@@ -26,17 +28,19 @@ export async function overviewLoader({ params }: LoaderFunctionArgs) {
   await waitForDatabase();
   const cls = await getSchoolClass(Number(params.id));
   if (!cls) return redirect("/404");
-  const [students, entries, holidays, days, lessons, lessonTypes] =
+  const [students, entries, holidays, schoolYears, days, lessons, lessonTypes] =
     await Promise.all([
       getClassStudents(cls.id),
       getClassGrades(cls.id),
       getHolidays(),
+      getSchoolYears(),
       getCancelledDays(),
       getCancelledLessons(),
       getLessonTypes(),
     ]);
+  const calendar = createCalendar(holidays, schoolYears);
   // Cancelled lessons and days stay as grayed columns, e.g. for sanctions or to restore them
-  const lessonDates = getLessonDates(cls, holidays, { days: [], lessons: [] });
+  const lessonDates = getLessonDates(cls, calendar, { days: [], lessons: [] });
   return {
     class: cls,
     students: students.filter((student) => !student.hidden),

@@ -31,6 +31,15 @@ export const client = new SQLocalDrizzle({
 
 export const db = drizzle(client.driver, client.batchDriver);
 
+/**
+ * Whether the database is stored on the device. SQLocal silently falls back to an in-memory
+ * database if that fails for any reason, which would lose everything on closing the app.
+ */
+export async function isDatabasePersistent() {
+  const { storageType } = await client.getDatabaseInfo();
+  return storageType == "opfs";
+}
+
 /** Returns the whole SQLite database as a file, e.g. for a backup. */
 export const exportDatabase = () => client.getDatabaseFile();
 

@@ -1,6 +1,6 @@
-import { getMarkColor } from "../lib/grades";
+import { formatMark, getGradeColor } from "../lib/grades";
 
-type MarkBadgeProps = { mark: string; className?: string };
+type MarkBadgeProps = { mark: number; className?: string };
 
 /** Small colored badge with a classic mark like "2+". */
 export function MarkBadge({ mark, className = "" }: MarkBadgeProps) {
@@ -8,11 +8,11 @@ export function MarkBadge({ mark, className = "" }: MarkBadgeProps) {
     <span
       className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold text-white ${className}`}
       style={{
-        background: getMarkColor(mark),
+        background: getGradeColor(mark),
         borderColor: "var(--color-surface)",
       }}
     >
-      {mark.replace("-", "−")}
+      {formatMark(mark).replace("-", "−")}
     </span>
   );
 }

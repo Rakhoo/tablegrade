@@ -1,5 +1,6 @@
 import { createHashRouter, redirect } from "react-router";
 import { App } from "./App";
+import { rootLoader } from "./rootLoader";
 import { ErrorPage } from "./features/errors/ErrorPage";
 import { ClassroomPage } from "./features/classroom/ClassroomPage";
 import { classroomLoader } from "./features/classroom/classroomLoader";
@@ -9,6 +10,8 @@ import {
   overviewLoader,
   overviewListLoader,
 } from "./features/overview/overviewLoader";
+import { SettingsPage } from "./features/settings/SettingsPage";
+import { settingsLoader } from "./features/settings/settingsLoader";
 import { TimetablePage } from "./features/timetable/TimetablePage";
 import { timetableLoader } from "./features/timetable/timetableLoader";
 
@@ -19,7 +22,9 @@ import { timetableLoader } from "./features/timetable/timetableLoader";
 export const createAppRouter = () =>
   createHashRouter([
     {
+      id: "root",
       path: "/",
+      loader: rootLoader,
       Component: App,
       children: [
         {
@@ -66,6 +71,11 @@ export const createAppRouter = () =>
               path: "overview/:id",
               loader: overviewLoader,
               Component: OverviewPage,
+            },
+            {
+              path: "settings",
+              loader: settingsLoader,
+              Component: SettingsPage,
             },
             { path: "404", Component: ErrorPage },
             { path: "*", loader: () => redirect("/404") },

@@ -1,12 +1,14 @@
 import { IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import {
-  getGradeDefinition,
+  formatMark,
   getGradeTools,
-  type GradeKey,
+  getToolValue,
   type GradeTool,
   type LessonType,
 } from "../lib/grades";
+import { useSettings } from "../hooks/useSettings";
 import { LESSON_TYPE_LABELS } from "../lib/lessons";
+import { getVisibleGrades } from "../lib/settings";
 import { GradeIcon } from "./GradeIcon";
 import type { useGradingHistory } from "../hooks/useGradingHistory";
 import {
@@ -21,24 +23,14 @@ import { MarkBadge } from "./MarkBadge";
 
 type ExtraTool = "suggestion" | "erase" | "comment";
 
-const TOOL_EXTRAS: { tool: ExtraTool; label: string }[] = [
-  { tool: "suggestion", label: "Vorschlag" },
-  { tool: "erase", label: "Löschen" },
-  { tool: "comment", label: "Kommentar" },
-];
+const EXTRA_LABELS: Record<ExtraTool, string> = {
+  suggestion: "Vorschlag",
+  erase: "Löschen",
+  comment: "Kommentar",
+};
 
-const toolLabel = (tool: GradeKey | ExtraTool) =>
-  getGradeDefinition(tool)?.label ??
-  TOOL_EXTRAS.find((extra) => extra.tool == tool)!.label;
-
-/** Round icon of a tool, matching the size of the grade badges. */
-function ToolIcon({
-  tool,
-  size,
-}: {
-  tool: GradeKey | ExtraTool;
-  size: number;
-}) {
+/** Round icon of a tool that is no grade. */
+function ExtraToolIcon({ tool, size }: { tool: ExtraTool; size: number }) {
   if (tool == "suggestion") {
     return (
       <span
@@ -49,16 +41,11 @@ function ToolIcon({
       </span>
     );
   }
-  if (tool != "erase" && tool != "comment") {
-    return <GradeIcon grade={tool} size={size} />;
-  }
   return (
     <span
       className={
         "flex items-center justify-center rounded-full " +
-        (tool == "erase"
-          ? "bg-red-50 text-red-500"
-          : "bg-brand-100 text-brand-600")
+        (tool == "erase" ? "text-red-500" : "bg-brand-100 text-brand-600")
       }
       style={{ width: size, height: size }}
     >
@@ -102,30 +89,53 @@ export function GradeToolBar({
   hideMarks = false,
   history,
 }: GradeToolBarProps) {
-  const { symbols, marks } = getGradeTools(lessonType);
-  const isSymbol = (option: GradeKey | ExtraTool) =>
-    (symbols as string[]).includes(option);
+  const settings = useSettings();
+  const { grades, marks } = getGradeTools(
+    getVisibleGrades(settings),
+    lessonType,
+  );
 
-  const renderTool = (option: GradeKey | ExtraTool) => (
+  const buttonClass = (option: GradeTool) =>
+    "flex flex-col items-center gap-0.5 rounded-2xl p-1 text-[10px] leading-tight font-medium whitespace-nowrap transition-transform active:scale-95 " +
+    (option == tool
+      ? "bg-brand-100 text-ink ring-2 ring-brand-300"
+      : "text-muted");
+
+  const renderExtra = (option: ExtraTool) => (
     <button
       key={option}
       type="button"
-      aria-label={toolLabel(option)}
+      aria-label={EXTRA_LABELS[option]}
       aria-pressed={option == tool}
-      className={
-        "flex flex-col items-center gap-0.5 rounded-2xl p-1 text-[10px] leading-tight font-medium whitespace-nowrap transition-transform active:scale-95 " +
-        (isSymbol(option) ? "" : "w-16 ") +
-        (option == tool
-          ? "bg-brand-100 text-ink ring-2 ring-brand-300"
-          : "text-muted")
-      }
+      className={`w-16 ${buttonClass(option)}`}
       onClick={() => onChange(option)}
     >
-      <ToolIcon tool={option} size={isSymbol(option) ? 40 : 32} />
-      {/* The symbols speak for themselves, only the other tools are labeled */}
-      {!isSymbol(option) && toolLabel(option)}
+      <ExtraToolIcon tool={option} size={32} />
+      {EXTRA_LABELS[option]}
     </button>
   );
+
+  const renderSymbol = (option: GradeTool) => (
+    <button
+      key={option}
+      type="button"
+      aria-label={
+        option == "absent" ? "entschuldigt" : formatMark(getToolValue(option))
+      }
+      aria-pressed={option == tool}
+      className={buttonClass(option)}
+      onClick={() => onChange(option)}
+    >
+      <GradeIcon
+        grade={option == "absent" ? undefined : getToolValue(option)}
+        size={symbolSize}
+      />
+    </button>
+  );
+
+  const symbols: GradeTool[] = [...grades, "absent"];
+  // With all grades enabled the symbols form two rows
+  const symbolSize = symbols.length > 9 ? 32 : 40;
 
   const typeToggle = lessonType && onLessonTypeChange && (
     <ToggleButtonGroup
@@ -152,12 +162,22 @@ export function GradeToolBar({
       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
         <div className="flex items-center gap-1">
           {/* Exams have no symbols, so there is nothing to suggest */}
-          {lessonType != "exam" && renderTool("suggestion")}
-          {renderTool("comment")}
+          {lessonType != "exam" &&
+            settings.suggestions &&
+            renderExtra("suggestion")}
+          {renderExtra("comment")}
           {/* Only wide screens have room for the lesson type next to the tools */}
           <div className="ml-2 max-[1169px]:hidden">{typeToggle}</div>
         </div>
-        <div className="flex items-center gap-1">{symbols.map(renderTool)}</div>
+        <div
+          className={
+            symbols.length > 9
+              ? "grid grid-cols-9 justify-items-center gap-0.5"
+              : "flex items-center gap-1"
+          }
+        >
+          {symbols.map(renderSymbol)}
+        </div>
         <div className="flex items-center justify-end gap-1">
           <IconButton
             aria-label="Rückgängig"
@@ -173,7 +193,7 @@ export function GradeToolBar({
           >
             <RedoIcon />
           </IconButton>
-          {renderTool("erase")}
+          {renderExtra("erase")}
           <IconButton
             aria-label="Bewertung verlassen"
             onClick={onExit}
@@ -206,7 +226,7 @@ export function GradeToolBar({
                   <TrashIcon size={16} />
                 </span>
               ) : (
-                <MarkBadge mark={option.slice("mark:".length)} />
+                <MarkBadge mark={getToolValue(option)} />
               )}
             </button>
           ))}

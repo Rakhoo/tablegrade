@@ -1,5 +1,4 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
-import { ABSENT_GRADE } from "../../lib/grades";
 import { lessonDateOf } from "../../lib/lessons";
 import { freeSeats, seatsOverlap, type Seat } from "../../lib/seating";
 import { client, db } from "../client";
@@ -12,6 +11,7 @@ import {
   type SchoolClass,
 } from "../schema";
 import { getCompletedLessons } from "./grades";
+import { getSettings } from "./settings";
 import { deleteOrphanStudents, getClassStudents } from "./students";
 
 export type SchoolClassInput = Omit<SchoolClass, "id"> & { id?: number };
@@ -84,7 +84,8 @@ export async function saveSchoolClass(
   const occupied: Seat[] = existing.filter(
     (s) => keptIds.has(s.id) && !s.hidden && !hiddenIds.has(s.id),
   );
-  const seats = freeSeats(occupied);
+  const { seatLayout } = await getSettings();
+  const seats = freeSeats(occupied, seatLayout);
 
   const classId = await client.transaction(async (tx) => {
     let classId = id;
@@ -198,7 +199,7 @@ export async function saveSchoolClass(
                   classId,
                   studentId,
                   date,
-                  grade: ABSENT_GRADE,
+                  absent: true,
                 })),
               )
               .onConflictDoNothing(),
