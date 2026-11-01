@@ -34,8 +34,7 @@ export function AppMenu() {
   const handleExport = async () => {
     setAnchor(null);
     try {
-      await saveBackup();
-      setMessage("Die Sicherung wurde heruntergeladen.");
+      if (await saveBackup()) setMessage("Die Sicherung wurde gespeichert.");
     } catch (error) {
       console.error(error);
       const { name, message } = error as Error;

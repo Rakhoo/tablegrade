@@ -3,7 +3,7 @@ import { DEFAULT_GRADE, type LessonType } from "./grades";
 import type { AppSettings } from "./settings";
 
 /** The settings the calculation depends on. */
-type GradingRules = Pick<
+export type GradingRules = Pick<
   AppSettings,
   "examShare" | "projectShare" | "recency" | "minAssessments"
 >;
@@ -114,7 +114,3 @@ export function suggestGrade(
     Math.abs(grade - average) < Math.abs(best - average) ? grade : best,
   );
 }
-
-/** Formats a grade with one decimal, e.g. "2,4"; `null` is shown as `fallback`. */
-export const formatGrade = (value: number | null, fallback = "–") =>
-  value == null ? fallback : value.toFixed(1).replace(".", ",");

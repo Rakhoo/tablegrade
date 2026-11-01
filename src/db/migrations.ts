@@ -155,4 +155,30 @@ export const MIGRATIONS: string[][] = [
       WHEN 'Lernen' THEN '#84cc16' WHEN 'LRS' THEN '#b45309' ELSE color END`,
     "DELETE FROM Traits WHERE NOT EXISTS (SELECT 1 FROM Classes)",
   ],
+  // Quarter and half year grades, calculated unless set by hand
+  [
+    `CREATE TABLE Reports (
+      classId INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      PRIMARY KEY (classId, date, kind)
+    )`,
+    `CREATE TABLE ReportGrades (
+      classId INTEGER NOT NULL,
+      date TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      studentId INTEGER NOT NULL REFERENCES Students(id) ON DELETE CASCADE,
+      grade REAL NOT NULL,
+      PRIMARY KEY (classId, date, kind, studentId),
+      FOREIGN KEY (classId, date, kind)
+        REFERENCES Reports(classId, date, kind) ON DELETE CASCADE
+    )`,
+  ],
+  // Reports below the half are not tied to quarters. Copied, as the key of a report is referenced
+  [
+    `INSERT INTO Reports (classId, date, kind)
+      SELECT classId, date, 'partial' FROM Reports WHERE kind = 'quarter'`,
+    "UPDATE ReportGrades SET kind = 'partial' WHERE kind = 'quarter'",
+    "DELETE FROM Reports WHERE kind = 'quarter'",
+  ],
 ];

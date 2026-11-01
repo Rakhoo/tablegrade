@@ -15,6 +15,14 @@ export const isStandalone = () =>
   ) || (navigator as Navigator & { standalone?: boolean }).standalone == true;
 
 /**
+ * Whether this is a local run (`npm run dev` or `npm run preview`). These run in a normal tab,
+ * and the preview server does not send the headers the on-device storage needs.
+ */
+export const isLocalRun = () =>
+  import.meta.env.DEV ||
+  ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+
+/**
  * Lets a freshly launched app always start on the clean timetable. iPadOS may keep
  * the URL from the moment the app was added to the home screen instead of the manifest's
  * `start_url`. Reloads (update banner, "Neu laden") keep the current page.
@@ -38,15 +46,20 @@ export type InstallPlatform =
   | "desktop"
   | "unsupported";
 
+/** iPadOS reports itself as a Mac, but with touch support. */
+const isIosDevice = () =>
+  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+
+/** Whether this is a phone or tablet, as opposed to a desktop system. */
+export const isMobileDevice = () =>
+  isIosDevice() || /Android/.test(navigator.userAgent);
+
 /** Detects how this device can install the app. */
 export function getInstallPlatform(): InstallPlatform {
   if (installPrompt) return "prompt";
   const agent = navigator.userAgent;
-  // iPadOS reports itself as a Mac, but with touch support
-  const isIos =
-    /iPad|iPhone|iPod/.test(agent) ||
-    (/Macintosh/.test(agent) && navigator.maxTouchPoints > 1);
-  if (isIos)
+  if (isIosDevice())
     return /CriOS|FxiOS|EdgiOS/.test(agent) ? "ios-other-browser" : "ios";
   if (
     /Macintosh/.test(agent) &&

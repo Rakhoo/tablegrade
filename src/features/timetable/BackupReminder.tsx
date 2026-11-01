@@ -38,9 +38,10 @@ export function BackupReminder() {
             variant="contained"
             size="small"
             onClick={async () => {
-              await saveBackup();
-              setDismissed(true);
-              revalidate();
+              if (await saveBackup()) {
+                setDismissed(true);
+                revalidate();
+              }
             }}
           >
             Jetzt sichern

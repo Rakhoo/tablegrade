@@ -1,5 +1,6 @@
 import { exportDatabase, saveSettings } from "../db";
 import { toIsoDate } from "../lib/dates";
+import { isMobileDevice } from "./pwa";
 
 /** First 16 bytes of every SQLite 3 database file. */
 const SQLITE_HEADER = "SQLite format 3\0";
@@ -19,7 +20,7 @@ export async function describeFile(file: Blob) {
   return `${file.size} Bytes, Anfang: ${bytes || "leer"}`;
 }
 
-/** Downloads a file directly, so it cannot be sent to someone by accident. */
+/** Downloads a file directly, without any dialog. */
 export function downloadFile(file: File) {
   const url = URL.createObjectURL(file);
   const link = document.createElement("a");
@@ -32,7 +33,28 @@ export function downloadFile(file: File) {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
-/** Exports the database as `tablegrade-YYYY-MM-DD.sqlite3` and notes the date of the backup. */
+/**
+ * Hands a file to the share sheet on phones and tablets, where it is the convenient way to
+ * "Dateien" and the like, and downloads it elsewhere or if sharing is not possible.
+ * @returns `false` if the user closed the share sheet without saving.
+ */
+async function saveFile(file: File) {
+  if (isMobileDevice() && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file] });
+      return true;
+    } catch (error) {
+      if ((error as Error).name == "AbortError") return false;
+    }
+  }
+  downloadFile(file);
+  return true;
+}
+
+/**
+ * Exports the database as `tablegrade-YYYY-MM-DD.sqlite3` and notes the date of the backup.
+ * @returns `false` if the backup was cancelled.
+ */
 export async function saveBackup() {
   const today = toIsoDate(new Date());
   const database = await exportDatabase();
@@ -40,10 +62,11 @@ export async function saveBackup() {
   if (!(await isSqliteFile(database))) {
     throw new Error(`Ungültige Daten (${await describeFile(database)})`);
   }
-  downloadFile(
+  const saved = await saveFile(
     new File([database], `tablegrade-${today}.sqlite3`, {
       type: "application/x-sqlite3",
     }),
   );
-  await saveSettings({ lastBackup: today });
+  if (saved) await saveSettings({ lastBackup: today });
+  return saved;
 }

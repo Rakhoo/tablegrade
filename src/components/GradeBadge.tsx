@@ -103,7 +103,7 @@ type GradeBadgeProps = {
   value: number;
   color: string;
   size: number;
-  /** Black outline on white instead of a colored badge, for black and white exports. */
+  /** Only the black symbol without a badge, for black and white exports. */
   monochrome?: boolean;
 };
 
@@ -125,15 +125,20 @@ export function GradeBadge({
       role="img"
       aria-label={label}
     >
-      <circle
-        cx="12"
-        cy="12"
-        r="10.5"
-        fill={monochrome ? "#ffffff" : color}
-        stroke={monochrome ? "#000000" : color}
-        strokeWidth="1.5"
-      />
-      {getGlyph(symbol, monochrome ? "#000000" : "#ffffff", label)}
+      {!monochrome && (
+        <circle
+          cx="12"
+          cy="12"
+          r="10.5"
+          fill={color}
+          stroke={color}
+          strokeWidth="1.5"
+        />
+      )}
+      {monochrome
+        ? // Without its color a blank badge would vanish, so it shows the value
+          getGlyph(symbol == "blank" ? "value" : symbol, "#000000", label)
+        : getGlyph(symbol, "#ffffff", label)}
     </svg>
   );
 }

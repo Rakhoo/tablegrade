@@ -35,7 +35,8 @@ The only network request fetches school holidays from
   - *Bewerten*: choose a tool (grade symbol, delete, comment) and tap students to apply it.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
-    colors in `src/lib/traits.ts`); "Eigenschaften" explains the colors, counts them and hides the dots.
+    colors in the settings); "Eigenschaften" explains the colors of this class, counts them and
+    hides the dots.
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
 - **Class edit dialog** (`/classes/new`, `/classes/:id/edit`): school year, half, level and
@@ -72,7 +73,7 @@ The only network request fetches school holidays from
   half with students in rows, lesson dates in columns and the symbols at the intersections.
   Reachable from the timetable and from a lesson; editable through the same grading mode.
   Rows and columns are tinted, names can switch to nicknames, a long press on a date cancels
-  that lesson, "Noten" shows the calculated grades as of any date, and "Namen lernen" offers
+  that lesson, and "Namen lernen" offers
   flash cards for classes with photos.
 - **Exams and projects**: in the grading mode a lesson can become a *Klausur* (classic marks 1
   to 6 with tendencies instead of symbols, plus "entschuldigt") or a *Projekt* (symbols and
@@ -97,7 +98,7 @@ npm run dev
 | ----------------------------- | ---------------------------------------------------------- |
 | `npm run dev`                 | development server (service worker enabled in dev)         |
 | `npm run build`               | type check and production build into `dist/`               |
-| `npm run preview`             | serve the production build locally                         |
+| `npm run preview`             | serve the production build locally (temporary database)    |
 | `npm run lint`                | oxlint                                                     |
 | `npm run generate-pwa-assets` | render `public/apple-touch-icon.png` from its SVG source   |
 
@@ -171,8 +172,8 @@ connect and after importing a backup, so older backups are upgraded automaticall
 ### Backup and restore
 
 The "⋯" menu on the timetable exports the database as `tablegrade-YYYY-MM-DD.sqlite3`
-as a direct download, never through the share sheet, so sensitive data cannot be sent by
-accident. Importing checks the SQLite file signature, asks
+through the share sheet on phones and tablets and as a direct download on desktop systems;
+PDF and CSV exports are always direct downloads. Importing checks the SQLite file signature, asks
 for confirmation, replaces the database, runs the migrations and reloads the app. This is
 also the way to move data to another device.
 
@@ -220,11 +221,28 @@ export format and backup reminder. They are stored as JSON in the `Settings` tab
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
 hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
 
+## Partial and half year grades
+
+A tap on a date in the overview adds a *Teilnote* or *Halbjahresnote* behind that lesson; they
+are independent of the lesson type and a partial grade comes first on a shared day. A report covers the
+entries after the previous report: read-only columns show the rounded parts (*Mündlich*,
+*Projekte*, *Klausuren*, only those that exist), the main column *Gesamt* the calculated grade with tendency
+by the rules in [src/lib/assessment.ts](src/lib/assessment.ts). Marks set on the main column in the
+grading mode replace it, with an arrow towards the correction; deleting brings the calculation
+back. The grade suggestions for lessons still use all entries.
+
+A half without partials works like a partial grade. With at least two partials it lists them and suggests
+their average instead; there is one half per class, and exactly one partial before it is not
+allowed. Reports are calculated live in [src/lib/reports.ts](src/lib/reports.ts), only the
+corrections are stored.
+
 ## Export
 
 The corner of the overview table exports it as CSV or PDF. Projects get two columns, one for
-oral grades and one for marks, here and in the app. Theme colors are never exported; grade
-colors and symbols or numbers are settings. PDFs are built with jsPDF in
+oral grades and one for marks, here and in the app, and reports their columns. Theme colors are never exported; grade and
+trait colors and symbols or numbers are settings. PDFs contain photos and written out traits as
+the overview shows them (never the trait dots), unless the settings exclude them; CSV files only
+contain names and grade values. PDFs are built with jsPDF in
 [src/services/overviewExport.ts](src/services/overviewExport.ts).
 
 ## Styling

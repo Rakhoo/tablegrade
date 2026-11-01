@@ -16,15 +16,21 @@ const MIN_PIN_LENGTH = 4;
 
 /** Export format, backup reminder and the PIN lock (see `PIN_LOCK_ENABLED`). */
 export function DataSettings() {
-  const { exportColors, exportValues, backupReminderDays, pinHash } =
-    useSettings();
+  const {
+    exportColors,
+    exportValues,
+    exportNoPhotos,
+    exportNoTraits,
+    backupReminderDays,
+    pinHash,
+  } = useSettings();
   const save = useSaveSettings();
   const [pin, setPin] = useState("");
 
   return (
     <SettingsSection title="Export und Sicherung">
       <FormControlLabel
-        label="PDF-Export mit Notenfarben"
+        label="PDF-Export in Farbe"
         control={
           <Switch
             checked={exportColors}
@@ -38,6 +44,24 @@ export function DataSettings() {
           <Switch
             checked={exportValues}
             onChange={(event) => save({ exportValues: event.target.checked })}
+          />
+        }
+      />
+      <FormControlLabel
+        label="Bilder nie exportieren"
+        control={
+          <Switch
+            checked={exportNoPhotos}
+            onChange={(event) => save({ exportNoPhotos: event.target.checked })}
+          />
+        }
+      />
+      <FormControlLabel
+        label="Eigenschaften nie exportieren"
+        control={
+          <Switch
+            checked={exportNoTraits}
+            onChange={(event) => save({ exportNoTraits: event.target.checked })}
           />
         }
       />

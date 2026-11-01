@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import { InstallPage } from "./features/install/InstallPage";
-import { isStandalone, resetLaunchUrl } from "./services/pwa";
+import { isLocalRun, isStandalone, resetLaunchUrl } from "./services/pwa";
 import "./index.css";
 
 // iOS Safari ignores `user-scalable=no` for pinch gestures, its gesture events can be blocked
@@ -24,8 +24,7 @@ async function startApp() {
 if (isStandalone()) {
   resetLaunchUrl();
   startApp();
-} else if (import.meta.env.DEV) {
-  // Development runs in a normal browser tab
+} else if (isLocalRun()) {
   startApp();
 } else {
   // The clean base URL is what gets installed; in the app it leads to the timetable

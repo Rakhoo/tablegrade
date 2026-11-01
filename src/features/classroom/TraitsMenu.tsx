@@ -19,6 +19,13 @@ export function TraitsMenu({
   onVisibleChange,
 }: TraitsMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const counts = traits
+    .map((trait) => ({
+      trait,
+      count: students.filter((student) => student.traitIds.includes(trait.id))
+        .length,
+    }))
+    .filter(({ count }) => count > 0);
 
   return (
     <>
@@ -39,21 +46,16 @@ export function TraitsMenu({
       >
         <div className="flex min-w-56 flex-col gap-3 p-4">
           <ul className="flex flex-col gap-2">
-            {traits.map((trait) => {
-              const count = students.filter((student) =>
-                student.traitIds.includes(trait.id),
-              ).length;
-              return (
-                <li key={trait.id} className="flex items-center gap-2.5">
-                  <span
-                    className="h-3.5 w-3.5 rounded-full"
-                    style={{ background: trait.color }}
-                  />
-                  <span className="flex-1 font-medium">{trait.name}</span>
-                  <span className="text-sm text-muted">{count}</span>
-                </li>
-              );
-            })}
+            {counts.map(({ trait, count }) => (
+              <li key={trait.id} className="flex items-center gap-2.5">
+                <span
+                  className="h-3.5 w-3.5 rounded-full"
+                  style={{ background: trait.color }}
+                />
+                <span className="flex-1 font-medium">{trait.name}</span>
+                <span className="text-sm text-muted">{count}</span>
+              </li>
+            ))}
           </ul>
           <FormControlLabel
             className="m-0 justify-between border-t border-line pt-2"

@@ -84,10 +84,14 @@ export const DEFAULT_SETTINGS = {
   pinHash: null as string | null,
   /** Seats for new students; `null` uses the built-in layout. */
   seatLayout: null as { x: number; y: number }[] | null,
-  /** Export with grade colors, otherwise black and white. */
+  /** PDF export with grade and trait colors, otherwise black and white. */
   exportColors: true,
   /** Export numbers instead of symbols. */
   exportValues: false,
+  /** Leaves the photos out of the PDF export, even if they are shown in the overview. */
+  exportNoPhotos: false,
+  /** Leaves the traits out of the PDF export, even if they are written out in the overview. */
+  exportNoTraits: false,
   /** Which state and years the holidays in the database belong to. */
   holidayCache: null as {
     state: string;

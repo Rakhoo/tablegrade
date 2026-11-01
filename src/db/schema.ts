@@ -171,6 +171,41 @@ export const lessonTypes = sqliteTable(
   (table) => [primaryKey({ columns: [table.classId, table.date] })],
 );
 
+/** Partial and half year grades on a lesson date; their grades are calculated. */
+export const reports = sqliteTable(
+  "Reports",
+  {
+    classId: int("classId")
+      .notNull()
+      .references(() => schoolClasses.id, { onDelete: "cascade" }),
+    /** Date as `YYYY-MM-DD`. */
+    date: text("date").notNull(),
+    kind: text("kind").$type<"partial" | "half">().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.classId, table.date, table.kind] })],
+);
+
+/** Grades set by hand in a report, replacing the calculated ones. */
+export const reportGrades = sqliteTable(
+  "ReportGrades",
+  {
+    classId: int("classId").notNull(),
+    /** Date as `YYYY-MM-DD`. */
+    date: text("date").notNull(),
+    kind: text("kind").$type<"partial" | "half">().notNull(),
+    studentId: int("studentId")
+      .notNull()
+      .references(() => students.id, { onDelete: "cascade" }),
+    /** See `GRADE_VALUES` in `src/lib/grades.ts`. */
+    grade: real("grade").notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.classId, table.date, table.kind, table.studentId],
+    }),
+  ],
+);
+
 /** Single lessons marked as "Ausfall": nothing is graded for that class on that date. */
 export const cancelledLessons = sqliteTable(
   "CancelledLessons",
