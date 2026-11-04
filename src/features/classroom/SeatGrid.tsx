@@ -135,8 +135,8 @@ export function SeatGrid({
             gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
             left: percent(zoomedArea?.left ?? 0),
             top: percent(zoomedArea?.top ?? 0),
-            width: percent(zoomedArea?.size ?? 1),
-            height: percent(zoomedArea?.size ?? 1),
+            width: percent(zoomedArea?.width ?? 1),
+            height: percent(zoomedArea?.height ?? 1),
           }}
           {...dragHandlers}
         >

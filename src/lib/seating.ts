@@ -85,35 +85,26 @@ export function* freeSeats(occupied: Seat[], layout: Position[] | null = null) {
   }
 }
 
-/** Free space kept around the seats when zoomed, in cells, so the badges stay visible. */
-const ZOOM_PADDING = 0.5;
-
 /**
  * Size and position of the grid, as shares of its container, so the smallest part holding all
- * seated students fills the container; `null` if that would not enlarge anything. The grid
- * itself gets larger instead of scaled, so the text keeps its size and has more room.
+ * seated students fills the container in both directions (like the whole grid does unzoomed);
+ * `null` if that would not enlarge anything. The grid itself gets larger instead of scaled, so
+ * the text keeps its size and has more room.
  */
 export function getZoomedArea(seats: { x: number; y: number }[]) {
   if (seats.length == 0) return null;
-  const left = Math.max(Math.min(...seats.map((s) => s.x)) - ZOOM_PADDING, 0);
-  const top = Math.max(Math.min(...seats.map((s) => s.y)) - ZOOM_PADDING, 0);
-  const right = Math.min(
-    Math.max(...seats.map((s) => s.x)) + SEAT_SIZE + ZOOM_PADDING,
-    GRID_COLUMNS,
-  );
-  const bottom = Math.min(
-    Math.max(...seats.map((s) => s.y)) + SEAT_SIZE + ZOOM_PADDING,
-    GRID_ROWS,
-  );
-  // Shares of the grid; one scale for both directions keeps the seats' proportions
-  const width = (right - left) / GRID_COLUMNS;
-  const height = (bottom - top) / GRID_ROWS;
-  const scale = Math.min(1 / width, 1 / height);
-  if (scale < 1.05) return null;
-  // Moves the center of the part to the center of the container
+  const left = Math.min(...seats.map((s) => s.x));
+  const top = Math.min(...seats.map((s) => s.y));
+  const right = Math.max(...seats.map((s) => s.x)) + SEAT_SIZE;
+  const bottom = Math.max(...seats.map((s) => s.y)) + SEAT_SIZE;
+  // Each direction has its own scale, so the part's corners meet the container's corners
+  const scaleX = GRID_COLUMNS / (right - left);
+  const scaleY = GRID_ROWS / (bottom - top);
+  if (Math.max(scaleX, scaleY) < 1.05) return null;
   return {
-    size: scale,
-    left: 0.5 - scale * (left / GRID_COLUMNS + width / 2),
-    top: 0.5 - scale * (top / GRID_ROWS + height / 2),
+    width: scaleX,
+    height: scaleY,
+    left: (-scaleX * left) / GRID_COLUMNS,
+    top: (-scaleY * top) / GRID_ROWS,
   };
 }

@@ -49,8 +49,8 @@ type SpeedDialItemProps = {
 };
 
 /**
- * One entry: its label on the left, as wide as the widest of the dial and as high as the
- * buttons, and its icon on the right, as wide as a toggle.
+ * One entry, a single raised pill: its label on the left, as wide as the widest of the dial,
+ * and its icon on the right, set off by a tinted pill as wide as a toggle.
  */
 function SpeedDialItem({
   entry,
@@ -77,7 +77,7 @@ function SpeedDialItem({
     <>
       <span
         className={
-          `flex h-11 flex-1 flex-col items-center justify-center rounded-full bg-surface px-3.5 text-center text-sm leading-tight font-medium ${RAISED} ` +
+          "flex h-11 flex-1 flex-col items-center justify-center px-3.5 text-center text-sm leading-tight font-medium " +
           (danger ? "text-red-600" : "text-ink")
         }
       >
@@ -90,9 +90,7 @@ function SpeedDialItem({
       </span>
       {isToggle ? (
         // A switch with the icons of both states; the thumb covers the current one
-        <span
-          className={`relative flex h-11 w-[5.5rem] shrink-0 items-center rounded-full bg-surface ${RAISED}`}
-        >
+        <span className="relative flex h-11 w-[5.5rem] shrink-0 items-center rounded-full bg-brand-50">
           <span
             className={
               "absolute top-1 left-1 h-9 w-10 rounded-full bg-brand-600 transition-transform " +
@@ -119,8 +117,8 @@ function SpeedDialItem({
       ) : (
         <span
           className={
-            `flex h-11 w-[5.5rem] shrink-0 items-center justify-center rounded-full ${RAISED} ` +
-            (danger ? "bg-red-600 text-white" : "bg-surface text-brand-700")
+            "flex h-11 w-[5.5rem] shrink-0 items-center justify-center rounded-full " +
+            (danger ? "bg-red-600 text-white" : "bg-brand-50 text-brand-700")
           }
         >
           {icon}
@@ -129,7 +127,7 @@ function SpeedDialItem({
     </>
   );
   const className =
-    "flex w-full items-center justify-end gap-2 transition-transform active:scale-95 " +
+    `flex w-full items-center rounded-full bg-surface transition-transform active:scale-95 ${RAISED} ` +
     (disabled ? "pointer-events-none opacity-40" : "");
   if (to) {
     return (

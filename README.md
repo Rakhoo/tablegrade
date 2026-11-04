@@ -19,7 +19,7 @@ The only network request fetches school holidays from
   cover the page (only the calendar card a bit); open it lists all further features of the page with their
   labels on the left, above everything else. Display options are real switches showing the
   icons of both states, and all icon buttons of the open dial share their width, as do the
-  labels (centered, as high as the buttons); *Einstellungen* is always the last entry. Modes are no part of it: classroom and overview
+  labels (centered); label and icon button form one pill. *Einstellungen* is always the last entry. Modes are no part of it: classroom and overview
   table choose them with small text toggle buttons in the top left corner of the bar below the
   header, with undo/redo in its top right corner and the mode's hint or grading tools below.
   - *Hilfe* explains everything on the screen at once: each element with a `data-help` text
@@ -71,17 +71,20 @@ The only network request fetches school holidays from
     exams and projects and one delete tool at the right for both) stays open below the header;
     tapping a student applies the tool. The suggestion is the
     default tool; without previous grades it suggests the shown symbol closest to a plain 3,
-    the better one of two equally close.
+    the better one of two equally close. Erasing a student with several grades in the lesson
+    (oral, project, retake) first asks which one to delete, or all.
   - *Kommentieren*: the only place for comments. Speech bubbles show their first words, a tap
     edits the comment or starts a new one.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
   - "Zoom" zooms in on the smallest part of the room holding
     all seated students. The seats get larger, not the text, so longer names and larger photos
-    fit; both directions grow alike, so seats keep their shape. The choice is kept per device;
+    fit; each direction grows on its own, so that part fills the plan from corner to corner,
+    inside the same padding as unzoomed. The choice is kept per device;
     arranging always shows the whole room.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
     colors in the settings); "Legende" in the bottom left corner (while the traits are shown) explains the colors of this class
-    and counts them.
+    and counts them. The plan then ends above the button (zoomed or not), and the legend opens
+    in the row to its right, growing upwards only when that row is too narrow.
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
 - **Class editor** (`/classes/new`, `/classes/:id/edit`, `/overview/:id/edit`): a page of its
@@ -132,7 +135,8 @@ The only network request fetches school holidays from
   which are either written out below the names or hidden (photos and traits share their
   switches with the seating plan). Rows and columns are tinted,
   comments are marked with a small symbol, and a long press on a date cancels that lesson. A
-  tap on a name covers the entries of all other students, to show a student their own.
+  tap on a name covers the entries of all other students and hides all traits, to show a
+  student their own.
 - **Lesson types**: a lesson can be a *Klausur* (classic marks 1 to 6 with tendencies, plus
   "entschuldigt", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
   on the date in the overview and in the grading tool bar of the seating plan; a second tap

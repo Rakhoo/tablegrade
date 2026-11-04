@@ -898,8 +898,9 @@ export function OverviewPage() {
                           <div className="flex items-center gap-1.5">
                             {nameOf(student)}
                           </div>
+                          {/* Nor does the student shown their own entries see them */}
                           {showTraitNames &&
-                            !isHidden(student) &&
+                            shown == null &&
                             traitsOf(student).length > 0 && (
                               <div className="flex gap-2 text-xs font-semibold">
                                 {traitsOf(student).map((trait) => (

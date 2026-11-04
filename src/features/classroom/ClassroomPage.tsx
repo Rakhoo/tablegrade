@@ -67,6 +67,7 @@ import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
 import type { ClassroomLoaderData } from "./classroomLoader";
 import { ClearLessonDialog } from "./ClearLessonDialog";
 import { CommentDialog } from "./CommentDialog";
+import { EraseChoiceDialog } from "./EraseChoiceDialog";
 import { SeatGrid } from "./SeatGrid";
 import { TraitsLegend } from "./TraitsLegend";
 import "./ClassroomPage.css";
@@ -138,6 +139,11 @@ export function ClassroomPage() {
   const [zoomed, setZoomed] = useDisplayOption("zoom");
   const [traitsAnchor, setTraitsAnchor] = useState<HTMLElement | null>(null);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
+  /** A student with several grades in this lesson, asked which one to erase. */
+  const [erasing, setErasing] = useState<{
+    student: SeatedStudent;
+    parts: GradeTarget[];
+  } | null>(null);
 
   const gradeMap = new Map(grades.map((entry) => [entry.studentId, entry]));
   const lessonDate = parseISO(date);
@@ -274,6 +280,40 @@ export function ClassroomPage() {
     },
   );
 
+  /** The parts of a student's entry holding a grade; none on exam days, which have only one. */
+  const filledParts = (studentId: number): GradeTarget[] => {
+    const entry = gradeMap.get(studentId);
+    if (!entry || examDay) return [];
+    const retaker = isRetaker(studentId);
+    return [
+      ...(entry.grade != null || (entry.absent && !retaker)
+        ? (["oral"] as const)
+        : []),
+      ...(entry.projectMark != null ? (["projectMark"] as const) : []),
+      ...(entry.mark != null || (entry.absent && retaker)
+        ? (["mark"] as const)
+        : []),
+    ];
+  };
+
+  /** Applies a grading tool to a student's entry, recorded in the undo history. */
+  const applyTool = async (
+    student: SeatedStudent,
+    tool: GradeTool,
+    target: GradeTarget | undefined,
+  ) => {
+    const values = getToolValues(tool, lessonTypes, target);
+    if (!values) return;
+    await history.change(
+      "Bewertung",
+      student.id,
+      date,
+      gradeMap.get(student.id),
+      values,
+      `${formatStudentName(student)}: ${describeValues(values)}`,
+    );
+  };
+
   /** Applies the current mode (and grading tool) to a tapped student. */
   const handleTap = async (student: SeatedStudent) => {
     const entry = gradeMap.get(student.id);
@@ -297,18 +337,11 @@ export function ClassroomPage() {
           : suggestion == null
             ? null
             : `grade:${suggestion}`;
-      const values =
-        tool && getToolValues(tool, lessonTypes, targetOf(student.id, tool));
-      if (values) {
-        await history.change(
-          "Bewertung",
-          student.id,
-          date,
-          entry,
-          values,
-          `${formatStudentName(student)}: ${describeValues(values)}`,
-        );
-      }
+      if (!tool) return;
+      // With several grades, erasing asks which one goes
+      const parts = tool == "erase" ? filledParts(student.id) : [];
+      if (parts.length > 1) setErasing({ student, parts });
+      else await applyTool(student, tool, targetOf(student.id, tool));
     }
   };
 
@@ -526,8 +559,12 @@ export function ClassroomPage() {
         )}
       </ModeBar>
 
+      {/* With the legend shown, the plan ends above its button, zoomed or not */}
       <main
-        className="card relative min-h-0 flex-1 bg-brand-400 p-2"
+        className={
+          "card relative min-h-0 flex-1 bg-brand-400 p-2 " +
+          (hasTraits && showTraits ? "pb-13" : "")
+        }
         data-help={`Sitzplan: ${currentMode.gridHelp}`}
       >
         {students.length == 0 && (
@@ -592,6 +629,15 @@ export function ClassroomPage() {
       )}
 
       {lessonTypeDialog}
+
+      {erasing && (
+        <EraseChoiceDialog
+          studentName={formatStudentName(erasing.student)}
+          parts={erasing.parts}
+          onChoose={(part) => applyTool(erasing.student, "erase", part)}
+          onClose={() => setErasing(null)}
+        />
+      )}
 
       {commenting && (
         <CommentDialog

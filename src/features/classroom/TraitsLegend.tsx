@@ -9,7 +9,15 @@ type TraitsLegendProps = {
   students: SeatedStudent[];
 };
 
-/** Legend of the trait dots in this class with their count. */
+/** Space kept between the legend and the right edge of the screen, as MUI's popover does. */
+const SCREEN_MARGIN = 16;
+/** Gap between the button and the legend. */
+const GAP = 8;
+
+/**
+ * Legend of the trait dots in this class with their count. It opens to the right of its button,
+ * bottom aligned with it, and wraps upwards only when the row is too narrow.
+ */
 export function TraitsLegend({
   anchor,
   onClose,
@@ -24,24 +32,37 @@ export function TraitsLegend({
     }))
     .filter(({ count }) => count > 0);
 
+  const maxWidth = anchor
+    ? window.innerWidth -
+      anchor.getBoundingClientRect().right -
+      GAP -
+      SCREEN_MARGIN
+    : undefined;
+
   return (
     <Popover
       open={!!anchor}
       anchorEl={anchor}
       onClose={onClose}
-      anchorOrigin={{ vertical: "top", horizontal: "left" }}
+      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "bottom", horizontal: "left" }}
-      slotProps={{ paper: { className: "-mt-2 bg-brand-100/75" } }}
+      marginThreshold={SCREEN_MARGIN}
+      slotProps={{
+        paper: { className: "ml-2 bg-brand-100/75", style: { maxWidth } },
+      }}
     >
-      <div className="flex min-w-56 flex-col gap-3 p-4">
-        <ul className="flex flex-col gap-2">
+      <div className="px-4 py-2">
+        <ul className="flex flex-wrap gap-x-5 gap-y-1">
           {counts.map(({ trait, count }) => (
-            <li key={trait.id} className="flex items-center gap-2.5">
+            <li
+              key={trait.id}
+              className="flex h-5 items-center gap-2 whitespace-nowrap"
+            >
               <span
                 className="h-3.5 w-3.5 rounded-full"
                 style={{ background: trait.color }}
               />
-              <span className="flex-1 font-medium">{trait.name}</span>
+              <span className="font-medium">{trait.name}</span>
               <span className="text-sm text-muted">{count}</span>
             </li>
           ))}
