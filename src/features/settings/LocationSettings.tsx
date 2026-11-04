@@ -150,6 +150,7 @@ export function LocationSettings({ schoolClasses }: LocationSettingsProps) {
 
   return (
     <SettingsSection
+      help="Bundesland für Ferien und Feiertage sowie die Schuljahre mit ihren Halbjahren."
       title="Bundesland und Schuljahre"
       hint="Änderungen können Halbjahresgrenzen und Ferien verschieben. Einträge, die dadurch außerhalb ihrer Stunden liegen, werden nach Bestätigung gelöscht."
     >

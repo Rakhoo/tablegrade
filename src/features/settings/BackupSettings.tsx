@@ -1,40 +1,34 @@
-import {
-  Divider,
-  IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Snackbar,
-} from "@mui/material";
+import { Button, MenuItem, Snackbar, TextField } from "@mui/material";
+import { format, parseISO } from "date-fns";
 import { useRef, useState } from "react";
+import { useRevalidator } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import {
-  DownloadIcon,
-  MoreIcon,
-  RefreshIcon,
-  SettingsIcon,
-  UploadIcon,
-} from "../../components/icons";
+import { DownloadIcon, RefreshIcon, UploadIcon } from "../../components/icons";
 import { importDatabase } from "../../db";
-import { Link } from "react-router";
+import { useSettings } from "../../hooks/useSettings";
 import { describeFile, isSqliteFile, saveBackup } from "../../services/backup";
 import { reloadApp } from "../../services/pwa";
+import { SettingsSection } from "./SettingsSection";
+import { useSaveSettings } from "./useSaveSettings";
 
 /**
- * "⋯" menu of the timetable: backup and restore of the on-device database (e.g. to move
- * to another iPad), the settings and a manual reload for updates.
+ * Backup and restore of the on-device database (e.g. to move to another iPad), the backup
+ * reminder and a manual reload for updates.
  */
-export function AppMenu() {
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+export function BackupSettings() {
+  const { backupReminderDays, lastBackup } = useSettings();
+  const save = useSaveSettings();
+  const { revalidate } = useRevalidator();
   const [pendingImport, setPendingImport] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
-    setAnchor(null);
     try {
-      if (await saveBackup()) setMessage("Die Sicherung wurde gespeichert.");
+      if (await saveBackup()) {
+        setMessage("Die Sicherung wurde gespeichert.");
+        revalidate();
+      }
     } catch (error) {
       console.error(error);
       const { name, message } = error as Error;
@@ -64,65 +58,54 @@ export function AppMenu() {
   };
 
   return (
-    <>
-      <IconButton
-        aria-label="Weitere Funktionen"
-        onClick={(event) => setAnchor(event.currentTarget)}
-        className="bg-brand-50"
-      >
-        <MoreIcon />
-      </IconButton>
-
-      <Menu
-        anchorEl={anchor}
-        open={!!anchor}
-        onClose={() => setAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <MenuItem onClick={handleExport}>
-          <ListItemIcon>
-            <DownloadIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Sicherung exportieren"
-            secondary="Alle Daten als Datei speichern"
-          />
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setAnchor(null);
-            fileInput.current?.click();
-          }}
+    <SettingsSection
+      title="Sicherung"
+      hint={`Alle Daten liegen nur auf diesem Gerät. Letzte Sicherung: ${lastBackup ? format(parseISO(lastBackup), "dd.MM.yyyy") : "noch keine"}.`}
+      help="Sicherung aller Daten als Datei, Wiederherstellen aus einer Sicherung (auch zum Umzug auf ein anderes Gerät), die Erinnerung daran und ein Neustart der App für Updates."
+    >
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="contained"
+          startIcon={<DownloadIcon size={18} />}
+          onClick={handleExport}
         >
-          <ListItemIcon>
-            <UploadIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Sicherung importieren"
-            secondary="Daten aus einer Datei wiederherstellen"
-          />
-        </MenuItem>
-        <Divider />
-        <MenuItem component={Link} to="/settings">
-          <ListItemIcon>
-            <SettingsIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Einstellungen"
-            secondary="Schuljahre, Darstellung, Benotung und mehr"
-          />
-        </MenuItem>
-        <MenuItem onClick={reloadApp}>
-          <ListItemIcon>
-            <RefreshIcon />
-          </ListItemIcon>
-          <ListItemText
-            primary="Neu laden"
-            secondary="App neu starten und Updates übernehmen"
-          />
-        </MenuItem>
-      </Menu>
+          Sicherung exportieren
+        </Button>
+        <Button
+          variant="outlined"
+          startIcon={<UploadIcon size={18} />}
+          onClick={() => fileInput.current?.click()}
+        >
+          Sicherung importieren
+        </Button>
+      </div>
+      <TextField
+        select
+        size="small"
+        label="An Sicherung erinnern"
+        value={backupReminderDays}
+        className="max-w-72"
+        onChange={(event) =>
+          save({ backupReminderDays: Number(event.target.value) })
+        }
+      >
+        <MenuItem value={0}>Nie</MenuItem>
+        <MenuItem value={7}>Nach 7 Tagen</MenuItem>
+        <MenuItem value={14}>Nach 14 Tagen</MenuItem>
+        <MenuItem value={30}>Nach 30 Tagen</MenuItem>
+      </TextField>
+      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon size={18} />}
+          onClick={reloadApp}
+        >
+          Neu laden
+        </Button>
+        <span className="text-sm text-muted">
+          App neu starten und Updates übernehmen
+        </span>
+      </div>
 
       <input
         ref={fileInput}
@@ -159,6 +142,6 @@ export function AppMenu() {
         onClose={() => setMessage(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
-    </>
+    </SettingsSection>
   );
 }

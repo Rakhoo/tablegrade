@@ -1,34 +1,48 @@
 import {
   Button,
   Divider,
+  IconButton,
   Menu,
   MenuItem,
   Popover,
   Snackbar,
-  Switch,
-  FormControlLabel,
 } from "@mui/material";
 import { format, parseISO } from "date-fns";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   Link,
   useLoaderData,
+  useLocation,
   useRevalidator,
   useSearchParams,
 } from "react-router";
 import { CancelDialog } from "../../components/CancelDialog";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { GradeIcon } from "../../components/GradeIcon";
+import { BackButton } from "../../components/BackButton";
 import { GradeToolBar } from "../../components/GradeToolBar";
+import { HistoryButtons } from "../../components/HistoryButtons";
+import { ModeBar, ModeToggle } from "../../components/ModeBar";
+import {
+  SpeedDialLayout,
+  type SpeedDialEntry,
+  type SpeedDialLink,
+} from "../../components/SpeedDial";
 import {
   CardsIcon,
-  CheckIcon,
   ChevronLeftIcon,
+  ChevronRightIcon,
+  CheckIcon,
+  CommentIcon,
   DownloadIcon,
-  EyeIcon,
-  EyeOffIcon,
-  InfoIcon,
-  StarIcon,
+  BadgeIcon,
+  ImageIcon,
+  ImageOffIcon,
+  TagOffIcon,
+  PencilIcon,
+  SeatsIcon,
+  SmileIcon,
+  TagIcon,
 } from "../../components/icons";
 import { LessonTypeBadge, Pill } from "../../components/LessonTypeBadge";
 import { MarkBadge } from "../../components/MarkBadge";
@@ -39,20 +53,22 @@ import {
   type GradeEntry,
   type SeatedStudent,
 } from "../../db";
-import { useGradingHistory } from "../../hooks/useGradingHistory";
+import { useEditHistory } from "../../hooks/useEditHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useSettings } from "../../hooks/useSettings";
-import { useStoredBoolean } from "../../hooks/useStoredBoolean";
+import { useDisplayOption } from "../../hooks/useDisplayOption";
 import { suggestGrade } from "../../lib/assessment";
 import {
   formatClassName,
   formatSchoolYear,
   formatStudentName,
+  getCommentPreview,
   getStudentLabel,
 } from "../../lib/formatters";
 import {
   DEFAULT_GRADE_TOOL,
+  formatMark,
   getToolValue,
   getValidGradeTool,
   isEntryComplete,
@@ -75,18 +91,28 @@ import {
 } from "../../lib/reports";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getVisibleGrades } from "../../lib/settings";
-import { FAIL_TOOL, getToolValues } from "../../services/grading";
+import {
+  describeValues,
+  FAIL_TOOL,
+  getToolValues,
+} from "../../services/grading";
 import { CommentDialog } from "../classroom/CommentDialog";
-import { NameTrainerDialog } from "./NameTrainerDialog";
 import type { OverviewLoaderData } from "./overviewLoader";
 
 const entryKey = (studentId: number, date: string) => `${studentId}|${date}`;
+
+/** What a tap on a cell does: nothing (viewing), apply the grading tool or edit the comment. */
+type OverviewMode = "view" | "grade" | "comment";
 
 /** Cell tints like a soft checkerboard: the row picks the hue, the column the strength. */
 const CELL_TINTS = [
   ["var(--color-brand-50)", "var(--color-brand-100)"],
   ["var(--color-blush-50)", "var(--color-blush-100)"],
 ];
+
+/** Frame of the cells in the column of the current lesson. */
+const LESSON_FRAME =
+  "inset 2px 0 0 var(--color-brand-500), inset -2px 0 0 var(--color-brand-500)";
 
 /** Header tints per column, matching the strength of the names in the first column. */
 const HEADER_TINTS = ["var(--color-brand-50)", "var(--color-brand-200)"];
@@ -107,6 +133,8 @@ type DateHeaderProps = {
   columns: number;
   isComplete: boolean;
   isCancelled: boolean;
+  /** The current lesson (`?date=`), highlighted. */
+  isCurrent: boolean;
   lessonType: LessonType;
   /** Tap on the date, to pick the lesson type. */
   onTap?: (element: HTMLElement) => void;
@@ -120,6 +148,7 @@ function DateHeader({
   columns,
   isComplete,
   isCancelled,
+  isCurrent,
   lessonType,
   onTap,
   onLongPress,
@@ -128,6 +157,7 @@ function DateHeader({
   return (
     <th
       className="sticky top-0 h-24 min-w-11 border-b border-line bg-surface"
+      data-date={date}
       // Earlier columns stay on top, so their slanted headers are not covered
       style={{ zIndex: 10 + columns - index, WebkitTouchCallout: "none" }}
       onClick={(event) => onTap?.(event.currentTarget)}
@@ -139,7 +169,9 @@ function DateHeader({
         style={{
           background: isCancelled
             ? "var(--color-line)"
-            : HEADER_TINTS[index % 2],
+            : isCurrent
+              ? "var(--color-brand-500)"
+              : HEADER_TINTS[index % 2],
         }}
       />
       {/* Rotates around its vertical center, placed on the band's center line, which keeps
@@ -147,7 +179,11 @@ function DateHeader({
       <span
         className={
           "absolute bottom-2.5 flex origin-left flex-col items-start gap-0.5 text-xs font-medium whitespace-nowrap " +
-          (isCancelled ? "text-muted line-through" : "")
+          (isCancelled
+            ? "text-muted line-through"
+            : isCurrent
+              ? "font-bold text-white"
+              : "")
         }
         style={{
           left: "calc(50% + 6px)",
@@ -234,23 +270,31 @@ export function OverviewPage() {
     traits,
     reports,
     reportGrades,
+    seatingDate,
+    previous,
+    next,
   } = useLoaderData<OverviewLoaderData>();
+  const location = useLocation();
   const settings = useSettings();
   const visibleGrades = getVisibleGrades(settings);
   const { revalidate } = useRevalidator();
   const [searchParams] = useSearchParams();
-  const [grading, setGrading] = useState(false);
+  const [mode, setModeState] = useState<OverviewMode>("view");
+  /** Student whose entries alone stay visible, e.g. to show them to the student. */
+  const [shownStudent, setShownStudent] = useState<number | null>(null);
+  // The arrows switch the class without leaving the page, the student may not be in the new one
+  const [shownClass, setShownClass] = useState(cls.id);
+  if (shownClass != cls.id) {
+    setShownClass(cls.id);
+    setShownStudent(null);
+  }
+  // Looked up instead of trusted, as the render that resets it still sees the old id
+  const shown = students.find((student) => student.id == shownStudent);
+  const grading = mode == "grade";
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
-  const [useNicknames, setUseNicknames] = useStoredBoolean(
-    "overviewNicknames",
-    false,
-  );
-  const [showPhotos, setShowPhotos] = useStoredBoolean("overviewPhotos", true);
-  const [showTraitNames, setShowTraitNames] = useStoredBoolean(
-    "overviewTraitNames",
-    false,
-  );
-  const [trainingNames, setTrainingNames] = useState(false);
+  const [useNicknames, setUseNicknames] = useDisplayOption("nicknames");
+  const [showPhotos, setShowPhotos] = useDisplayOption("photos");
+  const [showTraitNames, setShowTraitNames] = useDisplayOption("traits");
   const [exportMenu, setExportMenu] = useState<HTMLElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
@@ -266,7 +310,15 @@ export function OverviewPage() {
     student: SeatedStudent;
     date: string;
   } | null>(null);
-  const history = useGradingHistory(cls.id, revalidate);
+  const history = useEditHistory(
+    cls.id,
+    {
+      key: `overview/${cls.id}`,
+      url: location.pathname + location.search,
+      label: "Übersicht",
+    },
+    revalidate,
+  );
   const handleLessonChanged = () => {
     history.reset();
     revalidate();
@@ -279,7 +331,8 @@ export function OverviewPage() {
   const entryMap = new Map<string, GradeEntry>(
     entries.map((entry) => [entryKey(entry.studentId, entry.date), entry]),
   );
-  const lessonDate = searchParams.get("date");
+  // The lesson the seating plan was left from, otherwise today's or the next one
+  const lessonDate = searchParams.get("date") ?? seatingDate;
   const typeOf = (date: string): LessonType =>
     lessonTypes[lessonKey(cls.id, date)] ?? "normal";
   const isLessonCancelled = (date: string) =>
@@ -315,6 +368,23 @@ export function OverviewPage() {
     ),
   );
 
+  const tableArea = useRef<HTMLElement>(null);
+  // Opening a table shows the lesson's column, or the last one before it, in the middle
+  const scrollTarget = lessonDate
+    ? dates.filter((date) => date <= lessonDate).at(-1)
+    : dates.at(-1);
+  useLayoutEffect(() => {
+    const area = tableArea.current;
+    const header = area?.querySelector<HTMLElement>(
+      `th[data-date="${scrollTarget}"]`,
+    );
+    if (!area || !header) return;
+    area.scrollLeft =
+      header.offsetLeft - area.clientWidth / 2 + header.offsetWidth / 2;
+    // Only when a table or lesson is opened, not on every change of its data
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cls.id, lessonDate]);
+
   const nameOf = useNicknames ? getStudentLabel : formatStudentName;
   const rows = [...students].sort((a, b) =>
     nameOf(a).localeCompare(nameOf(b), "de"),
@@ -339,15 +409,12 @@ export function OverviewPage() {
       return activeTool == FAIL_TOOL || activeTool == "erase";
     const isMarkTool =
       activeTool.startsWith("mark:") || activeTool == "eraseMark";
-    return (
-      activeTool == "comment" ||
-      typeOf(date) != "project" ||
-      (kind == "mark") == isMarkTool
-    );
+    return typeOf(date) != "project" || (kind == "mark") == isMarkTool;
   };
 
   const handleTap = async (student: SeatedStudent, column: LessonColumn) => {
     const { date } = column;
+    if (mode == "comment") return setCommenting({ student, date });
     if (!fitsColumn(column)) {
       setMessage(
         isCancelled(date)
@@ -356,7 +423,6 @@ export function OverviewPage() {
       );
       return;
     }
-    if (activeTool == "comment") return setCommenting({ student, date });
     const entry = entryMap.get(entryKey(student.id, date));
     if (activeTool == "suggestion" && (entry?.grade != null || entry?.absent)) {
       return;
@@ -368,8 +434,16 @@ export function OverviewPage() {
         : activeTool,
       type,
     );
-    if (values) await history.change(student.id, date, entry, values);
-    else {
+    if (values) {
+      await history.change(
+        "Bewertung",
+        student.id,
+        date,
+        entry,
+        values,
+        `${describeCell(student, date)}: ${describeValues(values)}`,
+      );
+    } else {
       setMessage(
         `Dieses Werkzeug passt nicht zu dieser Stunde (${LESSON_TYPE_LABELS[type]}).`,
       );
@@ -397,6 +471,11 @@ export function OverviewPage() {
       student.id,
       before,
       activeTool == "eraseMark" ? null : getToolValue(activeTool),
+      `${formatStudentName(student)}, ${REPORT_LABELS[kind]}: ${
+        activeTool == "eraseMark"
+          ? "Vorschlag"
+          : formatMark(getToolValue(activeTool))
+      }`,
     );
   };
 
@@ -450,73 +529,192 @@ export function OverviewPage() {
     }
   };
 
+  const viewLink = (path: string) =>
+    `/overview/${cls.id}${path}${lessonDate ? `?date=${lessonDate}` : ""}`;
+  /** Name and date of a cell, for the undo history. */
+  const describeCell = (student: SeatedStudent, date: string) =>
+    `${formatStudentName(student)}, ${format(parseISO(date), "dd.MM.")}`;
+  const isHidden = (student: SeatedStudent) =>
+    !!shown && student.id != shown.id;
+
+  const seatingLink: SpeedDialLink = {
+    key: "seating",
+    label: "Sitzplan",
+    icon: <SeatsIcon />,
+    help: "Sitzplan der Klasse: in der Stunde, aus der diese Übersicht geöffnet wurde, sonst in der heutigen oder nächsten.",
+    to: `/classes/${cls.id}${lessonDate ? `?date=${lessonDate}` : ""}`,
+  };
+  const editEntry: SpeedDialEntry = {
+    key: "edit",
+    label: "Bearbeiten",
+    icon: <PencilIcon />,
+    help: "Klasse bearbeiten: Fach, Stunden und Schülerliste.",
+    to: viewLink("/edit"),
+  };
+  const namesEntry: SpeedDialEntry = {
+    key: "names",
+    label: "Namen lernen",
+    icon: <CardsIcon />,
+    help: "Karteikarten mit den Fotos, um die Namen der Klasse zu lernen.",
+    disabled: withPhotos.length == 0,
+    to: viewLink("/names"),
+  };
+  const tableEntries: SpeedDialEntry[] = [editEntry, namesEntry, "divider"];
+  if (withPhotos.length > 0) {
+    tableEntries.push({
+      key: "photos",
+      label: "Bilder",
+      icon: <ImageIcon />,
+      offIcon: <ImageOffIcon />,
+      checked: showPhotos,
+      help: "Zeigt die Fotos vor den Namen.",
+      onClick: () => setShowPhotos(!showPhotos),
+    });
+  }
+  tableEntries.push({
+    key: "nicknames",
+    label: "Spitznamen",
+    icon: <SmileIcon />,
+    offIcon: <BadgeIcon />,
+    checked: useNicknames,
+    help: "Zeigt Spitznamen statt der vollen Namen; die Reihenfolge folgt den Namen.",
+    onClick: () => setUseNicknames(!useNicknames),
+  });
+  if (hasTraits) {
+    tableEntries.push({
+      key: "traits",
+      label: "Eigenschaften",
+      icon: <TagIcon />,
+      offIcon: <TagOffIcon />,
+      checked: showTraitNames,
+      help: "Zeigt die Eigenschaften ausgeschrieben unter den Namen.",
+      onClick: () => setShowTraitNames(!showTraitNames),
+    });
+  }
+  const modes = (
+    <ModeToggle
+      value={mode}
+      onChange={setModeState}
+      options={[
+        {
+          value: "view",
+          label: "Betrachten",
+          help: "Modus Betrachten: die Tabelle nur ansehen, ein Tipp in eine Zelle ändert nichts.",
+        },
+        {
+          value: "grade",
+          label: "Bewerten",
+          help: "Modus Bewerten: Werkzeug wählen und Zellen antippen.",
+          disabled: dates.length == 0,
+        },
+        {
+          value: "comment",
+          label: "Kommentieren",
+          help: "Modus Kommentieren: Kommentare der Stunden lesen und schreiben.",
+          disabled: dates.length == 0,
+        },
+      ]}
+    />
+  );
+
+  const tableHelp =
+    "Zeilen sind die Schüler, Spalten die Stunden. Ein Tipp auf ein Datum macht die Stunde zur Klausur oder zum Projekt oder fügt eine Teil- oder Halbjahresnote an, langes Drücken setzt Ausfall. " +
+    (mode == "grade"
+      ? "Antippen einer Zelle wendet das oben gewählte Werkzeug an; Teil- und Halbjahresnoten lassen sich mit den Noten korrigieren."
+      : mode == "comment"
+        ? "Sprechblasen zeigen den Anfang der Kommentare; Antippen einer Zelle bearbeitet den Kommentar oder legt einen neuen an."
+        : "Zum Ändern oben „Bewerten“ oder „Kommentieren“ wählen.") +
+    " Ein Tipp auf einen Namen verdeckt die Einträge aller anderen, etwa um sie dem Schüler zu zeigen.";
+
   return (
-    <div className="flex h-full flex-col gap-3 p-4">
-      {grading ? (
-        <GradeToolBar
-          tool={activeTool}
-          onChange={setTool}
-          onExit={() => {
-            history.reset();
-            setGrading(false);
-          }}
-          history={history}
-          hideMarks={!hasMarkColumns}
-        />
-      ) : (
-        <header className="flex flex-wrap items-center gap-3">
-          <Button
+    <SpeedDialLayout entries={tableEntries} links={[seatingLink]}>
+      <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+        <div className="justify-self-start">
+          <BackButton target="overview" />
+        </div>
+        <div
+          className="flex items-center gap-3"
+          data-help="Klasse und Halbjahr der Tabelle. Die Pfeile wechseln zur Übersicht der Klasse, die laut Stundenplan vorher oder danach Unterricht hat."
+        >
+          <IconButton
             component={Link}
             to={
-              lessonDate ? `/classes/${cls.id}?date=${lessonDate}` : "/overview"
+              previous ? `/overview/${previous.id}?date=${previous.date}` : ""
             }
-            startIcon={<ChevronLeftIcon />}
-            className="pl-2"
+            replace
+            disabled={!previous}
+            aria-label="Vorherige Stunde"
+            className="bg-surface shadow-tile disabled:opacity-40"
           >
-            {lessonDate ? "Zur Stunde" : "Alle Klassen"}
-          </Button>
-          <div className="mx-auto text-center">
+            <ChevronLeftIcon />
+          </IconButton>
+          <div className="min-w-56 text-center portrait:min-w-44">
             <div className="text-xl font-bold tracking-tight">
               {formatClassName(cls)} · {cls.subject}
             </div>
             <div className="text-sm text-muted">
-              {formatSchoolYear(cls.year)} · {SCHOOL_YEAR_PART_LABELS[cls.part]}
+              {[
+                formatSchoolYear(cls.year),
+                SCHOOL_YEAR_PART_LABELS[cls.part],
+                lessonDate && format(parseISO(lessonDate), "dd.MM."),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </div>
           </div>
-          <FormControlLabel
-            className="mr-0"
-            label="Spitznamen"
-            control={
-              <Switch
-                checked={useNicknames}
-                onChange={(event) => setUseNicknames(event.target.checked)}
-              />
-            }
-          />
-          {withPhotos.length > 0 && (
-            <Button
-              variant="outlined"
-              startIcon={<CardsIcon size={18} />}
-              onClick={() => setTrainingNames(true)}
-              className="whitespace-nowrap"
-            >
-              Namen lernen
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            disabled={dates.length == 0}
-            startIcon={<StarIcon size={18} />}
-            onClick={() => setGrading(true)}
-            className="whitespace-nowrap"
+          <IconButton
+            component={Link}
+            to={next ? `/overview/${next.id}?date=${next.date}` : ""}
+            replace
+            disabled={!next}
+            aria-label="Nächste Stunde"
+            className="bg-surface shadow-tile disabled:opacity-40"
           >
-            Bewerten
-          </Button>
-        </header>
-      )}
+            <ChevronRightIcon />
+          </IconButton>
+        </div>
+        {/* The right end stays free for the speed dial */}
+        <div />
+      </header>
+
+      <ModeBar
+        modes={modes}
+        history={<HistoryButtons history={history} />}
+        footer={
+          shown && (
+            <>
+              Nur die Einträge von{" "}
+              <span className="font-semibold text-ink">{nameOf(shown)}</span>{" "}
+              sind sichtbar.
+              <Button size="small" onClick={() => setShownStudent(null)}>
+                Alle zeigen
+              </Button>
+            </>
+          )
+        }
+        hint={
+          grading
+            ? null
+            : mode == "comment"
+              ? "Zelle antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"
+              : "Ein Tipp auf einen Namen zeigt nur dessen Einträge"
+        }
+      >
+        {grading && (
+          <GradeToolBar
+            tool={activeTool}
+            onChange={setTool}
+            hideMarks={!hasMarkColumns}
+          />
+        )}
+      </ModeBar>
 
       <div className="relative min-h-0 flex-1">
-        <main className="card h-full overflow-auto pb-10">
+        <main
+          ref={tableArea}
+          className="card h-full overflow-auto"
+          data-help={tableHelp}
+        >
           {dates.length == 0 || students.length == 0 ? (
             <p className="p-5 text-muted">
               {students.length == 0
@@ -530,6 +728,7 @@ export function OverviewPage() {
                   <th className="sticky top-0 left-0 z-40 bg-surface p-2 text-left align-top">
                     <Button
                       size="small"
+                      data-help="Exportiert die Tabelle als PDF oder CSV."
                       startIcon={<DownloadIcon size={16} />}
                       onClick={(event) => setExportMenu(event.currentTarget)}
                     >
@@ -559,6 +758,7 @@ export function OverviewPage() {
                         columns={columns.length}
                         isComplete={isComplete(date)}
                         isCancelled={isCancelled(date)}
+                        isCurrent={date == lessonDate}
                         lessonType={
                           // A project's marker belongs to its column of marks
                           kind == "oral" && typeOf(date) == "project"
@@ -585,10 +785,22 @@ export function OverviewPage() {
                 {rows.map((student, rowIndex) => (
                   <tr key={student.id}>
                     <th
-                      className="sticky left-0 z-10 border-r border-b border-line px-3 py-1 text-left font-semibold whitespace-nowrap"
+                      className="sticky left-0 z-10 border-r border-b border-line p-0 text-left font-semibold whitespace-nowrap"
                       style={{ background: CELL_TINTS[rowIndex % 2][1] }}
                     >
-                      <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        aria-pressed={shownStudent == student.id}
+                        onClick={() =>
+                          setShownStudent(
+                            shownStudent == student.id ? null : student.id,
+                          )
+                        }
+                        className={
+                          "flex w-full items-center gap-2 px-3 py-1 text-left " +
+                          (isHidden(student) ? "opacity-40" : "")
+                        }
+                      >
                         {photoColumn &&
                           (student.image ? (
                             <img
@@ -603,32 +815,33 @@ export function OverviewPage() {
                         <div>
                           <div className="flex items-center gap-1.5">
                             {nameOf(student)}
-                            {!showTraitNames &&
-                              traitsOf(student).map((trait) => (
-                                <span
-                                  key={trait.id}
-                                  title={trait.name}
-                                  className="h-2.5 w-2.5 rounded-full"
-                                  style={{ background: trait.color }}
-                                />
-                              ))}
                           </div>
-                          {showTraitNames && traitsOf(student).length > 0 && (
-                            <div className="flex gap-2 text-xs font-semibold">
-                              {traitsOf(student).map((trait) => (
-                                <span
-                                  key={trait.id}
-                                  style={{ color: trait.color }}
-                                >
-                                  {trait.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          {showTraitNames &&
+                            !isHidden(student) &&
+                            traitsOf(student).length > 0 && (
+                              <div className="flex gap-2 text-xs font-semibold">
+                                {traitsOf(student).map((trait) => (
+                                  <span
+                                    key={trait.id}
+                                    style={{ color: trait.color }}
+                                  >
+                                    {trait.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                         </div>
-                      </div>
+                      </button>
                     </th>
                     {columns.map((column, columnIndex) => {
+                      if (isHidden(student)) {
+                        return (
+                          <td
+                            key={getColumnKey(column)}
+                            className="h-11 min-w-11 border-r border-b border-line bg-line p-0"
+                          />
+                        );
+                      }
                       if (column.kind == "report") {
                         const value = column.values.get(student.id) ?? null;
                         const suggestion =
@@ -698,11 +911,14 @@ export function OverviewPage() {
                             background: cancelled
                               ? "var(--color-line)"
                               : CELL_TINTS[rowIndex % 2][columnIndex % 2],
+                            // The current lesson's column is framed in the color of its header
+                            boxShadow:
+                              date == lessonDate ? LESSON_FRAME : undefined,
                           }}
                         >
                           <button
                             type="button"
-                            disabled={!grading}
+                            disabled={mode == "view"}
                             aria-label={`${formatStudentName(student)}, ${date}`}
                             title={entry?.comment ?? undefined}
                             className="relative flex h-full min-h-11 w-full items-center justify-center gap-0.5 px-0.5 active:bg-brand-100"
@@ -726,9 +942,17 @@ export function OverviewPage() {
                                   size={26}
                                 />
                               )}
-                            {entry?.comment && (kind == "oral" || isExam) && (
-                              <span className="absolute right-0.5 bottom-0.5 h-2 w-2 rounded-full bg-brand-500" />
-                            )}
+                            {entry?.comment &&
+                              (kind == "oral" || isExam) &&
+                              (mode == "comment" ? (
+                                <span className="relative ml-0.5 max-w-28 truncate rounded-lg bg-surface px-1.5 py-0.5 text-left text-[10px] leading-tight font-medium text-ink shadow-tile ring-1 ring-brand-200">
+                                  {getCommentPreview(entry.comment, 3)}
+                                </span>
+                              ) : (
+                                <span className="absolute right-0 bottom-0 flex text-brand-600">
+                                  <CommentIcon size={13} strokeWidth={2.5} />
+                                </span>
+                              ))}
                           </button>
                         </td>
                       );
@@ -740,26 +964,6 @@ export function OverviewPage() {
             </table>
           )}
         </main>
-        {hasTraits && (
-          <Button
-            startIcon={<InfoIcon size={18} />}
-            onClick={() => setShowTraitNames(!showTraitNames)}
-            className="absolute -bottom-2 -left-2 z-50 bg-brand-100 opacity-75 shadow-tile"
-          >
-            {showTraitNames ? "Nur Farbpunkte" : "Eigenschaften anzeigen"}
-          </Button>
-        )}
-        {withPhotos.length > 0 && (
-          <Button
-            startIcon={
-              showPhotos ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />
-            }
-            onClick={() => setShowPhotos(!showPhotos)}
-            className="absolute -right-2 -bottom-2 z-50 bg-brand-100 opacity-75 shadow-tile"
-          >
-            {showPhotos ? "Bilder ausblenden" : "Bilder einblenden"}
-          </Button>
-        )}
       </div>
 
       <Menu
@@ -847,13 +1051,6 @@ export function OverviewPage() {
         </ConfirmDialog>
       )}
 
-      {trainingNames && (
-        <NameTrainerDialog
-          students={withPhotos}
-          onClose={() => setTrainingNames(false)}
-        />
-      )}
-
       {commenting && (
         <CommentDialog
           studentName={formatStudentName(commenting.student)}
@@ -865,10 +1062,12 @@ export function OverviewPage() {
           onSave={async (comment) => {
             setCommenting(null);
             await history.change(
+              "Kommentar",
               commenting.student.id,
               commenting.date,
               entryMap.get(entryKey(commenting.student.id, commenting.date)),
               { comment: comment.trim() || null },
+              describeCell(commenting.student, commenting.date),
             );
           }}
         />
@@ -881,6 +1080,6 @@ export function OverviewPage() {
         onClose={() => setMessage(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       />
-    </div>
+    </SpeedDialLayout>
   );
 }

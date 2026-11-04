@@ -21,7 +21,10 @@ export function AppearanceSettings() {
   const save = useSaveSettings();
 
   return (
-    <SettingsSection title="Darstellung">
+    <SettingsSection
+      help="Farbschema und heller oder dunkler Modus."
+      title="Darstellung"
+    >
       <div className="flex flex-wrap gap-2">
         {(Object.keys(THEMES) as ThemeId[]).map((id) => {
           const tokens = getThemeTokens(id, false);

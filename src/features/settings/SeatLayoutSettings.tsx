@@ -52,6 +52,7 @@ export function SeatLayoutSettings() {
 
   return (
     <SettingsSection
+      help="Die Plätze, auf die neue Schüler gesetzt werden."
       title="Standard-Sitzordnung"
       hint="Neue Schüler bekommen diese Plätze in der Reihenfolge der Nummern. Plätze lassen sich ziehen, wie beim Anordnen."
     >
@@ -63,6 +64,7 @@ export function SeatLayoutSettings() {
           grades={new Map()}
           suggestions={new Map()}
           arranging
+          showComments={false}
           onTap={() => undefined}
           onMove={move}
         />

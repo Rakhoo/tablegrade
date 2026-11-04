@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 type SettingsSectionProps = {
   title: string;
   hint?: string;
+  /** Explanation shown by the help. */
+  help: string;
   children: ReactNode;
 };
 
@@ -10,10 +12,11 @@ type SettingsSectionProps = {
 export function SettingsSection({
   title,
   hint,
+  help,
   children,
 }: SettingsSectionProps) {
   return (
-    <section className="card flex flex-col gap-3 p-5">
+    <section className="card flex flex-col gap-3 p-5" data-help={help}>
       <div>
         <h2 className="text-lg font-bold tracking-tight">{title}</h2>
         {hint && <p className="text-sm text-muted">{hint}</p>}

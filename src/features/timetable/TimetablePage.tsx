@@ -23,18 +23,20 @@ import {
   useSearchParams,
 } from "react-router";
 import type { SchoolClass } from "../../db";
+import { SpeedDialLayout } from "../../components/SpeedDial";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
   TableIcon,
 } from "../../components/icons";
+import { useRememberMainPage } from "../../hooks/useRememberMainPage";
+import { rememberCurrentPageFor } from "../../lib/returnPage";
 import { useSwipe } from "../../hooks/useSwipe";
 import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
 import { lessonKey } from "../../lib/lessons";
 import { CALENDAR_START, getCalendarEnd } from "../../lib/schoolYear";
 import { CancelDialog } from "../../components/CancelDialog";
-import { AppMenu } from "./AppMenu";
 import { BackupReminder } from "./BackupReminder";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
@@ -51,6 +53,7 @@ export function TimetablePage() {
     schoolClasses,
   } = useLoaderData<TimetableLoaderData>();
   const { revalidate } = useRevalidator();
+  useRememberMainPage("timetable");
   const [searchParams, setSearchParams] = useSearchParams();
   const [cancelTarget, setCancelTarget] = useState<{
     date: Date;
@@ -158,74 +161,94 @@ export function TimetablePage() {
     return `${base} rounded-none ${edge} bg-brand-600 font-semibold ${todayDot} hover:bg-brand-700 focus:bg-brand-600`;
   };
 
+  const weekBar = (
+    <div
+      className="flex items-center justify-between rounded-full bg-brand-50 p-1"
+      data-help="Die gezeigte Kalenderwoche; die Pfeile oder Wischen über den Stundenplan wechseln die Woche."
+    >
+      <IconButton
+        aria-label="Vorherige Woche"
+        disabled={addDays(monday, -3) < CALENDAR_START}
+        onClick={() => selectWeekAround(addWeeks(monday, -1))}
+        className="bg-surface shadow-tile"
+      >
+        <ChevronLeftIcon />
+      </IconButton>
+      <div className="text-center leading-tight">
+        <div className="font-semibold">KW {getISOWeek(monday)}</div>
+        <div className="text-sm text-muted">
+          {format(monday, "d. MMM", { locale: de })} –{" "}
+          {format(addDays(monday, 4), "d. MMM yyyy", { locale: de })}
+        </div>
+      </div>
+      <IconButton
+        aria-label="Nächste Woche"
+        disabled={addWeeks(monday, 1) > maxDate}
+        onClick={() => selectWeekAround(addWeeks(monday, 1))}
+        className="bg-surface shadow-tile"
+      >
+        <ChevronRightIcon />
+      </IconButton>
+    </div>
+  );
+
   return (
-    <div className="timetable-page flex h-full gap-4 p-4 portrait:flex-col">
-      {/* Landscape: controls above the calendar; portrait: side by side to save height */}
-      <aside className="card flex shrink-0 gap-3 px-3 landscape:w-[22rem] landscape:flex-col landscape:items-center landscape:pt-5 portrait:justify-center portrait:py-3">
-        {/* Portrait: aligned to the calendar's top, so the title is level with the month label */}
+    <SpeedDialLayout
+      entries={[]}
+      className="timetable-page gap-4 portrait:flex-col"
+    >
+      {/* Landscape: a column on the left with the controls above the calendar, the week bar above
+          the timetable; portrait: above the timetable with controls (week bar included) and
+          calendar side by side to save height, the calendar lower so the speed dial in the top
+          right corner covers nothing. */}
+      <aside className="card flex shrink-0 gap-3 px-3 landscape:w-[22rem] landscape:flex-col landscape:items-center landscape:pt-4 portrait:justify-center portrait:py-3">
         <div className="flex flex-col gap-3 px-3 landscape:w-full portrait:w-80 portrait:shrink-0">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex min-h-11 items-center justify-between gap-3">
             <h1 className="text-2xl font-bold tracking-tight">Stundenplan</h1>
-            <div className="flex gap-2">
-              <Button
-                variant="outlined"
-                size="small"
-                // Without a date the current week is shown, the clean start state
-                onClick={() => setSearchParams({}, { replace: true })}
-              >
-                Heute
-              </Button>
-              <AppMenu />
-            </div>
+            <Button
+              variant="outlined"
+              size="small"
+              // Without a date the current week is shown, the clean start state
+              onClick={() => setSearchParams({}, { replace: true })}
+              data-help="Springt zurück zur aktuellen Woche."
+            >
+              Heute
+            </Button>
           </div>
 
-          <div className="flex items-center justify-between rounded-full bg-brand-50 p-1">
-            <IconButton
-              aria-label="Vorherige Woche"
-              disabled={addDays(monday, -3) < CALENDAR_START}
-              onClick={() => selectWeekAround(addWeeks(monday, -1))}
-              className="bg-surface shadow-tile"
-            >
-              <ChevronLeftIcon />
-            </IconButton>
-            <div className="text-center leading-tight">
-              <div className="font-semibold">KW {getISOWeek(monday)}</div>
-              <div className="text-sm text-muted">
-                {format(monday, "d. MMM", { locale: de })} –{" "}
-                {format(addDays(monday, 4), "d. MMM yyyy", { locale: de })}
-              </div>
-            </div>
-            <IconButton
-              aria-label="Nächste Woche"
-              disabled={addWeeks(monday, 1) > maxDate}
-              onClick={() => selectWeekAround(addWeeks(monday, 1))}
-              className="bg-surface shadow-tile"
-            >
-              <ChevronRightIcon />
-            </IconButton>
-          </div>
+          <div className="landscape:hidden">{weekBar}</div>
 
-          <Button
-            component={Link}
-            to={newClassUrl}
-            variant="contained"
-            size="large"
-            startIcon={<PlusIcon />}
-          >
-            Neue Klasse
-          </Button>
-          <Button
-            component={Link}
-            to="/overview"
-            variant="outlined"
-            size="large"
-            startIcon={<TableIcon />}
-          >
-            Übersicht
-          </Button>
+          <div className="flex flex-col gap-2">
+            <Button
+              component={Link}
+              to={newClassUrl}
+              onClick={() => rememberCurrentPageFor("/classes/new")}
+              variant="contained"
+              startIcon={<PlusIcon size={18} />}
+              className="flex-1 whitespace-nowrap"
+              data-help="Legt eine Klasse mit Fach, Stunden und Schülerliste an."
+            >
+              Neue Klasse
+            </Button>
+            <Button
+              component={Link}
+              to="/overview"
+              variant="outlined"
+              startIcon={<TableIcon size={18} />}
+              className="flex-1 whitespace-nowrap"
+              data-help="Alle Klassen mit ihren Übersichtstabellen der Noten."
+            >
+              Übersichten
+            </Button>
+          </div>
         </div>
 
-        <div {...calendarSwipe} className="touch-pan-y">
+        {/* Portrait: lower, so the speed dial above it covers nothing */}
+        <div
+          {...calendarSwipe}
+          className="touch-pan-y portrait:mt-12"
+          data-help="Ein Tag wählt seine Woche; Wischen wechselt den Monat. Ferien und freie Tage stehen im Stundenplan."
+        >
           <StaticDatePicker
             displayStaticWrapperAs="desktop"
             value={anchor}
@@ -244,24 +267,30 @@ export function TimetablePage() {
         </div>
       </aside>
 
-      <section
-        {...timetableSwipe}
-        className="card relative min-h-0 flex-1 touch-pan-y p-3"
-      >
-        <TimetableGrid
-          monday={monday}
-          schoolClasses={schoolClasses}
-          calendar={calendar}
-          cancelledDays={cancelledDays}
-          cancelledLessons={cancelledLessons}
-          completedLessons={completedLessons}
-          lessonTypes={lessonTypes}
-          onDayLongPress={(date) => setCancelTarget({ date })}
-          onLessonLongPress={(date, schoolClass) =>
-            setCancelTarget({ date, schoolClass })
-          }
-        />
-      </section>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+        <div className="flex min-h-11 items-center justify-center pr-28 portrait:hidden">
+          <div className="w-80">{weekBar}</div>
+        </div>
+        <section
+          {...timetableSwipe}
+          className="card relative min-h-0 flex-1 touch-pan-y p-3"
+          data-help="Stundenplan der Woche: eine Stunde öffnet ihren Sitzplan, ein leeres Feld legt dort eine Klasse an. Langes Drücken auf eine Stunde oder einen Tag setzt Ausfall; ein Haken zeigt vollständig bewertete Stunden."
+        >
+          <TimetableGrid
+            monday={monday}
+            schoolClasses={schoolClasses}
+            calendar={calendar}
+            cancelledDays={cancelledDays}
+            cancelledLessons={cancelledLessons}
+            completedLessons={completedLessons}
+            lessonTypes={lessonTypes}
+            onDayLongPress={(date) => setCancelTarget({ date })}
+            onLessonLongPress={(date, schoolClass) =>
+              setCancelTarget({ date, schoolClass })
+            }
+          />
+        </section>
+      </div>
 
       <BackupReminder />
 
@@ -283,6 +312,6 @@ export function TimetablePage() {
           onChanged={revalidate}
         />
       )}
-    </div>
+    </SpeedDialLayout>
   );
 }

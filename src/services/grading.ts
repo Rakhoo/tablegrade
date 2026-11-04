@@ -1,6 +1,7 @@
 import type { GradeEntry } from "../db";
 import {
   FAIL_GRADE,
+  formatMark,
   getToolValue,
   type GradeTool,
   type LessonType,
@@ -13,14 +14,14 @@ export type EntryValues = Pick<
 >;
 
 /**
- * Returns what a grading tool (all but comment and suggestion) changes on an entry, if it fits
+ * Returns what a grading tool (all but the suggestion) changes on an entry, if it fits
  * the lesson type: exams take marks and "excused", regular lessons grades, projects both.
  */
 export function getToolValues(
   tool: GradeTool,
   type: LessonType,
 ): Partial<EntryValues> | null {
-  if (tool == "comment" || tool == "suggestion") return null;
+  if (tool == "suggestion") return null;
   if (tool == "erase") {
     return type == "exam"
       ? { grade: null, mark: null, absent: false }
@@ -38,6 +39,14 @@ export function getToolValues(
     return type == "exam" ? { mark, absent: false } : { mark };
   }
   return type == "exam" ? null : { grade: getToolValue(tool), absent: false };
+}
+
+/** Short text of what a change of an entry sets, for the undo history. */
+export function describeValues(values: Partial<EntryValues>) {
+  if (values.absent) return "entschuldigt";
+  if (values.grade != null) return formatMark(values.grade);
+  if (values.mark != null) return `Note ${formatMark(values.mark)}`;
+  return "gelöscht";
 }
 
 /** The tool for sanctioning a student in a cancelled lesson. */

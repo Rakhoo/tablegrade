@@ -4,10 +4,6 @@ import {
   Avatar,
   Button,
   ButtonBase,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   MenuItem,
@@ -16,10 +12,12 @@ import {
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-import { useRef, useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router";
+import { rememberReturnPage } from "../../lib/returnPage";
 import {
   getClassStudents,
+  saveSchoolClass,
   type RosterEntry,
   type SchoolClass,
   type SchoolClassInput,
@@ -63,7 +61,7 @@ type ClassForm = Omit<SchoolClassInput, "id">;
 /** Roster row with a stable React key, also for students not saved yet. */
 type RosterRow = RosterEntry & { key: string };
 
-type ClassEditDialogProps = {
+type ClassEditorProps = {
   /** The edited class, `undefined` when creating a new one. */
   cls?: SchoolClass;
   students: SeatedStudent[];
@@ -73,12 +71,36 @@ type ClassEditDialogProps = {
   /** The school years in use, the only ones a class can belong to. */
   schoolYears: { year: number }[];
   traits: Trait[];
-  /** Preset weekday and lesson for new classes (from the timetable cell). */
-  preset: { day?: number; hour?: number; date: Date };
-  onSave: (form: ClassForm, roster: RosterEntry[]) => Promise<void>;
+  /** Presets for new classes: weekday and lesson from a timetable cell, or the half from the overview selection. */
+  preset: {
+    day?: number;
+    hour?: number;
+    date: Date;
+    /** School year and half, instead of the ones of `date`. */
+    year?: number;
+    part?: SchoolYearPart;
+  };
+  /** Creates the new class; existing classes are saved right after each change. */
+  onCreate?: (form: ClassForm, roster: RosterEntry[]) => Promise<void>;
+  /** Leaves the creation of a new class without saving. */
+  onCancel?: () => void;
+  /** Reports whether a new class has input that leaving would discard. */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Asks before the settings link leaves the page; calls `leave` to follow it. */
+  onLeave?: (leave: () => void) => void;
+  /** Called after each automatic save of an existing class. */
+  onSaved: () => void;
   onDelete: () => Promise<void>;
-  onCancel: () => void;
 };
+
+/** Delay after the last change of the class information before it is saved. */
+const SAVE_DELAY_MS = 500;
+
+const toRows = (students: SeatedStudent[]): RosterRow[] =>
+  students.map((student) => ({
+    ...toRosterEntry(student),
+    key: `s${student.id}`,
+  }));
 
 type LessonTime = Pick<SchoolClass, "day" | "hour" | "double">;
 
@@ -153,20 +175,20 @@ function LessonFields({
   );
 }
 
-/** Initial form values for a new class in the school year half of the preset date. */
+/** Initial form values for a new class in the preset school year half, else the one of the preset date. */
 function emptyForm(
   calendar: SchoolCalendar,
   settings: AppSettings,
   years: number[],
-  preset: ClassEditDialogProps["preset"],
+  preset: ClassEditorProps["preset"],
 ): ClassForm {
-  const year = getSchoolYear(preset.date, calendar);
+  const year = preset.year ?? getSchoolYear(preset.date, calendar);
   return {
     subject: "",
     number: settings.levels[0],
     letter: settings.letters[0],
     year: years.includes(year) ? year : (years.at(-1) ?? year),
-    part: getSchoolYearPart(preset.date, calendar),
+    part: preset.part ?? getSchoolYearPart(preset.date, calendar),
     day: preset.day ?? 1,
     hour: preset.hour ?? 1,
     double: false,
@@ -177,10 +199,11 @@ function emptyForm(
 }
 
 /**
- * Edit popup for all class information and the student list.
- * Mount it only while open, its state is initialized from the props once.
+ * Page content with all class information and the student list. Changes of an existing class
+ * are saved right away; a new class is only created with "Speichern".
+ * Its state is initialized from the props once.
  */
-export function ClassEditDialog({
+export function ClassEditor({
   cls,
   students,
   allClasses,
@@ -189,25 +212,40 @@ export function ClassEditDialog({
   schoolYears,
   traits,
   preset,
-  onSave,
-  onDelete,
+  onCreate,
   onCancel,
-}: ClassEditDialogProps) {
+  onDirtyChange,
+  onLeave,
+  onSaved,
+  onDelete,
+}: ClassEditorProps) {
   const settings = useSettings();
+  const location = useLocation();
+  const navigate = useNavigate();
   const years = schoolYears.map(({ year }) => year);
   const [form, setForm] = useState<ClassForm>(
     () => cls ?? emptyForm(calendar, settings, years, preset),
   );
-  const [roster, setRoster] = useState<RosterRow[]>(() =>
-    students.map((student) => ({
-      ...toRosterEntry(student),
-      key: `s${student.id}`,
-    })),
+  const [roster, setRosterState] = useState<RosterRow[]>(() =>
+    toRows(students),
   );
   const [pasteText, setPasteText] = useState<string | null>(null);
+  const [initialForm] = useState(form);
+  const dirty =
+    !cls &&
+    (JSON.stringify(form) != JSON.stringify(initialForm) ||
+      roster.length > 0 ||
+      !!pasteText?.trim());
+  useEffect(() => onDirtyChange?.(dirty), [dirty, onDirtyChange]);
   const [removing, setRemoving] = useState<RosterRow | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // The latest state for the queued saves, which run after the render they were started in
+  const formRef = useRef(form);
+  const rosterRef = useRef(roster);
+  const queue = useRef(Promise.resolve());
+  const pendingSave = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nextKey = useRef(0);
   const [editingStudent, setEditingStudent] = useState<
     RosterRow | "new" | null
@@ -219,8 +257,91 @@ export function ClassEditDialog({
     error?: boolean;
   } | null>(null);
 
-  const update = (changes: Partial<ClassForm>) =>
-    setForm((prev) => ({ ...prev, ...changes }));
+  // A new class for a school year that is not set up (yet), e.g. the timetable's week, waits for
+  // the settings, unless it is created in one of the existing school years instead
+  const presetYear = preset.year ?? getSchoolYear(preset.date, calendar);
+  const [inExistingYear, setInExistingYear] = useState(false);
+  const missingYear =
+    years.length == 0 ||
+    (!cls && !years.includes(presetYear) && !inExistingYear);
+
+  /** The form as it is saved; `null` while it cannot be saved. */
+  const toSaved = (current: ClassForm) =>
+    current.subject.trim() && !missingYear
+      ? {
+          ...current,
+          subject: current.subject.trim(),
+          letter: !hasLetters(current.number)
+            ? null
+            : (current.letter ?? settings.letters[0]),
+        }
+      : null;
+
+  /** Runs saves one after the other, so they never overlap. */
+  const enqueue = (job: () => Promise<void>) => {
+    queue.current = queue.current.then(job).catch((error) => {
+      console.error(error);
+      const { name, message } = error as Error;
+      setSaveError(`Speichern fehlgeschlagen (${name}: ${message}).`);
+    });
+  };
+
+  /**
+   * Saves an existing class with the latest form and roster. The roster is reloaded after a
+   * change of it, so new students get their ids before the next save.
+   */
+  const persist = async (reload: boolean) => {
+    const saved = toSaved(formRef.current);
+    if (!cls || !saved) return;
+    await saveSchoolClass(
+      { ...saved, id: cls.id },
+      rosterRef.current.map(toRosterEntry),
+    );
+    setSaveError(null);
+    if (reload) {
+      rosterRef.current = toRows(await getClassStudents(cls.id));
+      setRosterState(rosterRef.current);
+    }
+    onSaved();
+  };
+
+  // Leaving the page right after typing still saves the last change
+  const flushPendingSave = useRef(() => undefined as void);
+  useEffect(() => {
+    flushPendingSave.current = () => {
+      if (!pendingSave.current) return;
+      clearTimeout(pendingSave.current);
+      pendingSave.current = null;
+      enqueue(() => persist(false));
+    };
+  });
+  useEffect(() => () => flushPendingSave.current(), []);
+
+  const update = (changes: Partial<ClassForm>) => {
+    formRef.current = { ...formRef.current, ...changes };
+    setForm(formRef.current);
+    if (!cls) return;
+    if (pendingSave.current) clearTimeout(pendingSave.current);
+    pendingSave.current = setTimeout(() => {
+      pendingSave.current = null;
+      enqueue(() => persist(false));
+    }, SAVE_DELAY_MS);
+  };
+
+  /** Changes the roster; for an existing class queued with its save, on the latest roster. */
+  const setRoster = (change: (prev: RosterRow[]) => RosterRow[]) => {
+    const apply = () => {
+      rosterRef.current = change(rosterRef.current);
+      setRosterState(rosterRef.current);
+    };
+    if (!cls) return apply();
+    if (pendingSave.current) clearTimeout(pendingSave.current);
+    pendingSave.current = null;
+    enqueue(async () => {
+      apply();
+      await persist(true);
+    });
+  };
   // "Ganzes Jahr" only stays visible for classes that were created with it
   const parts: SchoolYearPart[] =
     form.part == "full" ? ["1", "2", "full"] : ["1", "2"];
@@ -281,7 +402,7 @@ export function ClassEditDialog({
         })),
         createRow,
       );
-      setRoster(fillNicknames(result.rows));
+      setRoster(() => fillNicknames(result.rows));
       setImportResult({
         text:
           `${result.added} neu, ${result.matched} abgeglichen` +
@@ -307,16 +428,14 @@ export function ClassEditDialog({
   const removeRow = (row: RosterRow) =>
     setRoster((prev) => prev.filter((r) => r.key != row.key));
 
-  const save = async () => {
+  const create = async () => {
+    const saved = toSaved(form);
+    if (!saved) return;
     setSaving(true);
     try {
-      await onSave(
-        {
-          ...form,
-          subject: form.subject.trim(),
-          letter: hasNoLetter ? null : (form.letter ?? settings.letters[0]),
-        },
-        // A pasted list that was not applied yet is saved as well
+      // A pasted list that was not applied yet is saved as well
+      await onCreate?.(
+        saved,
         mergeList(roster, pasteText ?? "").map(toRosterEntry),
       );
     } finally {
@@ -325,16 +444,63 @@ export function ClassEditDialog({
   };
 
   return (
-    <Dialog open fullWidth maxWidth="md" scroll="paper">
-      <DialogTitle>{cls ? "Klasseninformationen" : "Neue Klasse"}</DialogTitle>
-      <DialogContent>
-        {years.length == 0 && (
+    <main
+      className="card flex min-h-0 flex-1 flex-col"
+      data-help={
+        cls
+          ? "Alle Angaben der Klasse und die Schülerliste. Änderungen werden sofort gespeichert."
+          : "Angaben der neuen Klasse und die Schülerliste. Erst „Speichern“ legt die Klasse an, „Abbrechen“ verwirft sie."
+      }
+    >
+      <div className="min-h-0 flex-1 overflow-auto p-5">
+        {saveError && (
+          <Alert severity="error" className="mb-3">
+            {saveError}
+          </Alert>
+        )}
+        {cls && !form.subject.trim() && (
           <Alert severity="warning" className="mb-3">
-            Es ist noch kein Schuljahr angelegt. Bitte zuerst in den{" "}
-            <Link to="/settings" className="font-semibold underline">
+            Ohne Fach wird nichts gespeichert.
+          </Alert>
+        )}
+        {missingYear && (
+          <Alert severity="warning" className="mb-3">
+            {years.length == 0
+              ? "Es ist noch kein Schuljahr angelegt."
+              : `Das Schuljahr ${formatSchoolYear(presetYear)} ist nicht angelegt.`}{" "}
+            Bitte zuerst in den{" "}
+            <Link
+              to="/settings"
+              className="font-semibold underline"
+              onClick={(event) => {
+                const leave = () =>
+                  rememberReturnPage(
+                    "/settings",
+                    location.pathname + location.search,
+                  );
+                if (!onLeave) return leave();
+                event.preventDefault();
+                onLeave(() => {
+                  leave();
+                  navigate("/settings");
+                });
+              }}
+            >
               Einstellungen
             </Link>{" "}
             hinzufügen.
+            {years.length > 0 && (
+              <div className="mt-2">
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="inherit"
+                  onClick={() => setInExistingYear(true)}
+                >
+                  Stattdessen in einem bestehenden Schuljahr anlegen
+                </Button>
+              </div>
+            )}
           </Alert>
         )}
         <h3 className="mb-3 text-sm font-semibold tracking-wider text-muted uppercase">
@@ -542,7 +708,7 @@ export function ClassEditDialog({
               className="self-end"
               variant="contained"
               onClick={() => {
-                setRoster(mergeList(roster, pasteText));
+                setRoster((prev) => mergeList(prev, pasteText));
                 setPasteText(null);
               }}
             >
@@ -615,29 +781,34 @@ export function ClassEditDialog({
             </div>
           ))}
         </div>
-      </DialogContent>
-
-      <DialogActions>
         {cls && (
-          <Button
-            color="error"
-            onClick={() => setConfirmDelete(true)}
-            sx={{ mr: "auto" }}
-          >
-            Klasse löschen
-          </Button>
+          <div className="mt-8 border-t border-line pt-4">
+            <Button
+              color="error"
+              variant="outlined"
+              startIcon={<TrashIcon size={18} />}
+              onClick={() => setConfirmDelete(true)}
+            >
+              Klasse löschen
+            </Button>
+          </div>
         )}
-        <Button color="error" onClick={onCancel}>
-          Abbrechen
-        </Button>
-        <Button
-          variant="contained"
-          disabled={!form.subject.trim() || saving || years.length == 0}
-          onClick={save}
-        >
-          Speichern
-        </Button>
-      </DialogActions>
+      </div>
+
+      {!cls && (
+        <div className="flex justify-end gap-2 border-t border-line px-5 py-3">
+          <Button color="error" onClick={onCancel}>
+            Abbrechen
+          </Button>
+          <Button
+            variant="contained"
+            disabled={!toSaved(form) || saving}
+            onClick={create}
+          >
+            Speichern
+          </Button>
+        </div>
+      )}
 
       {editingStudent && (
         <StudentDialog
@@ -666,8 +837,9 @@ export function ClassEditDialog({
         onClose={() => setRemoving(null)}
         onConfirm={() => removing && removeRow(removing)}
       >
-        Beim Speichern werden auch alle Noten und Kommentare in dieser Klasse
-        gelöscht.
+        {cls
+          ? "Alle Noten und Kommentare des Schülers in dieser Klasse werden gelöscht."
+          : "Der Schüler wird aus der Liste entfernt."}
       </ConfirmDialog>
       <ConfirmDialog
         open={confirmDelete}
@@ -678,6 +850,6 @@ export function ClassEditDialog({
         Die Klasse wird mit allen Noten, Kommentaren und der Sitzordnung
         gelöscht.
       </ConfirmDialog>
-    </Dialog>
+    </main>
   );
 }

@@ -2,8 +2,12 @@ import { createHashRouter, redirect } from "react-router";
 import { App } from "./App";
 import { rootLoader } from "./rootLoader";
 import { ErrorPage } from "./features/errors/ErrorPage";
+import { ClassEditPage } from "./features/classEdit/ClassEditPage";
+import { classEditLoader } from "./features/classEdit/classEditLoader";
 import { ClassroomPage } from "./features/classroom/ClassroomPage";
 import { classroomLoader } from "./features/classroom/classroomLoader";
+import { NameTrainerPage } from "./features/nameTrainer/NameTrainerPage";
+import { nameTrainerLoader } from "./features/nameTrainer/nameTrainerLoader";
 import { OverviewPage } from "./features/overview/OverviewPage";
 import { OverviewListPage } from "./features/overview/OverviewListPage";
 import {
@@ -49,18 +53,23 @@ export const createAppRouter = () =>
             },
             {
               path: "classes/new",
-              loader: (args) => classroomLoader(args, "new"),
-              Component: ClassroomPage,
+              loader: (args) => classEditLoader(args, "classes"),
+              Component: ClassEditPage,
             },
             {
               path: "classes/:id",
-              loader: (args) => classroomLoader(args, "view"),
+              loader: classroomLoader,
               Component: ClassroomPage,
             },
             {
               path: "classes/:id/edit",
-              loader: (args) => classroomLoader(args, "edit"),
-              Component: ClassroomPage,
+              loader: (args) => classEditLoader(args, "classes"),
+              Component: ClassEditPage,
+            },
+            {
+              path: "classes/:id/names",
+              loader: (args) => nameTrainerLoader(args, "classes"),
+              Component: NameTrainerPage,
             },
             {
               path: "overview",
@@ -71,6 +80,16 @@ export const createAppRouter = () =>
               path: "overview/:id",
               loader: overviewLoader,
               Component: OverviewPage,
+            },
+            {
+              path: "overview/:id/edit",
+              loader: (args) => classEditLoader(args, "overview"),
+              Component: ClassEditPage,
+            },
+            {
+              path: "overview/:id/names",
+              loader: (args) => nameTrainerLoader(args, "overview"),
+              Component: NameTrainerPage,
             },
             {
               path: "settings",

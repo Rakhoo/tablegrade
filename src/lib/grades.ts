@@ -22,7 +22,7 @@ export const FAIL_GRADE = 6;
 
 /**
  * What a tap on a student does while grading: set an oral grade or a mark, mark as absent,
- * remove something, enter the suggested grade or edit the comment.
+ * remove something or enter the suggested grade.
  */
 export type GradeTool =
   | `grade:${number}`
@@ -30,11 +30,20 @@ export type GradeTool =
   | "absent"
   | "erase"
   | "eraseMark"
-  | "suggestion"
-  | "comment";
+  | "suggestion";
 
-/** Default tool while grading. */
-export const DEFAULT_GRADE_TOOL: GradeTool = `grade:${DEFAULT_GRADE}`;
+/** Default tool while grading: the suggestion, if offered for the lesson. */
+export const DEFAULT_GRADE_TOOL: GradeTool = "suggestion";
+
+/**
+ * The grade of `grades` (from best to worst) closest to `value`; of two equally close ones the
+ * better. Tendencies are no exact binary fractions, so "equally close" allows for rounding.
+ */
+export function getNearestGrade(value: number, grades: number[]) {
+  return grades.reduce((best, grade) =>
+    Math.abs(grade - value) < Math.abs(best - value) - 1e-9 ? grade : best,
+  );
+}
 
 /** The value of a `grade:` or `mark:` tool. */
 export const getToolValue = (tool: GradeTool) => Number(tool.split(":")[1]);
@@ -102,11 +111,12 @@ export function getValidGradeTool(
   suggestions: boolean,
 ): GradeTool {
   const { grades, marks } = getGradeTools(visibleGrades, type);
-  const others: GradeTool[] = ["absent", "erase", "comment"];
+  const others: GradeTool[] = ["absent", "erase"];
   if (suggestions && type != "exam") others.push("suggestion");
   if ([...grades, ...marks, ...others].includes(tool)) return tool;
   if (type == "exam") return `mark:${DEFAULT_GRADE}`;
-  return grades[0] && !grades.includes(DEFAULT_GRADE_TOOL)
-    ? grades[0]
-    : DEFAULT_GRADE_TOOL;
+  // Without the suggestion the offered symbol closest to the neutral grade
+  return visibleGrades.length > 0
+    ? `grade:${getNearestGrade(DEFAULT_GRADE, visibleGrades)}`
+    : `grade:${DEFAULT_GRADE}`;
 }

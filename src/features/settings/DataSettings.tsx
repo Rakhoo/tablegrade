@@ -2,7 +2,6 @@ import {
   Alert,
   Button,
   FormControlLabel,
-  MenuItem,
   Switch,
   TextField,
 } from "@mui/material";
@@ -14,21 +13,23 @@ import { useSaveSettings } from "./useSaveSettings";
 
 const MIN_PIN_LENGTH = 4;
 
-/** Export format, backup reminder and the PIN lock (see `PIN_LOCK_ENABLED`). */
+/** Export format and the PIN lock (see `PIN_LOCK_ENABLED`). */
 export function DataSettings() {
   const {
     exportColors,
     exportValues,
     exportNoPhotos,
     exportNoTraits,
-    backupReminderDays,
     pinHash,
   } = useSettings();
   const save = useSaveSettings();
   const [pin, setPin] = useState("");
 
   return (
-    <SettingsSection title="Export und Sicherung">
+    <SettingsSection
+      title="Export"
+      help="Wie die Übersichtstabellen als PDF exportiert werden."
+    >
       <FormControlLabel
         label="PDF-Export in Farbe"
         control={
@@ -65,21 +66,6 @@ export function DataSettings() {
           />
         }
       />
-      <TextField
-        select
-        size="small"
-        label="An Sicherung erinnern"
-        value={backupReminderDays}
-        className="max-w-72"
-        onChange={(event) =>
-          save({ backupReminderDays: Number(event.target.value) })
-        }
-      >
-        <MenuItem value={0}>Nie</MenuItem>
-        <MenuItem value={7}>Nach 7 Tagen</MenuItem>
-        <MenuItem value={14}>Nach 14 Tagen</MenuItem>
-        <MenuItem value={30}>Nach 30 Tagen</MenuItem>
-      </TextField>
 
       {PIN_LOCK_ENABLED && (
         <>

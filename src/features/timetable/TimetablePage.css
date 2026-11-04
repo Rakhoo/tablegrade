@@ -19,7 +19,7 @@
   display: none !important;
 }
 
-/* Date picker in the sidebar: lavender selection, rounded days */
+/* Date picker beside the timetable: lavender selection, rounded days */
 .timetable-page .MuiDateCalendar-root {
   width: 20rem;
   height: auto;

@@ -11,42 +11,31 @@ import {
   getHolidays,
   getSchoolClass,
   getSchoolClasses,
-  getSubjects,
   getTraits,
   waitForDatabase,
-  type GradeEntry,
-  type SchoolClass,
-  type SeatedStudent,
 } from "../../db";
 import { getLastOccurrence, toIsoDate } from "../../lib/dates";
 import { createCalendar, getClassOccurrences } from "../../lib/schoolYear";
 import type { LessonType } from "../../lib/grades";
-import { getAdjacentLesson, lessonKey, type Lesson } from "../../lib/lessons";
-
-/** How the classroom page was opened: creating, viewing or editing a class. */
-export type ClassroomMode = "new" | "view" | "edit";
+import { getAdjacentLesson, lessonKey } from "../../lib/lessons";
 
 /**
  * Loads a class with students and the grades of the selected lesson date.
  * The date comes from `?date=` and defaults to the most recent lesson of the class.
  */
-export async function classroomLoader(
-  { params, request }: LoaderFunctionArgs,
-  mode: ClassroomMode,
-) {
-  const isNew = mode == "new";
+export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
   await waitForDatabase();
-
   const dateParam = parseISO(
     new URL(request.url).searchParams.get("date") ?? "",
   );
+  const cls = await getSchoolClass(Number(params.id));
+  if (!cls) return redirect("/404");
   const [
     holidays,
     schoolYears,
     cancelledDays,
     cancelledLessons,
     allClasses,
-    subjects,
     traits,
   ] = await Promise.all([
     getHolidays(),
@@ -54,36 +43,9 @@ export async function classroomLoader(
     getCancelledDays(),
     getCancelledLessons(),
     getSchoolClasses(),
-    getSubjects(),
     getTraits(),
   ]);
   const calendar = createCalendar(holidays, schoolYears);
-  const base = {
-    calendar,
-    schoolYears,
-    allClasses,
-    subjects,
-    traits,
-    editing: mode != "view",
-  };
-
-  if (isNew) {
-    return {
-      ...base,
-      class: undefined as SchoolClass | undefined,
-      students: [] as SeatedStudent[],
-      roster: [] as SeatedStudent[],
-      grades: [] as GradeEntry[],
-      classGrades: [] as GradeEntry[],
-      date: toIsoDate(isValid(dateParam) ? dateParam : new Date()),
-      lessonType: "normal" as LessonType,
-      previous: null as Lesson | null,
-      next: null as Lesson | null,
-    };
-  }
-
-  const cls = await getSchoolClass(Number(params.id));
-  if (!cls) return redirect("/404");
   const date = toIsoDate(
     isValid(dateParam)
       ? dateParam
@@ -100,10 +62,11 @@ export async function classroomLoader(
   const lessonDate = parseISO(date);
   const cancelled = { days: cancelledDays, lessons: cancelledLessons };
   return {
-    ...base,
-    class: cls as SchoolClass | undefined,
+    class: cls,
     students: roster.filter((student) => !student.hidden),
+    // All students, also hidden ones, to restore their seats when a move is undone
     roster,
+    traits,
     grades,
     classGrades,
     date,

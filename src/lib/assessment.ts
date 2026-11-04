@@ -1,5 +1,5 @@
 import type { GradeEntry } from "../db";
-import { DEFAULT_GRADE, type LessonType } from "./grades";
+import { DEFAULT_GRADE, getNearestGrade, type LessonType } from "./grades";
 import type { AppSettings } from "./settings";
 
 /** The settings the calculation depends on. */
@@ -98,7 +98,7 @@ export function getStudentResult(
 
 /**
  * Suggests the grade for a student's lesson: the offered one closest to the weighted average
- * of all grades before that date, or the neutral grade without any.
+ * of all grades before that date, or to a plain 3 without any; ties go to the better one.
  */
 export function suggestGrade(
   entries: GradeEntry[],
@@ -110,7 +110,5 @@ export function suggestGrade(
       entries.filter((entry) => entry.date < date),
       getSuggestionWeight,
     ) ?? DEFAULT_GRADE;
-  return visibleGrades.reduce((best, grade) =>
-    Math.abs(grade - average) < Math.abs(best - average) ? grade : best,
-  );
+  return getNearestGrade(average, visibleGrades);
 }

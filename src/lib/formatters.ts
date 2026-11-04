@@ -22,3 +22,11 @@ export const compareStudents = (a: StudentName, b: StudentName) =>
 export const getStudentLabel = (
   student: StudentName & { nickname: string | null },
 ) => student.nickname || student.firstName || student.lastName;
+
+/** The first words of a comment, e.g. for a speech bubble. */
+export function getCommentPreview(comment: string, words = 6) {
+  const parts = comment.trim().split(/\s+/);
+  return parts.length > words
+    ? `${parts.slice(0, words).join(" ")} …`
+    : parts.join(" ");
+}

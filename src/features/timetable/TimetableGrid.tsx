@@ -2,6 +2,7 @@ import { addDays, format, isToday } from "date-fns";
 import { de } from "date-fns/locale/de";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
+import { rememberCurrentPageFor } from "../../lib/returnPage";
 import { CheckIcon } from "../../components/icons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import type { SchoolClass } from "../../db";
@@ -46,6 +47,7 @@ type Slot = { day: number; weekday: string; date: Date };
 const newClassLink = ({ day, weekday, date }: Slot, hour: number) => ({
   to: `/classes/new?day=${day}&hour=${hour}&date=${toIsoDate(date)}`,
   "aria-label": `Neue Klasse am ${weekday}, ${hour}. Stunde`,
+  onClick: () => rememberCurrentPageFor("/classes/new"),
 });
 
 /**

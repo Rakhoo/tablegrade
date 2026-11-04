@@ -1,6 +1,6 @@
 import type { GradeEntry } from "../db";
 import { getStudentResult, type GradingRules } from "./assessment";
-import { GRADE_VALUES, type LessonType } from "./grades";
+import { getNearestGrade, GRADE_VALUES, type LessonType } from "./grades";
 
 /** A grade given for a period: part of the school year half ("Teilnote") or all of it. */
 export type ReportKind = "partial" | "half";
@@ -32,14 +32,15 @@ export type ReportColumn = {
   suggestions: Map<number, number | null>;
 };
 
-/** Rounds a calculated grade to the closest grade with tendency. */
-export const getNearestGrade = (value: number) =>
-  GRADE_VALUES.reduce((best, grade) =>
-    Math.abs(grade - value) < Math.abs(best - value) ? grade : best,
-  );
+/**
+ * Rounds a calculated grade to the closest grade with tendency. Only a value exactly in the
+ * middle when rounded to two decimals goes to the better grade, e.g. 2.85 to 2.7 ("3+").
+ */
+const roundToGrade = (value: number) =>
+  getNearestGrade(Math.round(value * 100) / 100, GRADE_VALUES);
 
 const roundGrade = (value: number | null) =>
-  value == null ? null : getNearestGrade(value);
+  value == null ? null : roundToGrade(value);
 
 /** Reports by date; on the same day the partial comes before the half. */
 const sortReports = (reports: Report[]) =>
@@ -87,7 +88,7 @@ export function getReportColumns(
           (partial) => partial.values.get(id) ?? [],
         );
         return values.length > 0
-          ? getNearestGrade(
+          ? roundToGrade(
               values.reduce((sum, value) => sum + value, 0) / values.length,
             )
           : null;

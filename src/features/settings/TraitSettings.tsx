@@ -65,6 +65,7 @@ export function TraitSettings({ traits }: TraitSettingsProps) {
 
   return (
     <SettingsSection
+      help="Eigenschaften, die Schülern zugewiesen werden können, mit ihren Farben."
       title="Schülereigenschaften"
       hint="Erscheinen als farbige Punkte im Sitzplan. Jede Farbe gibt es nur einmal."
     >

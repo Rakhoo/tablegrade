@@ -119,6 +119,25 @@ export function getLessonDates(
 }
 
 /**
+ * Date (`YYYY-MM-DD`) of the class's lesson on `from` or the next one after it within its
+ * school year part, `null` if no lesson is left.
+ */
+export function getUpcomingLessonDate(
+  cls: SchoolClass,
+  calendar: SchoolCalendar,
+  cancelled: CancelledDates,
+  from = new Date(),
+) {
+  const { end } = getSchoolYearRange(cls.year, cls.part, calendar);
+  for (let day = from; day < end; day = addDays(day, 1)) {
+    if (getLessonsOn(day, [cls], calendar, cancelled).length > 0) {
+      return toIsoDate(day);
+    }
+  }
+  return null;
+}
+
+/**
  * Entries that lose their lesson under a calendar: outside the class's school year part or on
  * a holiday, e.g. after moving the start of the second half.
  */

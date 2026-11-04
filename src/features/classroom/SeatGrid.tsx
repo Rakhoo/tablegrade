@@ -4,9 +4,14 @@ import { MarkBadge } from "../../components/MarkBadge";
 import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
 import { CommentIcon } from "../../components/icons";
 import type { GradeEntry, SeatedStudent, Trait } from "../../db";
-import { getStudentLabel } from "../../lib/formatters";
+import { getCommentPreview, getStudentLabel } from "../../lib/formatters";
 import { getGradeColor } from "../../lib/grades";
-import { GRID_COLUMNS, GRID_ROWS, SEAT_SIZE } from "../../lib/seating";
+import {
+  getZoomedArea,
+  GRID_COLUMNS,
+  GRID_ROWS,
+  SEAT_SIZE,
+} from "../../lib/seating";
 import { WARNING_LEVELS } from "../../lib/warnings";
 
 type SeatGridProps = {
@@ -21,6 +26,10 @@ type SeatGridProps = {
   suggestions: Map<number, number>;
   /** Arrange mode: students are dragged instead of tapped. */
   arranging: boolean;
+  /** Comment mode: comments show their first words in a speech bubble. */
+  showComments: boolean;
+  /** Enlarges the smallest part of the room holding all seated students (not while arranging). */
+  zoomed?: boolean;
   /** Called when a student is tapped outside of arrange mode. */
   onTap: (student: SeatedStudent) => void;
   onMove: (student: SeatedStudent, x: number, y: number) => void;
@@ -49,6 +58,8 @@ export function SeatGrid({
   grades,
   suggestions,
   arranging,
+  showComments,
+  zoomed = false,
   onTap,
   onMove,
 }: SeatGridProps) {
@@ -100,40 +111,53 @@ export function SeatGrid({
     onPointerCancel: () => setDrag(null),
   };
 
+  const seated = students.filter(
+    (student) => student.x != null && student.y != null,
+  );
+  const zoomedArea =
+    zoomed && !arranging ? getZoomedArea(seated as Position[]) : null;
+  const percent = (share: number) => `${share * 100}%`;
+
   return (
     <>
-      <div
-        ref={gridRef}
-        className={
-          "seat-grid grid h-full " + (arranging ? "arranging touch-none" : "")
-        }
-        style={{
-          gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
-        }}
-        {...dragHandlers}
-      >
-        {students
-          .filter((student) => student.x != null && student.y != null)
-          .map((student) => (
+      <div className="relative h-full overflow-hidden">
+        <div
+          ref={gridRef}
+          className={
+            "seat-grid absolute grid transition-[left,top,width,height] duration-300 " +
+            (arranging ? "arranging touch-none" : "")
+          }
+          style={{
+            gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${GRID_ROWS}, minmax(0, 1fr))`,
+            left: percent(zoomedArea?.left ?? 0),
+            top: percent(zoomedArea?.top ?? 0),
+            width: percent(zoomedArea?.size ?? 1),
+            height: percent(zoomedArea?.size ?? 1),
+          }}
+          {...dragHandlers}
+        >
+          {seated.map((student) => (
             <Seat
               key={student.id}
               student={student}
               entry={grades.get(student.id)}
               suggestion={suggestions.get(student.id)}
               arranging={arranging}
+              showComment={showComments}
               traits={traits}
               showPhoto={showPhotos}
               isDragged={drag?.student.id == student.id}
               onTap={onTap}
             />
           ))}
-        {drag && (
-          <div
-            className="pointer-events-none m-1 rounded-2xl border-2 border-dashed border-white bg-white/25"
-            style={seatArea(drag.target)}
-          />
-        )}
+          {drag && (
+            <div
+              className="pointer-events-none m-1 rounded-2xl border-2 border-dashed border-white bg-white/25"
+              style={seatArea(drag.target)}
+            />
+          )}
+        </div>
       </div>
       {drag && (
         <div
@@ -152,6 +176,7 @@ type SeatProps = {
   entry?: GradeEntry;
   suggestion?: number;
   arranging: boolean;
+  showComment: boolean;
   traits: Trait[];
   showPhoto: boolean;
   isDragged: boolean;
@@ -164,6 +189,7 @@ function Seat({
   entry,
   suggestion,
   arranging,
+  showComment,
   traits,
   showPhoto,
   isDragged,
@@ -269,7 +295,15 @@ function Seat({
           className="absolute -bottom-1 -left-1 z-10 border-2 shadow-tile"
         />
       )}
-      {entry?.comment && (
+      {entry?.comment && showComment && (
+        <span className="absolute inset-x-1 top-1 z-20 rounded-xl bg-surface px-1.5 py-1 text-left text-[11px] leading-tight font-medium text-ink shadow-tile ring-1 ring-brand-200">
+          <span className="line-clamp-3">
+            {getCommentPreview(entry.comment)}
+          </span>
+          <span className="absolute -bottom-1 left-4 h-2 w-2 rotate-45 bg-surface" />
+        </span>
+      )}
+      {entry?.comment && !showComment && (
         <span
           className="absolute -right-1 -bottom-1 z-10 flex rounded-full border-2 bg-surface p-0.5 text-brand-500 shadow-tile"
           style={{ borderColor: tileColor }}

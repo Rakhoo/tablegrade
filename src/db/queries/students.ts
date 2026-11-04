@@ -61,6 +61,32 @@ export const deleteOrphanStudents = () =>
     "DELETE FROM Students WHERE id NOT IN (SELECT studentId FROM Classes2Students)",
   );
 
+/** A student's seat, `null` coordinates for no seat. */
+export type SeatPosition = {
+  studentId: number;
+  x: number | null;
+  y: number | null;
+};
+
+/** Puts students back on given seats, e.g. to undo a move. */
+export async function setStudentSeats(classId: number, seats: SeatPosition[]) {
+  await client.transaction(async (tx) => {
+    for (const { studentId, x, y } of seats) {
+      await tx.query(
+        db
+          .update(classStudents)
+          .set({ x, y })
+          .where(
+            and(
+              eq(classStudents.classId, classId),
+              eq(classStudents.studentId, studentId),
+            ),
+          ),
+      );
+    }
+  });
+}
+
 /**
  * Moves a student so its top left cell is at `(x, y)`. If the new place overlaps exactly
  * one other student, both swap their places; overlapping several students does nothing.

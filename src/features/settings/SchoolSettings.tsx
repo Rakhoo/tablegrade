@@ -31,6 +31,7 @@ export function SchoolSettings({ schoolClasses }: SchoolSettingsProps) {
 
   return (
     <SettingsSection
+      help="Stufen, Klassenbuchstaben, Stunden pro Tag und der Modus, mit dem eine Stunde öffnet."
       title="Schule"
       hint="Stufen ohne Zahl am Anfang (z. B. EF) haben keinen Buchstaben. Von Klassen genutzte Werte bleiben erhalten."
     >
@@ -85,8 +86,9 @@ export function SchoolSettings({ schoolClasses }: SchoolSettingsProps) {
             save({ startMode: event.target.value as ClassroomMode })
           }
         >
-          <MenuItem value="warn">Ermahnung</MenuItem>
+          <MenuItem value="warn">Ermahnen</MenuItem>
           <MenuItem value="grade">Bewerten</MenuItem>
+          <MenuItem value="comment">Kommentieren</MenuItem>
           <MenuItem value="arrange">Anordnen</MenuItem>
         </TextField>
       </div>

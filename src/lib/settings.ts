@@ -26,7 +26,7 @@ export const FEDERAL_STATES = [
 export const MIXED = "Mix";
 
 /** Interaction mode of the seating plan. */
-export type ClassroomMode = "warn" | "grade" | "arrange";
+export type ClassroomMode = "warn" | "grade" | "comment" | "arrange";
 
 type GradeSymbolSetting = { symbol: GradeSymbol; visible: boolean };
 

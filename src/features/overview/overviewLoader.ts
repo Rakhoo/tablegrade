@@ -14,7 +14,13 @@ import {
   getTraits,
   waitForDatabase,
 } from "../../db";
-import { getLessonDates } from "../../lib/lessons";
+import { parseISO } from "date-fns";
+import {
+  getAdjacentLesson,
+  getLessonDates,
+  getUpcomingLessonDate,
+} from "../../lib/lessons";
+import { toIsoDate } from "../../lib/dates";
 import { createCalendar } from "../../lib/schoolYear";
 
 /** Loads all classes for the selection page. */
@@ -25,9 +31,10 @@ export async function overviewListLoader() {
 
 /**
  * Loads a class with its students, all grade entries, the lesson states and the table
- * columns: the lesson dates so far plus any later or irregular date with entries.
+ * columns: the lesson dates up to today or the table's lesson (`?date=`, else today's or the
+ * next one), whichever is later, plus any later or irregular date with entries.
  */
-export async function overviewLoader({ params }: LoaderFunctionArgs) {
+export async function overviewLoader({ params, request }: LoaderFunctionArgs) {
   await waitForDatabase();
   const cls = await getSchoolClass(Number(params.id));
   if (!cls) return redirect("/404");
@@ -42,6 +49,7 @@ export async function overviewLoader({ params }: LoaderFunctionArgs) {
     traits,
     reports,
     reportGrades,
+    allClasses,
   ] = await Promise.all([
     getClassStudents(cls.id),
     getClassGrades(cls.id),
@@ -53,13 +61,41 @@ export async function overviewLoader({ params }: LoaderFunctionArgs) {
     getTraits(),
     getReports(cls.id),
     getReportGrades(cls.id),
+    getSchoolClasses(),
   ]);
   const calendar = createCalendar(holidays, schoolYears);
   // Cancelled lessons and days stay as grayed columns, e.g. for sanctions or to restore them
-  const lessonDates = getLessonDates(cls, calendar, { days: [], lessons: [] });
+  const allLessons = { days: [], lessons: [] };
+  const pastDates = getLessonDates(cls, calendar, allLessons);
+  const cancelled = { days, lessons };
+  const seatingDate =
+    getUpcomingLessonDate(cls, calendar, cancelled) ?? pastDates.at(-1) ?? null;
+  // The lesson the table belongs to, for the previous and next lesson in the timetable
+  const lessonDate =
+    new URL(request.url).searchParams.get("date") ?? seatingDate;
+  // The lessons so far, up to the table's lesson if that is still to come
+  const lessonDates =
+    lessonDate && lessonDate > toIsoDate(new Date())
+      ? getLessonDates(cls, calendar, allLessons, parseISO(lessonDate))
+      : pastDates;
+  const adjacent = (direction: 1 | -1) =>
+    lessonDate
+      ? getAdjacentLesson(
+          cls,
+          parseISO(lessonDate),
+          allClasses,
+          calendar,
+          cancelled,
+          direction,
+        )
+      : null;
   return {
     class: cls,
     students: students.filter((student) => !student.hidden),
+    /** The lesson the seating plan opens with: today's or the next one, else the last one. */
+    seatingDate,
+    previous: adjacent(-1),
+    next: adjacent(1),
     entries,
     days,
     lessons,

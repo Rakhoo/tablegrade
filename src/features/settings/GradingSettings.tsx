@@ -52,6 +52,7 @@ export function GradingSettings() {
 
   return (
     <SettingsSection
+      help="Bewertungssymbole, angebotene Noten und wie Noten aus den Bewertungen berechnet werden."
       title="Benotung"
       hint="Ausgeblendete Noten fehlen in der Bewertungsleiste, bleiben aber bei vorhandenen Einträgen sichtbar."
     >

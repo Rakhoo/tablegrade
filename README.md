@@ -13,6 +13,32 @@ The only network request fetches school holidays from
 
 ## Features
 
+- **Speed dial** (top right, [src/components/SpeedDial.tsx](src/components/SpeedDial.tsx)):
+  collapsed it only shows *Hilfe*, the caret opening it and, on the pages of a class, buttons
+  to its other pages (seating plan or overview table, labelled in landscape), which never
+  cover the page (only the calendar card a bit); open it lists all further features of the page with their
+  labels on the left, above everything else. Display options are real switches, and
+  *Einstellungen* is always the last entry. Modes are no part of it: classroom and overview
+  table choose them with small text toggle buttons in the top left corner of the bar below the
+  header, with undo/redo in its top right corner and the mode's hint or grading tools below.
+  - *Hilfe* explains everything on the screen at once: each element with a `data-help` text
+    gets a callout connected to it by a line ([src/components/HelpOverlay.tsx](src/components/HelpOverlay.tsx)),
+    placed so it covers neither the explained elements nor other callouts.
+    With the dial collapsed it explains the page, open only the dial itself. Large areas like
+    the seating plan cannot be avoided, they get their callout inside; a tap anywhere closes it.
+  - At the top left the seating plan always leads back to "Stundenplan" (in the week of the
+    lesson) and the overview table to "Übersichten" ([src/lib/mainPage.ts](src/lib/mainPage.ts)
+    keeps how they were last shown). The overview selection always leads back to the timetable,
+    in the week last shown; settings, class editor and name cards go one real step back
+    and name the page they came from ([src/lib/returnPage.ts](src/lib/returnPage.ts)); editor
+    and name cards are pages of their own (`…/edit`, `…/names`) whose speed dial only holds the
+    help and the settings.
+  - Seating plans and overview tables share one undo/redo across their modes and pages, shown
+    as two pills with the step's mode and description. A step made on another page first
+    opens that page (the page change itself is no step); the main pages end the history. Each
+    step is named after its mode (*Ermahnung*, *Bewertung*,
+    *Kommentar*, *Anordnung*) and describes the student and value
+    ([src/hooks/useEditHistory.ts](src/hooks/useEditHistory.ts)).
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
   selected week, one row per lesson.
   - Lessons are colored tiles: the subject sets the hue, the level the shade (5 light, Q2
@@ -23,23 +49,38 @@ The only network request fetches school holidays from
     makes it regular again. Existing entries must be confirmed and are then deleted.
   - Complete lessons (every student has a symbol) show a check mark, here and in the classroom.
   - Swiping the timetable switches weeks, swiping the calendar switches months.
+  - In landscape the calendar column sits on the left and the week bar above the timetable;
+    in portrait calendar and controls (week bar included) sit above it. "Neue Klasse" and
+    "Übersichten" are among the controls.
   - Week arrows and month switching in the calendar select whole weeks; "Heute" removes
     the `date` parameter and returns to the clean start state (current week).
-  - "⋯" menu: export / import a backup of the whole database, settings and "Neu laden"
-    (reload and activate a waiting update).
 - **Classroom** (`/classes/:id?date=YYYY-MM-DD`): seating plan of one lesson.
-  - *Ermahnung* (default mode): each tap cycles a student through yellow → red → none.
-  - *Bewerten*: a grading mode showing only the open tool bar (seven grade symbols,
-    "entschuldigt", suggestion, delete, comment, undo/redo) and the seats; tapping a student
-    applies the tool. Undo and redo cover the current session, here and in the overview.
-  - *Bewerten*: choose a tool (grade symbol, delete, comment) and tap students to apply it.
+  - Modes: *Ermahnen* (default, set in the settings), *Bewerten*, *Kommentieren* and
+    *Anordnen*. The speed dial holds *Bearbeiten* (class
+    editor), *Namen lernen* (flash cards for classes with photos), "Stunde zurücksetzen" (in red) and the
+    switches for zoom, photos and traits.
+  - *Ermahnen*: each tap cycles a student through yellow → red → none.
+  - *Bewerten*: the tool bar (grade symbols, "entschuldigt", suggestion, delete, lesson type)
+    stays open below the header; tapping a student applies the tool. The suggestion is the
+    default tool; without previous grades it suggests the shown symbol closest to a plain 3,
+    the better one of two equally close.
+  - *Kommentieren*: the only place for comments. Speech bubbles show their first words, a tap
+    edits the comment or starts a new one.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
+  - "Zoom" zooms in on the smallest part of the room holding
+    all seated students. The seats get larger, not the text, so longer names and larger photos
+    fit; both directions grow alike, so seats keep their shape. The choice is kept per device;
+    arranging always shows the whole room.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
-    colors in the settings); "Eigenschaften" explains the colors of this class, counts them and
-    hides the dots.
+    colors in the settings); "Legende" in the bottom left corner (while the traits are shown) explains the colors of this class
+    and counts them.
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
-- **Class edit dialog** (`/classes/new`, `/classes/:id/edit`): school year, half, level and
+- **Class editor** (`/classes/new`, `/classes/:id/edit`, `/overview/:id/edit`): a page of its
+  own. Changes of an existing class are saved right away (text after a short pause); a new
+  class has "Abbrechen" and "Speichern"; leaving it by "Abbrechen", the back button or a link
+  to the settings asks first once something was entered. School
+  year, half, level and
   letter (both also "Mix"), subject, weekday, lesson, double lesson, an optional second weekly
   lesson on another weekday, and the student list:
   - **WebUntis PDF**: reads last name, first name and photo from all pages (first import and
@@ -71,10 +112,19 @@ The only network request fetches school holidays from
 
 - **Overview** (`/overview`, `/overview/:id`): one table per class and school year
   half with students in rows, lesson dates in columns and the symbols at the intersections.
-  Reachable from the timetable and from a lesson; editable through the same grading mode.
-  Rows and columns are tinted, names can switch to nicknames, a long press on a date cancels
-  that lesson, and "Namen lernen" offers
-  flash cards for classes with photos.
+  The selection groups the classes by school year half, each group ending with a "Neue
+  Klasse" tile that presets that half.
+  Reachable from the overview selection and from a lesson. Arrows next to the title switch to
+  the table of the class with the previous or next lesson in the timetable, as in the seating
+  plan. The column of that lesson (`?date=`, else today's or the next one) is
+  highlighted and scrolled to the middle when a table or lesson is opened. Its modes are
+  *Betrachten* (default, cells do not react), *Bewerten* and *Kommentieren*. The seating plan
+  button opens the lesson the table was opened from, else today's or the next one; the speed
+  dial holds *Bearbeiten*, *Namen lernen* and switches for photos, nicknames and the traits,
+  which are either written out below the names or hidden (photos and traits share their
+  switches with the seating plan). Rows and columns are tinted,
+  comments are marked with a small symbol, and a long press on a date cancels that lesson. A
+  tap on a name covers the entries of all other students, to show a student their own.
 - **Exams and projects**: in the grading mode a lesson can become a *Klausur* (classic marks 1
   to 6 with tendencies instead of symbols, plus "entschuldigt") or a *Projekt* (symbols and
   marks). In the overview a tap on a date sets this for the column; marks only appear in its tool
@@ -117,26 +167,48 @@ repository needs the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 ```
 src/
 ├── main.tsx, router.tsx, App.tsx   entry point, routes, root layout (theme, German locale)
+├── rootLoader.ts                   settings and storage check for every page
 ├── theme.ts, index.css             MUI theme and CSS design tokens
-├── components/                     shared UI: ConfirmDialog, GradeIcon, GradeToolBar, icons
+├── components/                     shared UI: speed dial, help, mode bar, undo/redo, grade
+│                                   tool bar, the frame of a class's sub pages, icons, dialogs
 ├── features/
-│   ├── timetable/                  timetable page, grid, Ausfall dialog, app menu
-│   ├── classroom/                  classroom page, seat grid, dialogs
+│   ├── timetable/                  timetable page, grid, backup reminder
+│   ├── classroom/                  seating plan page, seat grid, its dialogs
 │   ├── overview/                   class selection and overview table
+│   ├── classEdit/                  class editor page (new class and editing), student dialog
+│   ├── nameTrainer/                name cards page
 │   ├── settings/                   settings page, one component per topic
-│   └── errors/                     404 and error page with a way back
+│   ├── install/                    install instructions in a browser tab
+│   └── errors/                     404, error page and storage error
 ├── db/
 │   ├── schema.ts                   Drizzle tables and row types
 │   ├── migrations.ts               ordered SQL migrations
 │   ├── client.ts                   SQLocal connection, migrations, import/export
 │   └── queries/                    data access per entity
 ├── services/                       holiday API, backups, PWA, WebUntis PDF, overview export
-├── hooks/                          useLongPress
+├── hooks/                          shared state (undo history, display options, stored
+│                                   preferences), long press, swipe, settings
 └── lib/                            pure helpers: dates, school year, lessons, seating,
-                                    grades, warnings, subject colors, formatters
+                                    grades, reports, warnings, colors, formatters, page memory
 public/                             _headers and icons
 pwa-assets.config.ts                generator config for the PNG home screen icon
 ```
+
+Routes: `/timetable`, `/overview` (selection), `/overview/:id` (table), `/classes/:id`
+(seating plan), `/classes/new`, `/settings`. Editor and name cards exist under both class
+prefixes (`/classes/:id/edit`, `/overview/:id/edit`, `…/names`) as the same page components;
+the prefix only decides the way back. Each route has its own loader, pages only reload their
+data after changes (`useRevalidator`).
+
+State: data lives in SQLite and comes through the loaders. Shared UI state lives in small
+stores outside React, read with `useSyncExternalStore`: the undo history across seating plans
+and overview tables ([src/hooks/useEditHistory.ts](src/hooks/useEditHistory.ts)) and the
+display options shared by both pages
+([src/hooks/useDisplayOption.ts](src/hooks/useDisplayOption.ts), kept in local storage).
+How the main pages were last shown and which page the settings were opened from is kept in the
+session
+([src/lib/mainPage.ts](src/lib/mainPage.ts), [src/lib/returnPage.ts](src/lib/returnPage.ts)).
+Everything else is local state of its page.
 
 Conventions: components (and their CSS) in PascalCase files with named exports, everything
 else in camelCase files; JSDoc on exported functions and components.
@@ -171,7 +243,7 @@ connect and after importing a backup, so older backups are upgraded automaticall
 
 ### Backup and restore
 
-The "⋯" menu on the timetable exports the database as `tablegrade-YYYY-MM-DD.sqlite3`
+The settings ("Sicherung") export the database as `tablegrade-YYYY-MM-DD.sqlite3`
 through the share sheet on phones and tablets and as a direct download on desktop systems;
 PDF and CSV exports are always direct downloads. Importing checks the SQLite file signature, asks
 for confirmation, replaces the database, runs the migrations and reloads the app. This is
@@ -215,9 +287,9 @@ also the way to move data to another device.
 
 ## Settings
 
-`/settings` (via "⋯"): federal state and school years, theme and light/dark mode, symbols per
+`/settings`: federal state and school years, theme and light/dark mode, symbols per
 grade, grading shares, traits, levels, letters and lessons per day, default seating plan,
-export format and backup reminder. They are stored as JSON in the `Settings` table
+backup, restore, backup reminder, "Neu laden" and the export format. They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
 hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
 
@@ -226,7 +298,8 @@ hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
 A tap on a date in the overview adds a *Teilnote* or *Halbjahresnote* behind that lesson; they
 are independent of the lesson type and a partial grade comes first on a shared day. A report covers the
 entries after the previous report: read-only columns show the rounded parts (*Mündlich*,
-*Projekte*, *Klausuren*, only those that exist), the main column *Gesamt* the calculated grade with tendency
+*Projekte*, *Klausuren*, only those that exist), the main column *Gesamt* the calculated grade (rounded to the closest grade; only a value
+exactly in the middle at two decimals, like 2,85, goes to the better one) with tendency
 by the rules in [src/lib/assessment.ts](src/lib/assessment.ts). Marks set on the main column in the
 grading mode replace it, with an arrow towards the correction; deleting brings the calculation
 back. The grade suggestions for lessons still use all entries.

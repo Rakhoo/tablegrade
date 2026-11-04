@@ -1,18 +1,11 @@
-import {
-  Avatar,
-  Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@mui/material";
+import { Avatar, Button } from "@mui/material";
 import { useState } from "react";
 import type { SeatedStudent } from "../../db";
 import { formatStudentName } from "../../lib/formatters";
 
-type NameTrainerDialogProps = {
+type NameTrainerProps = {
   /** Students with a photo. */
   students: SeatedStudent[];
-  onClose: () => void;
 };
 
 const shuffle = <T,>(items: T[]) =>
@@ -27,13 +20,10 @@ const FACE_STYLE = {
 } as const;
 
 /**
- * Flash cards for learning names: the photo on the front, the name on the back. Students
- * marked as not known come back later in the round. Mount it only while open.
+ * Page content with flash cards for learning names: the photo on the front, the name on the
+ * back. Students marked as not known come back later in the round.
  */
-export function NameTrainerDialog({
-  students,
-  onClose,
-}: NameTrainerDialogProps) {
+export function NameTrainer({ students }: NameTrainerProps) {
   const [queue, setQueue] = useState(() => shuffle(students));
   const [flipped, setFlipped] = useState(false);
   const [card] = queue;
@@ -48,15 +38,19 @@ export function NameTrainerDialog({
   };
 
   return (
-    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle className="flex items-center justify-between">
-        Namen lernen
-        <span className="text-sm font-medium text-muted">
-          {students.length - queue.length} von {students.length}
-        </span>
-      </DialogTitle>
-      <DialogContent>
-        {card ? (
+    <main
+      className="card flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto p-5"
+      data-help="Karteikarten: das Foto antippen deckt den Namen auf. „Nochmal“ bringt die Karte später in der Runde zurück, „Gewusst“ legt sie weg."
+    >
+      <div className="flex w-full max-w-sm flex-col gap-4">
+        <div className="text-center text-sm font-medium text-muted">
+          {students.length - queue.length} von {students.length} gewusst
+        </div>
+        {students.length == 0 ? (
+          <p className="text-center text-muted">
+            Noch kein Schüler dieser Klasse hat ein Foto.
+          </p>
+        ) : card ? (
           <div className="flex flex-col items-center gap-4">
             <button
               type="button"
@@ -132,10 +126,7 @@ export function NameTrainerDialog({
             </Button>
           </div>
         )}
-        <div className="mt-3 flex justify-center">
-          <Button onClick={onClose}>Beenden</Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </main>
   );
 }

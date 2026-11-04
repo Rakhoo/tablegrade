@@ -1,4 +1,4 @@
-import { IconButton, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import {
   formatMark,
   getGradeTools,
@@ -10,23 +10,14 @@ import { useSettings } from "../hooks/useSettings";
 import { LESSON_TYPE_LABELS } from "../lib/lessons";
 import { getVisibleGrades } from "../lib/settings";
 import { GradeIcon } from "./GradeIcon";
-import type { useGradingHistory } from "../hooks/useGradingHistory";
-import {
-  CloseIcon,
-  CommentIcon,
-  RedoIcon,
-  TrashIcon,
-  UndoIcon,
-  WandIcon,
-} from "./icons";
+import { TrashIcon, WandIcon } from "./icons";
 import { MarkBadge } from "./MarkBadge";
 
-type ExtraTool = "suggestion" | "erase" | "comment";
+type ExtraTool = "suggestion" | "erase";
 
 const EXTRA_LABELS: Record<ExtraTool, string> = {
   suggestion: "Vorschlag",
   erase: "Löschen",
-  comment: "Kommentar",
 };
 
 /** Round icon of a tool that is no grade. */
@@ -43,17 +34,10 @@ function ExtraToolIcon({ tool, size }: { tool: ExtraTool; size: number }) {
   }
   return (
     <span
-      className={
-        "flex items-center justify-center rounded-full " +
-        (tool == "erase" ? "text-red-500" : "bg-brand-100 text-brand-600")
-      }
+      className="flex items-center justify-center rounded-full text-red-500"
       style={{ width: size, height: size }}
     >
-      {tool == "erase" ? (
-        <TrashIcon size={size * 0.5} />
-      ) : (
-        <CommentIcon size={size * 0.5} />
-      )}
+      <TrashIcon size={size * 0.5} />
     </span>
   );
 }
@@ -61,33 +45,24 @@ function ExtraToolIcon({ tool, size }: { tool: ExtraTool; size: number }) {
 type GradeToolBarProps = {
   tool: GradeTool;
   onChange: (tool: GradeTool) => void;
-  /** Leaves the grading mode. */
-  onExit: () => void;
   /** Type of the graded lesson; without one all tools are offered (overview table). */
   lessonType?: LessonType;
   /** Changes the type of the graded lesson. */
   onLessonTypeChange?: (type: LessonType) => void;
   /** Hides the marks when no lesson can take them (overview without special lessons). */
   hideMarks?: boolean;
-  /** Undo and redo of the current grading session. */
-  history: Pick<
-    ReturnType<typeof useGradingHistory>,
-    "undo" | "redo" | "canUndo" | "canRedo"
-  >;
 };
 
 /**
- * Toolbar of the grading mode: all tools stay open, so switching takes a single tap.
- * Classic marks get their own row, shown for exams and projects.
+ * Tools of the grading mode: all stay open, so switching takes a single tap. Classic marks
+ * get their own row, shown for exams and projects.
  */
 export function GradeToolBar({
   tool,
   onChange,
-  onExit,
   lessonType,
   onLessonTypeChange,
   hideMarks = false,
-  history,
 }: GradeToolBarProps) {
   const settings = useSettings();
   const { grades, marks } = getGradeTools(
@@ -157,50 +132,38 @@ export function GradeToolBar({
   );
 
   return (
-    <div className="card flex flex-col gap-1 px-2 py-1">
-      {/* Equal outer columns keep the symbols in the center of the screen */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+    <div
+      className="flex flex-col gap-1"
+      data-help={
+        "Werkzeuge zum Bewerten: erst ein Symbol" +
+        (marks.length > 0 && !hideMarks ? " oder eine Note" : "") +
+        " wählen, dann antippen. „Vorschlag“ übernimmt das gestrichelte Symbol, „Löschen“ entfernt die Bewertung." +
+        (typeToggle
+          ? " Hier wird die Stunde auch zur Klausur oder zum Projekt."
+          : "")
+      }
+    >
+      {/* Only wide screens have room for the lesson type next to the tools */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
         <div className="flex items-center gap-1">
           {/* Exams have no symbols, so there is nothing to suggest */}
           {lessonType != "exam" &&
             settings.suggestions &&
             renderExtra("suggestion")}
-          {renderExtra("comment")}
-          {/* Only wide screens have room for the lesson type next to the tools */}
-          <div className="ml-2 max-[1169px]:hidden">{typeToggle}</div>
         </div>
         <div
           className={
-            symbols.length > 9
+            "justify-self-center " +
+            (symbols.length > 9
               ? "grid grid-cols-9 justify-items-center gap-0.5"
-              : "flex items-center gap-1"
+              : "flex items-center gap-1")
           }
         >
           {symbols.map(renderSymbol)}
         </div>
         <div className="flex items-center justify-end gap-1">
-          <IconButton
-            aria-label="Rückgängig"
-            disabled={!history.canUndo}
-            onClick={history.undo}
-          >
-            <UndoIcon />
-          </IconButton>
-          <IconButton
-            aria-label="Wiederherstellen"
-            disabled={!history.canRedo}
-            onClick={history.redo}
-          >
-            <RedoIcon />
-          </IconButton>
+          <div className="mr-2 max-[1169px]:hidden">{typeToggle}</div>
           {renderExtra("erase")}
-          <IconButton
-            aria-label="Bewertung verlassen"
-            onClick={onExit}
-            className="bg-brand-600 text-white"
-          >
-            <CloseIcon />
-          </IconButton>
         </div>
       </div>
       {typeToggle && (
