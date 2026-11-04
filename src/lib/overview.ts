@@ -1,32 +1,42 @@
-import type { LessonType } from "./grades";
+import { isExamDay, MARK_KIND } from "./grades";
+import type { TypesOf } from "./lessonChains";
 import type { ReportColumn } from "./reports";
 
-/** A column of the overview with the oral grades or marks of a lesson. */
-export type LessonColumn = { date: string; kind: "oral" | "mark" };
+/**
+ * A column of the overview for a lesson: its oral grades, its exam or retake marks (`mark`) or
+ * its project marks (`projectMark`).
+ */
+export type LessonColumn = {
+  date: string;
+  kind: "oral" | "mark" | "projectMark";
+};
 
 /** A column of the overview. */
 export type OverviewColumn = LessonColumn | ReportColumn;
 
 /**
- * Lessons take one column each; projects two, as marks stand apart from the oral grades.
- * The columns of a date's reports follow its lesson.
+ * An exam takes one column of marks; other lessons one of oral grades, followed by one for
+ * retake marks and one for project marks if they have them. The columns of a date's reports
+ * follow its lesson.
  */
 export const getOverviewColumns = (
   dates: string[],
-  typeOf: (date: string) => LessonType,
+  typesOf: TypesOf,
   reportColumns: ReportColumn[],
 ): OverviewColumn[] =>
   dates.flatMap((date): OverviewColumn[] => {
-    const type = typeOf(date);
-    const lesson: LessonColumn[] =
-      type == "exam"
-        ? [{ date, kind: "mark" }]
-        : type == "project"
-          ? [
-              { date, kind: "oral" },
-              { date, kind: "mark" },
-            ]
-          : [{ date, kind: "oral" }];
+    const types = typesOf(date);
+    const lesson: LessonColumn[] = isExamDay(types)
+      ? [{ date, kind: "mark" }]
+      : [
+          { date, kind: "oral" },
+          ...(types.includes("retake")
+            ? [{ date, kind: "mark" } as const]
+            : []),
+          ...(types.some((type) => MARK_KIND[type] == "project")
+            ? [{ date, kind: "projectMark" } as const]
+            : []),
+        ];
     return [
       ...lesson,
       ...reportColumns.filter((column) => column.date == date),

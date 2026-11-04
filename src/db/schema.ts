@@ -98,8 +98,10 @@ export const grades = sqliteTable(
     /** Oral grade, see `GRADE_VALUES` in `src/lib/grades.ts`. */
     grade: real("grade"),
     comment: text("comment"),
-    /** Mark of an exam or project, on the same scale as `grade`. */
+    /** Mark of an exam or retake, on the same scale as `grade`. */
     mark: real("mark"),
+    /** Mark of a project or its extension, on the same scale as `grade`. */
+    projectMark: real("projectMark"),
     /** Excused: the lesson does not count for this student. */
     absent: int("absent", { mode: "boolean" }).notNull().default(false),
     /** Number of warnings in this lesson: 0 = none, 1 = first, 2 = second warning. */
@@ -157,7 +159,7 @@ export const cancelledDays = sqliteTable("CancelledDays", {
   date: text("date").primaryKey(),
 });
 
-/** Lessons that are an exam or carry a project; regular lessons have no entry. */
+/** Types of special lessons, one row each; a regular lesson has none. See `LessonType`. */
 export const lessonTypes = sqliteTable(
   "LessonTypes",
   {
@@ -166,9 +168,11 @@ export const lessonTypes = sqliteTable(
       .references(() => schoolClasses.id, { onDelete: "cascade" }),
     /** Date as `YYYY-MM-DD`. */
     date: text("date").notNull(),
-    type: text("type").$type<"exam" | "project">().notNull(),
+    type: text("type")
+      .$type<"exam" | "project" | "retake" | "extension">()
+      .notNull(),
   },
-  (table) => [primaryKey({ columns: [table.classId, table.date] })],
+  (table) => [primaryKey({ columns: [table.classId, table.date, table.type] })],
 );
 
 /** Partial and half year grades on a lesson date; their grades are calculated. */

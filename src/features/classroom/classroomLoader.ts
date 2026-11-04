@@ -17,7 +17,7 @@ import {
 import { getLastOccurrence, toIsoDate } from "../../lib/dates";
 import { createCalendar, getClassOccurrences } from "../../lib/schoolYear";
 import type { LessonType } from "../../lib/grades";
-import { getAdjacentLesson, lessonKey } from "../../lib/lessons";
+import { getAdjacentLesson, lessonDateOf, lessonKey } from "../../lib/lessons";
 
 /**
  * Loads a class with students and the grades of the selected lesson date.
@@ -70,8 +70,13 @@ export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
     grades,
     classGrades,
     date,
-    lessonType: (lessonTypes[lessonKey(cls.id, date)] ??
-      "normal") as LessonType,
+    lessonTypes: lessonTypes[lessonKey(cls.id, date)] ?? ([] as LessonType[]),
+    // The class's special lessons, to find the exam or project a follow-up belongs to
+    classLessonTypes: Object.fromEntries(
+      Object.entries(lessonTypes).flatMap(([key, type]) =>
+        key.startsWith(`${cls.id}|`) ? [[lessonDateOf(key), type]] : [],
+      ),
+    ) as Record<string, LessonType[]>,
     previous: getAdjacentLesson(
       cls,
       lessonDate,

@@ -1,6 +1,6 @@
 import type { GradeEntry } from "../db";
 import { getStudentResult, type GradingRules } from "./assessment";
-import { getNearestGrade, GRADE_VALUES, type LessonType } from "./grades";
+import { getNearestGrade, GRADE_VALUES } from "./grades";
 
 /** A grade given for a period: part of the school year half ("Teilnote") or all of it. */
 export type ReportKind = "partial" | "half";
@@ -55,14 +55,12 @@ const sortReports = (reports: Report[]) =>
  * a half after partials consists of these partials instead, and uses their average.
  * @param studentIds The students to calculate grades for.
  * @param entries The entries of the class.
- * @param typeOf Returns the type of the lesson on a date.
  */
 export function getReportColumns(
   reports: Report[],
   overrides: ReportOverride[],
   studentIds: number[],
   entries: GradeEntry[],
-  typeOf: (date: string) => LessonType,
   rules: GradingRules,
 ) {
   const columns: ReportColumn[] = [];
@@ -101,7 +99,6 @@ export function getReportColumns(
             entries.filter(
               (entry) => entry.studentId == id && entry.date > coveredUntil,
             ),
-            typeOf,
             date,
             rules,
           ),

@@ -20,8 +20,16 @@ export function Pill({
   );
 }
 
-/** Small label marking a lesson as exam or project; regular lessons show nothing. */
-export function LessonTypeBadge({ type }: { type: LessonType }) {
-  if (type == "normal") return null;
-  return <Pill>{LESSON_TYPE_LABELS[type]}</Pill>;
+/**
+ * Small label marking a lesson as exam, project or follow-up.
+ * `label` replaces the type's name, e.g. with the part of a project (see `getLessonTypeLabel`).
+ */
+export function LessonTypeBadge({
+  type,
+  label,
+}: {
+  type: LessonType;
+  label?: string;
+}) {
+  return <Pill>{label ?? LESSON_TYPE_LABELS[type]}</Pill>;
 }

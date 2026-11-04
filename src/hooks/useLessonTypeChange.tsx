@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog";
-import { setLessonType, type GradeEntry } from "../db";
-import type { LessonType } from "../lib/grades";
-import { LESSON_TYPE_LABELS } from "../lib/lessons";
+import { setLessonTypes, type GradeEntry } from "../db";
+import { isExamDay, MARK_KIND, type LessonType } from "../lib/grades";
+import { toggleLessonType } from "../lib/lessons";
 
-type PendingChange = { date: string; type: LessonType; lost: number };
+type PendingChange = { date: string; types: LessonType[]; lost: string[] };
 
 /**
- * Changes the type of a lesson, asking first if that deletes entries.
+ * Toggles a type of a lesson (see `toggleLessonType`), asking first if that deletes entries.
  * @returns The function to request a change and the confirmation dialog to render.
  */
 export function useLessonTypeChange(
@@ -16,32 +16,47 @@ export function useLessonTypeChange(
 ) {
   const [pending, setPending] = useState<PendingChange | null>(null);
 
-  const apply = async (date: string, type: LessonType) => {
-    await setLessonType(classId!, date, type);
+  const apply = async (date: string, types: LessonType[]) => {
+    await setLessonTypes(classId!, date, types);
     onDone();
   };
 
-  const request = (date: string, type: LessonType, entries: GradeEntry[]) => {
-    const lost = entries.filter((entry) =>
-      type == "exam"
-        ? entry.grade != null
-        : type == "normal" && entry.mark != null,
-    ).length;
-    if (lost > 0) setPending({ date, type, lost });
-    else apply(date, type);
+  /**
+   * @param current The lesson's types now.
+   * @param entries The lesson's entries, to count what the change would delete.
+   */
+  const request = (
+    date: string,
+    current: LessonType[],
+    type: LessonType,
+    entries: GradeEntry[],
+  ) => {
+    const types = toggleLessonType(current, type);
+    const kinds = new Set(types.map((other) => MARK_KIND[other]));
+    const count = (has: (entry: GradeEntry) => boolean) =>
+      entries.filter(has).length;
+    const lost = [
+      isExamDay(types) && count((entry) => entry.grade != null),
+      !kinds.has("exam") && count((entry) => entry.mark != null),
+      !kinds.has("project") && count((entry) => entry.projectMark != null),
+    ];
+    const labels = ["Bewertungssymbole", "Klausurnoten", "Projektnoten"];
+    const texts = lost.flatMap((number, index) =>
+      number ? [`${number} ${labels[index]}`] : [],
+    );
+    if (texts.length > 0) setPending({ date, types, lost: texts });
+    else apply(date, types);
   };
 
   const dialog = pending && (
     <ConfirmDialog
       open
-      title={`Zu „${LESSON_TYPE_LABELS[pending.type]}“ wechseln?`}
-      confirmLabel="Wechseln"
+      title="Stundentyp ändern?"
+      confirmLabel="Ändern"
       onClose={() => setPending(null)}
-      onConfirm={() => apply(pending.date, pending.type)}
+      onConfirm={() => apply(pending.date, pending.types)}
     >
-      {pending.type == "exam"
-        ? `Die ${pending.lost} vorhandenen Bewertungssymbole dieser Stunde werden gelöscht.`
-        : `Die ${pending.lost} vorhandenen Noten dieser Stunde werden gelöscht.`}
+      {`Dabei werden ${pending.lost.join(" und ")} dieser Stunde gelöscht.`}
     </ConfirmDialog>
   );
 

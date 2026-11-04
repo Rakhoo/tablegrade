@@ -1,7 +1,29 @@
 import { mixColors } from "./colors";
 
-/** Kind of a lesson: a regular one, an exam ("Klausur") or one with a project. */
-export type LessonType = "normal" | "exam" | "project";
+/**
+ * Type of a special lesson: an exam ("Klausur"), a project, or a follow-up of the latest exam
+ * or project for students without a mark yet: a retake ("Nachklausur") or an extension
+ * ("Projektverlängerung"). A lesson has no type, only an exam, or any of the others, at most one
+ * of project and extension. Regular lessons and all but exams take oral grades.
+ */
+export type LessonType = "exam" | "retake" | "project" | "extension";
+
+/** The two kinds of marks: of exams with their retakes, and of projects with their extensions. */
+export type MarkKind = "exam" | "project";
+
+/** Which mark a lesson type takes. */
+export const MARK_KIND: Record<LessonType, MarkKind> = {
+  exam: "exam",
+  retake: "exam",
+  project: "project",
+  extension: "project",
+};
+
+/** The entry field holding a kind of mark. */
+export const MARK_FIELD = { exam: "mark", project: "projectMark" } as const;
+
+/** Whether a lesson is an exam, which takes marks but no oral grades. */
+export const isExamDay = (types: LessonType[]) => types.includes("exam");
 
 /**
  * All grades as stored and calculated, from best to worst: a tendency is worth 0.3, so "2+"
@@ -25,12 +47,7 @@ export const FAIL_GRADE = 6;
  * remove something or enter the suggested grade.
  */
 export type GradeTool =
-  | `grade:${number}`
-  | `mark:${number}`
-  | "absent"
-  | "erase"
-  | "eraseMark"
-  | "suggestion";
+  `grade:${number}` | `mark:${number}` | "absent" | "erase" | "suggestion";
 
 /** Default tool while grading: the suggestion, if offered for the lesson. */
 export const DEFAULT_GRADE_TOOL: GradeTool = "suggestion";
@@ -73,48 +90,32 @@ export function getGradeColor(value: number) {
 /** Color of the "excused" symbol. */
 export const ABSENT_COLOR = "#9ca3af";
 
-type EntryState = {
-  grade: number | null;
-  mark: number | null;
-  absent: boolean;
-};
-
-/** Whether a lesson counts as complete for a student: exams need a mark or "excused". */
-export const isEntryComplete = (
-  entry: EntryState | undefined,
-  type: LessonType,
-) =>
-  !!entry &&
-  (entry.absent || (type == "exam" ? entry.mark : entry.grade) != null);
-
-/** The tools available for a lesson type; without a type all of them (overview table). */
-export function getGradeTools(visibleGrades: number[], type?: LessonType) {
+/** The tools available for a lesson's types; without types all of them (overview table). */
+export function getGradeTools(visibleGrades: number[], types?: LessonType[]) {
   const grades: GradeTool[] =
-    type == "exam"
+    types && isExamDay(types)
       ? []
       : visibleGrades.map((grade) => `grade:${grade}` as const);
   const marks: GradeTool[] =
-    type == "normal"
+    types && types.length == 0
       ? []
-      : [
-          ...GRADE_VALUES.map((mark) => `mark:${mark}` as const),
-          ...(type == "exam" ? [] : (["eraseMark"] as const)),
-        ];
+      : GRADE_VALUES.map((mark) => `mark:${mark}` as const);
   return { grades, marks };
 }
 
-/** Keeps a tool if it fits the lesson type, otherwise returns the type's neutral default. */
+/** Keeps a tool if it fits the lesson's types (all for none given), otherwise a neutral default. */
 export function getValidGradeTool(
   tool: GradeTool,
-  type: LessonType,
+  types: LessonType[] | undefined,
   visibleGrades: number[],
   suggestions: boolean,
 ): GradeTool {
-  const { grades, marks } = getGradeTools(visibleGrades, type);
+  const { grades, marks } = getGradeTools(visibleGrades, types);
+  const examDay = !!types && isExamDay(types);
   const others: GradeTool[] = ["absent", "erase"];
-  if (suggestions && type != "exam") others.push("suggestion");
+  if (suggestions && !examDay) others.push("suggestion");
   if ([...grades, ...marks, ...others].includes(tool)) return tool;
-  if (type == "exam") return `mark:${DEFAULT_GRADE}`;
+  if (examDay) return `mark:${DEFAULT_GRADE}`;
   // Without the suggestion the offered symbol closest to the neutral grade
   return visibleGrades.length > 0
     ? `grade:${getNearestGrade(DEFAULT_GRADE, visibleGrades)}`

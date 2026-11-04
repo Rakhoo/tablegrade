@@ -71,11 +71,26 @@ import {
   formatMark,
   getToolValue,
   getValidGradeTool,
-  isEntryComplete,
+  isExamDay,
+  MARK_FIELD,
+  MARK_KIND,
+  type MarkKind,
   type GradeTool,
   type LessonType,
 } from "../../lib/grades";
-import { LESSON_TYPE_LABELS, lessonKey } from "../../lib/lessons";
+import {
+  LESSON_TYPE_LABELS,
+  LESSON_TYPE_ORDER,
+  lessonKey,
+} from "../../lib/lessons";
+import {
+  canBeFollowUp,
+  getLessonChains,
+  getLessonCompletion,
+  type FollowUpType,
+  getLessonTypeLabel,
+  isMarkLocked,
+} from "../../lib/lessonChains";
 import {
   getColumnKey,
   getOverviewColumns,
@@ -110,6 +125,9 @@ const CELL_TINTS = [
   ["var(--color-blush-50)", "var(--color-blush-100)"],
 ];
 
+/** Marker of a report grade set by hand where too few assessments gave "n.b.". */
+const OVERRIDE_COLOR = "#ca8a04";
+
 /** Frame of the cells in the column of the current lesson. */
 const LESSON_FRAME =
   "inset 2px 0 0 var(--color-brand-500), inset -2px 0 0 var(--color-brand-500)";
@@ -135,7 +153,10 @@ type DateHeaderProps = {
   isCancelled: boolean;
   /** The current lesson (`?date=`), highlighted. */
   isCurrent: boolean;
-  lessonType: LessonType;
+  /** The type a mark column belongs to; oral columns have none. */
+  lessonType: LessonType | null;
+  /** Label of the type, e.g. the part of a project. */
+  typeLabel: string;
   /** Tap on the date, to pick the lesson type. */
   onTap?: (element: HTMLElement) => void;
   onLongPress: () => void;
@@ -150,6 +171,7 @@ function DateHeader({
   isCancelled,
   isCurrent,
   lessonType,
+  typeLabel,
   onTap,
   onLongPress,
 }: DateHeaderProps) {
@@ -198,7 +220,7 @@ function DateHeader({
             </span>
           )}
         </span>
-        <LessonTypeBadge type={lessonType} />
+        {lessonType && <LessonTypeBadge type={lessonType} label={typeLabel} />}
       </span>
     </th>
   );
@@ -333,39 +355,82 @@ export function OverviewPage() {
   );
   // The lesson the seating plan was left from, otherwise today's or the next one
   const lessonDate = searchParams.get("date") ?? seatingDate;
-  const typeOf = (date: string): LessonType =>
-    lessonTypes[lessonKey(cls.id, date)] ?? "normal";
+  const typesOf = (date: string): LessonType[] =>
+    lessonTypes[lessonKey(cls.id, date)] ?? [];
   const isLessonCancelled = (date: string) =>
     lessons.includes(lessonKey(cls.id, date));
   const isCancelled = (date: string) =>
     days.includes(date) || isLessonCancelled(date);
-  const isComplete = (date: string) =>
-    students.length > 0 &&
-    students.every((student) =>
-      isEntryComplete(entryMap.get(entryKey(student.id, date)), typeOf(date)),
+  const studentIds = students.map((student) => student.id);
+  // Exams and projects with their retakes and extensions, which close a student's mark on
+  // their other dates once it is given on one
+  const chains = getLessonChains(dates, typesOf);
+  const hasMark = (kind: MarkKind, studentId: number, date: string) =>
+    entryMap.get(entryKey(studentId, date))?.[MARK_FIELD[kind]] != null;
+  const isLocked = (student: SeatedStudent, date: string, kind: MarkKind) =>
+    isMarkLocked(chains[kind], date, (other) =>
+      hasMark(kind, student.id, other),
+    );
+  /** On a retake day, whether a student writes it: without the exam mark on another date. */
+  const isRetaker = (student: SeatedStudent, date: string) =>
+    typesOf(date).includes("retake") && !isLocked(student, date, "exam");
+  /**
+   * Whether a cell is closed: its mark lies on another date, or it is a retaker's oral grade or
+   * project mark, as those writing a retake take part in nothing else that day.
+   */
+  const isCellLocked = (
+    student: SeatedStudent,
+    { date, kind }: LessonColumn,
+  ) =>
+    kind == "oral"
+      ? isRetaker(student, date)
+      : kind == "projectMark"
+        ? isLocked(student, date, "project") || isRetaker(student, date)
+        : isLocked(student, date, "exam");
+  /** Whether a column is complete: oral grades, an exam's or retake's marks, project marks. */
+  const isComplete = ({ date, kind }: LessonColumn) => {
+    const completion = getLessonCompletion(
+      date,
+      typesOf(date),
+      studentIds,
+      entries,
+      chains,
+    );
+    if (kind == "projectMark") return completion.project;
+    if (kind == "mark" && !isExamDay(typesOf(date))) return completion.retake;
+    return completion.lesson;
+  };
+  /** The lesson types a date can get; follow-ups only after an incomplete exam or project. */
+  const typesFor = (date: string) =>
+    LESSON_TYPE_ORDER.filter(
+      (type) =>
+        type == "exam" ||
+        type == "project" ||
+        typesOf(date).includes(type) ||
+        canBeFollowUp(
+          type as FollowUpType,
+          date,
+          dates,
+          typesOf,
+          studentIds,
+          (studentId, day) => hasMark(MARK_KIND[type], studentId, day),
+        ),
     );
 
   const hasMarkColumns =
     reports.length > 0 ||
-    dates.some((date) => !isCancelled(date) && typeOf(date) != "normal");
+    dates.some((date) => !isCancelled(date) && typesOf(date).length > 0);
   // A selected mark does not stay active once no lesson takes marks anymore
   const activeTool = getValidGradeTool(
     tool,
-    hasMarkColumns ? "project" : "normal",
+    hasMarkColumns ? undefined : [],
     visibleGrades,
     settings.suggestions,
   );
   const columns = getOverviewColumns(
     dates,
-    typeOf,
-    getReportColumns(
-      reports,
-      reportGrades,
-      students.map((student) => student.id),
-      entries,
-      typeOf,
-      settings,
-    ),
+    typesOf,
+    getReportColumns(reports, reportGrades, studentIds, entries, settings),
   );
 
   const tableArea = useRef<HTMLElement>(null);
@@ -403,18 +468,28 @@ export function OverviewPage() {
       visibleGrades,
     );
 
-  /** Whether a tool can be used in a column; a project's two columns take different ones. */
+  /** Whether a tool can be used in a column: marks in mark columns, symbols in oral ones. */
   const fitsColumn = ({ date, kind }: LessonColumn) => {
     if (isCancelled(date))
       return activeTool == FAIL_TOOL || activeTool == "erase";
-    const isMarkTool =
-      activeTool.startsWith("mark:") || activeTool == "eraseMark";
-    return typeOf(date) != "project" || (kind == "mark") == isMarkTool;
+    if (activeTool == "erase") return true;
+    if (activeTool == "absent") return kind != "projectMark";
+    return activeTool.startsWith("mark:") ? kind != "oral" : kind == "oral";
   };
 
   const handleTap = async (student: SeatedStudent, column: LessonColumn) => {
     const { date } = column;
     if (mode == "comment") return setCommenting({ student, date });
+    if (activeTool != "erase" && isCellLocked(student, column)) {
+      setMessage(
+        column.kind == "oral"
+          ? "Wer nachschreibt, bekommt in dieser Stunde keine mündliche Note."
+          : column.kind == "projectMark" && isRetaker(student, date)
+            ? "Wer nachschreibt, wird in dieser Stunde nicht für das Projekt bewertet."
+            : "Dieser Schüler hat seine Note für diese Klausur bzw. dieses Projekt an einem anderen Termin.",
+      );
+      return;
+    }
     if (!fitsColumn(column)) {
       setMessage(
         isCancelled(date)
@@ -427,12 +502,12 @@ export function OverviewPage() {
     if (activeTool == "suggestion" && (entry?.grade != null || entry?.absent)) {
       return;
     }
-    const type = typeOf(date);
     const values = getToolValues(
       activeTool == "suggestion"
         ? `grade:${suggestionFor(student, date)}`
         : activeTool,
-      type,
+      typesOf(date),
+      column.kind,
     );
     if (values) {
       await history.change(
@@ -444,9 +519,7 @@ export function OverviewPage() {
         `${describeCell(student, date)}: ${describeValues(values)}`,
       );
     } else {
-      setMessage(
-        `Dieses Werkzeug passt nicht zu dieser Stunde (${LESSON_TYPE_LABELS[type]}).`,
-      );
+      setMessage("Dieses Werkzeug passt nicht zu dieser Stunde.");
     }
   };
 
@@ -455,7 +528,7 @@ export function OverviewPage() {
     student: SeatedStudent,
     { date, report: kind }: ReportColumn,
   ) => {
-    if (!activeTool.startsWith("mark:") && activeTool != "eraseMark") {
+    if (!activeTool.startsWith("mark:") && activeTool != "erase") {
       setMessage("Hier können nur Noten gesetzt oder gelöscht werden.");
       return;
     }
@@ -470,9 +543,9 @@ export function OverviewPage() {
       { date, kind },
       student.id,
       before,
-      activeTool == "eraseMark" ? null : getToolValue(activeTool),
+      activeTool == "erase" ? null : getToolValue(activeTool),
       `${formatStudentName(student)}, ${REPORT_LABELS[kind]}: ${
-        activeTool == "eraseMark"
+        activeTool == "erase"
           ? "Vorschlag"
           : formatMark(getToolValue(activeTool))
       }`,
@@ -514,7 +587,7 @@ export function OverviewPage() {
       columns,
       entryOf: (studentId: number, date: string) =>
         entryMap.get(entryKey(studentId, date)),
-      typeOf,
+      typesOf,
       settings,
     };
     try {
@@ -750,20 +823,29 @@ export function OverviewPage() {
                       );
                     }
                     const { date, kind } = column;
+                    const columnType =
+                      kind == "oral"
+                        ? null
+                        : (typesOf(date).find(
+                            (type) =>
+                              MARK_KIND[type] ==
+                              (kind == "projectMark" ? "project" : "exam"),
+                          ) ?? null);
                     return (
                       <DateHeader
                         key={getColumnKey(column)}
                         date={date}
                         index={index}
                         columns={columns.length}
-                        isComplete={isComplete(date)}
+                        isComplete={isComplete(column)}
                         isCancelled={isCancelled(date)}
                         isCurrent={date == lessonDate}
-                        lessonType={
-                          // A project's marker belongs to its column of marks
-                          kind == "oral" && typeOf(date) == "project"
-                            ? "normal"
-                            : typeOf(date)
+                        // A mark column carries the type it belongs to, the oral one none
+                        lessonType={columnType}
+                        typeLabel={
+                          columnType
+                            ? getLessonTypeLabel(chains, date, columnType)
+                            : ""
                         }
                         onTap={
                           isCancelled(date)
@@ -892,6 +974,18 @@ export function OverviewPage() {
                                     {value < suggestion ? "↑" : "↓"}
                                   </span>
                                 )}
+                              {/* Set by hand although too few assessments allow a grade */}
+                              {column.main &&
+                                value != null &&
+                                suggestion == null && (
+                                  <span
+                                    className="font-bold"
+                                    style={{ color: OVERRIDE_COLOR }}
+                                    title="Statt „n.b.“ von Hand gesetzt"
+                                  >
+                                    !
+                                  </span>
+                                )}
                             </button>
                           </td>
                         );
@@ -899,18 +993,45 @@ export function OverviewPage() {
                       const { date, kind } = column;
                       const entry = entryMap.get(entryKey(student.id, date));
                       const cancelled = isCancelled(date);
-                      const value = kind == "oral" ? entry?.grade : entry?.mark;
-                      const isExam = typeOf(date) == "exam";
+                      const value =
+                        kind == "oral"
+                          ? entry?.grade
+                          : kind == "mark"
+                            ? entry?.mark
+                            : entry?.projectMark;
+                      const isExam = isExamDay(typesOf(date));
+                      const retaker = isRetaker(student, date);
+                      // Graded on another date of the exam or project, shown faintly
+                      const locked = isCellLocked(student, column);
+                      const markKind: MarkKind =
+                        kind == "projectMark" ? "project" : "exam";
+                      const chainMark =
+                        locked && kind != "oral"
+                          ? chains[markKind]
+                              .get(date)!
+                              .map(
+                                (other) =>
+                                  entryMap.get(entryKey(student.id, other))?.[
+                                    MARK_FIELD[markKind]
+                                  ],
+                              )
+                              .find((mark) => mark != null)
+                          : undefined;
+                      // "Excused" belongs to the exam or retake for those writing it
                       const showAbsent =
-                        !!entry?.absent && (kind == "oral" || isExam);
+                        !!entry?.absent &&
+                        (kind == "mark"
+                          ? isExam || retaker
+                          : kind == "oral" && !retaker);
                       return (
                         <td
                           key={getColumnKey(column)}
                           className="h-11 min-w-11 border-r border-b border-line p-0 text-center"
                           style={{
-                            background: cancelled
-                              ? "var(--color-line)"
-                              : CELL_TINTS[rowIndex % 2][columnIndex % 2],
+                            background:
+                              cancelled || locked
+                                ? "var(--color-line)"
+                                : CELL_TINTS[rowIndex % 2][columnIndex % 2],
                             // The current lesson's column is framed in the color of its header
                             boxShadow:
                               date == lessonDate ? LESSON_FRAME : undefined,
@@ -920,15 +1041,22 @@ export function OverviewPage() {
                             type="button"
                             disabled={mode == "view"}
                             aria-label={`${formatStudentName(student)}, ${date}`}
+                            aria-disabled={locked || undefined}
                             title={entry?.comment ?? undefined}
-                            className="relative flex h-full min-h-11 w-full items-center justify-center gap-0.5 px-0.5 active:bg-brand-100"
+                            className={
+                              "relative flex h-full min-h-11 w-full items-center justify-center gap-0.5 px-0.5 active:bg-brand-100 " +
+                              (locked ? "opacity-60" : "")
+                            }
                             onClick={() => handleTap(student, column)}
                           >
                             {kind == "oral" && value != null && (
                               <GradeIcon grade={value} size={26} />
                             )}
-                            {kind == "mark" && value != null && (
+                            {kind != "oral" && value != null && (
                               <MarkBadge mark={value} />
+                            )}
+                            {chainMark != null && (
+                              <MarkBadge mark={chainMark} />
                             )}
                             {showAbsent && <GradeIcon size={26} />}
                             {kind == "oral" &&
@@ -936,14 +1064,15 @@ export function OverviewPage() {
                               !entry?.absent &&
                               grading &&
                               settings.suggestions &&
-                              !cancelled && (
+                              !cancelled &&
+                              !locked && (
                                 <SuggestedGradeIcon
                                   grade={suggestionFor(student, date)}
                                   size={26}
                                 />
                               )}
                             {entry?.comment &&
-                              (kind == "oral" || isExam) &&
+                              (kind == "oral" || (isExam && kind == "mark")) &&
                               (mode == "comment" ? (
                                 <span className="relative ml-0.5 max-w-28 truncate rounded-lg bg-surface px-1.5 py-0.5 text-left text-[10px] leading-tight font-medium text-ink shadow-tile ring-1 ring-brand-200">
                                   {getCommentPreview(entry.comment, 3)}
@@ -985,11 +1114,12 @@ export function OverviewPage() {
         <div className="flex flex-col gap-1 p-2">
           {typeMenu &&
             !isCancelled(typeMenu.date) &&
-            (Object.keys(LESSON_TYPE_LABELS) as LessonType[]).map((type) => (
+            typesFor(typeMenu.date).map((type) => (
               <Button
                 key={type}
+                // A second tap removes a type
                 variant={
-                  typeMenu && typeOf(typeMenu.date) == type
+                  typeMenu && typesOf(typeMenu.date).includes(type)
                     ? "contained"
                     : "text"
                 }
@@ -998,6 +1128,7 @@ export function OverviewPage() {
                   setTypeMenu(null);
                   requestLessonType(
                     date,
+                    typesOf(date),
                     type,
                     entries.filter((entry) => entry.date == date),
                   );

@@ -1,5 +1,5 @@
 import type { GradeEntry } from "../db";
-import { DEFAULT_GRADE, getNearestGrade, type LessonType } from "./grades";
+import { DEFAULT_GRADE, getNearestGrade } from "./grades";
 import type { AppSettings } from "./settings";
 
 /** The settings the calculation depends on. */
@@ -56,22 +56,17 @@ function combine(first: number | null, second: number | null, share: number) {
 /**
  * Calculates a student's result from all entries up to `asOf` (`YYYY-MM-DD`): exams against
  * the rest, which splits into projects and oral participation, all shares from the rules.
+ * Exam marks include retakes, project marks extensions.
  * @param entries The entries of one student in one class.
- * @param typeOf Returns the type of the lesson on a date.
  */
 export function getStudentResult(
   entries: GradeEntry[],
-  typeOf: (date: string) => LessonType,
   asOf: string,
   rules: GradingRules,
 ): StudentResult {
   const relevant = entries.filter((entry) => entry.date <= asOf);
-  const marksOf = (type: LessonType) =>
-    relevant
-      .filter((entry) => entry.mark != null && typeOf(entry.date) == type)
-      .map((entry) => entry.mark!);
-  const examMarks = marksOf("exam");
-  const projectMarks = marksOf("project");
+  const examMarks = relevant.flatMap((entry) => entry.mark ?? []);
+  const projectMarks = relevant.flatMap((entry) => entry.projectMark ?? []);
   const grades = relevant.filter((entry) => entry.grade != null);
 
   // The newest grade counts `recency` times as much as the oldest, evenly rising in between

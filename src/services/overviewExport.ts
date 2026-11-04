@@ -6,6 +6,7 @@ import type { GradeEntry, SchoolClass, Trait } from "../db";
 import { toIsoDate } from "../lib/dates";
 import { formatClassName } from "../lib/formatters";
 import {
+  MARK_KIND,
   ABSENT_COLOR,
   formatMark,
   getGradeColor,
@@ -30,22 +31,34 @@ export type OverviewExport = {
   }[];
   columns: OverviewColumn[];
   entryOf: (studentId: number, date: string) => GradeEntry | undefined;
-  typeOf: (date: string) => LessonType;
+  typesOf: (date: string) => LessonType[];
   settings: AppSettings;
 };
 
+/** The grade or mark of a lesson column. */
+const valueOf = (entry: GradeEntry | undefined, column: LessonColumn) =>
+  column.kind == "oral"
+    ? entry?.grade
+    : column.kind == "mark"
+      ? entry?.mark
+      : entry?.projectMark;
+
 /** Text of a cell: the grade or mark like "2+", or "E" for excused. */
 function cellText(entry: GradeEntry | undefined, column: LessonColumn) {
-  const value = column.kind == "oral" ? entry?.grade : entry?.mark;
+  const value = valueOf(entry, column);
   if (value != null) return formatMark(value);
   return entry?.absent ? "E" : "";
 }
 
-const columnTitle = (column: OverviewColumn, type: LessonType) => {
+const columnTitle = (column: OverviewColumn, types: LessonType[]) => {
   if (column.kind == "report")
     return column.main ? REPORT_LABELS[column.report] : column.label;
   const label = format(parseISO(column.date), "dd.MM.yy");
-  return column.kind == "mark" ? `${label} ${LESSON_TYPE_LABELS[type]}` : label;
+  if (column.kind == "oral") return label;
+  // A mark column is named after the type it belongs to
+  const kind = column.kind == "projectMark" ? "project" : "exam";
+  const type = types.find((other) => MARK_KIND[other] == kind);
+  return type ? `${label} ${LESSON_TYPE_LABELS[type]}` : label;
 };
 
 /** Text of a report's cell; a main column has "n.b." without a grade. */
@@ -69,7 +82,7 @@ export function exportCsv(data: OverviewExport) {
     [
       "Schüler",
       ...data.columns.map((column) =>
-        columnTitle(column, data.typeOf(column.date)),
+        columnTitle(column, data.typesOf(column.date)),
       ),
     ],
     ...data.students.map((student) => [
@@ -254,7 +267,7 @@ export async function exportPdf(data: OverviewExport) {
       pageColumns.forEach((column, index) => {
         const x =
           MARGIN + nameWidth + index * COLUMN_WIDTH + COLUMN_WIDTH / 2 + 1;
-        doc.text(columnTitle(column, data.typeOf(column.date)), x, top - 2, {
+        doc.text(columnTitle(column, data.typesOf(column.date)), x, top - 2, {
           angle: 60,
         });
       });
@@ -326,11 +339,17 @@ export async function exportPdf(data: OverviewExport) {
               const foot = baseline - 1.2 + (better ? 1 : -1);
               doc.setFillColor(...arrow);
               doc.triangle(x + 2.6, tip, x + 1.7, foot, x + 3.5, foot, "F");
+            } else if (column.main && value != null && suggestion == null) {
+              // Set by hand instead of "n.b."
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(...(color ? hexToRgb("#ca8a04") : BLACK));
+              doc.text("!", x + 2.6, baseline);
+              doc.setFont("helvetica", "normal");
             }
             continue;
           }
           const entry = data.entryOf(student.id, column.date);
-          const value = column.kind == "oral" ? entry?.grade : entry?.mark;
+          const value = valueOf(entry, column);
           const x = MARGIN + nameWidth + columnIndex * COLUMN_WIDTH;
           const useBadge =
             !settings.exportValues && column.kind == "oral" && value != null;

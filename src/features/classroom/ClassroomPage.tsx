@@ -35,16 +35,32 @@ import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import {
   DEFAULT_GRADE_TOOL,
   getValidGradeTool,
-  isEntryComplete,
+  isExamDay,
+  MARK_FIELD,
+  MARK_KIND,
+  type MarkKind,
   type GradeTool,
 } from "../../lib/grades";
-import { describeValues, getToolValues } from "../../services/grading";
+import {
+  describeValues,
+  getToolValues,
+  type GradeTarget,
+} from "../../services/grading";
 import { useSettings } from "../../hooks/useSettings";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
 import { getVisibleGrades, type ClassroomMode } from "../../lib/settings";
 import { suggestGrade } from "../../lib/assessment";
 import { formatClassName, formatStudentName } from "../../lib/formatters";
 import type { Lesson } from "../../lib/lessons";
+import {
+  canBeFollowUp,
+  getLessonChains,
+  getLessonCompletion,
+  getLessonTypeLabel,
+  isMarkLocked,
+  type FollowUpType,
+} from "../../lib/lessonChains";
+import { LESSON_TYPE_ORDER } from "../../lib/lessons";
 import { getZoomedArea } from "../../lib/seating";
 import { getClassColor } from "../../lib/subjectColors";
 import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
@@ -106,7 +122,8 @@ export function ClassroomPage() {
     classGrades,
     date,
     traits,
-    lessonType,
+    lessonTypes,
+    classLessonTypes,
     previous,
     next,
   } = useLoaderData<ClassroomLoaderData>();
@@ -114,6 +131,7 @@ export function ClassroomPage() {
   const settings = useSettings();
   const [mode, setMode] = useState<ClassroomMode>(settings.startMode);
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
+  const [markTarget, setMarkTarget] = useState<"mark" | "projectMark">("mark");
   const [confirmClear, setConfirmClear] = useState(false);
   const [showTraits, setShowTraits] = useDisplayOption("traits");
   const [showPhotos, setShowPhotos] = useDisplayOption("photos");
@@ -137,25 +155,106 @@ export function ClassroomPage() {
   );
 
   const accent = getClassColor(cls, settings.levels).accent;
-  const isComplete =
-    students.length > 0 &&
-    students.every((student) =>
-      isEntryComplete(gradeMap.get(student.id), lessonType),
-    );
   const visibleGrades = getVisibleGrades(settings);
   const activeTool = getValidGradeTool(
     tool,
-    lessonType,
+    lessonTypes,
     visibleGrades,
     settings.suggestions,
   );
+  const examDay = isExamDay(lessonTypes);
+  const hasRetake = lessonTypes.includes("retake");
+  const hasProject = lessonTypes.some((type) => MARK_KIND[type] == "project");
+  // The marks set by mark tools; with a retake and a project on one day the switch decides
+  const markField: GradeTarget | undefined =
+    hasRetake && hasProject ? markTarget : hasRetake ? "mark" : "projectMark";
+
+  // Exams and projects with their follow-ups: a mark on one of their dates closes the others
+  const typesOf = (other: string) => classLessonTypes[other] ?? [];
+  const typedDates = Object.keys(classLessonTypes);
+  const chains = getLessonChains(typedDates, typesOf);
+  const hasMark = (kind: MarkKind, studentId: number, day: string) =>
+    classGrades.some(
+      (entry) =>
+        entry.studentId == studentId &&
+        entry.date == day &&
+        entry[MARK_FIELD[kind]] != null,
+    );
+  const lockedIn = (kind: MarkKind) =>
+    new Set(
+      students
+        .filter((student) =>
+          isMarkLocked(chains[kind], date, (day) =>
+            hasMark(kind, student.id, day),
+          ),
+        )
+        .map((student) => student.id),
+    );
+  const examLocked = lockedIn("exam");
+  const projectLocked = lockedIn("project");
+  /** Students who write the retake today: without their exam mark on another date. */
+  const isRetaker = (studentId: number) =>
+    hasRetake && !examLocked.has(studentId);
+  const isComplete = getLessonCompletion(
+    date,
+    lessonTypes,
+    students.map((student) => student.id),
+    classGrades,
+    chains,
+  ).lesson;
+  /** The types the lesson can get now: follow-ups only after an incomplete exam or project. */
+  const availableTypes = LESSON_TYPE_ORDER.filter(
+    (type) =>
+      type == "exam" ||
+      type == "project" ||
+      canBeFollowUp(
+        type as FollowUpType,
+        date,
+        typedDates,
+        typesOf,
+        students.map((student) => student.id),
+        (studentId, day) => hasMark(MARK_KIND[type], studentId, day),
+      ),
+  );
+
+  /** The part of a student's entry a tool sets, `undefined` for erasing everything. */
+  const targetOf = (
+    studentId: number,
+    option: GradeTool,
+  ): GradeTarget | undefined => {
+    if (option == "erase") return undefined;
+    if (option.startsWith("mark:")) return markField;
+    if (option == "absent" && isRetaker(studentId)) return "mark";
+    return "oral";
+  };
+  /** Whether a tool cannot be used on a student: graded elsewhere, or a retaker's oral grade. */
+  const isClosed = (studentId: number, option: GradeTool) => {
+    if (option == "erase") return false;
+    if (examDay) return examLocked.has(studentId);
+    const target = targetOf(studentId, option);
+    if (target == "mark") return examLocked.has(studentId);
+    // Those writing the retake take part in nothing else that day
+    if (target == "projectMark")
+      return projectLocked.has(studentId) || isRetaker(studentId);
+    return isRetaker(studentId);
+  };
+  const closedStudents = new Set(
+    mode == "grade"
+      ? students
+          .filter((student) => isClosed(student.id, activeTool))
+          .map((student) => student.id)
+      : [],
+  );
+
   // While grading, students without a symbol show what their previous ones suggest
   const suggestions = new Map<number, number>(
-    mode == "grade" && lessonType != "exam" && settings.suggestions
+    mode == "grade" && !examDay && settings.suggestions
       ? students
           .filter((student) => {
             const entry = gradeMap.get(student.id);
-            return entry?.grade == null && !entry?.absent;
+            return (
+              entry?.grade == null && !entry?.absent && !isRetaker(student.id)
+            );
           })
           .map((student) => [
             student.id,
@@ -190,6 +289,7 @@ export function ClassroomPage() {
     } else if (mode == "comment") {
       setCommenting(student);
     } else if (mode == "grade") {
+      if (isClosed(student.id, activeTool)) return;
       const suggestion = suggestions.get(student.id);
       const tool: GradeTool | null =
         activeTool != "suggestion"
@@ -197,7 +297,8 @@ export function ClassroomPage() {
           : suggestion == null
             ? null
             : `grade:${suggestion}`;
-      const values = tool && getToolValues(tool, lessonType);
+      const values =
+        tool && getToolValues(tool, lessonTypes, targetOf(student.id, tool));
       if (values) {
         await history.change(
           "Bewertung",
@@ -339,7 +440,13 @@ export function ClassroomPage() {
                 />
               )}
               {title}
-              <LessonTypeBadge type={lessonType} />
+              {lessonTypes.map((type) => (
+                <LessonTypeBadge
+                  key={type}
+                  type={type}
+                  label={getLessonTypeLabel(chains, date, type)}
+                />
+              ))}
               {isComplete && (
                 <span
                   className="flex h-6 w-6 items-center justify-center rounded-full text-white"
@@ -409,8 +516,13 @@ export function ClassroomPage() {
           <GradeToolBar
             tool={activeTool}
             onChange={setTool}
-            lessonType={lessonType}
-            onLessonTypeChange={(type) => requestLessonType(date, type, grades)}
+            lessonTypes={lessonTypes}
+            availableTypes={availableTypes}
+            onToggleType={(type) =>
+              requestLessonType(date, lessonTypes, type, grades)
+            }
+            markTarget={markTarget}
+            onMarkTargetChange={setMarkTarget}
           />
         )}
       </ModeBar>
@@ -436,6 +548,7 @@ export function ClassroomPage() {
           arranging={mode == "arrange"}
           showComments={mode == "comment"}
           zoomed={zoomed}
+          dimmed={closedStudents}
           onTap={handleTap}
           onMove={(student, x, y) =>
             history.moveSeat(

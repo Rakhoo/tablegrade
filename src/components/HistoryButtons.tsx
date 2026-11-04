@@ -33,9 +33,18 @@ function HistoryButton({
       <span className="min-w-0 truncate text-left">
         {step ? (
           <>
-            <span className="font-semibold">
-              {elsewhere ? `Zu: ${step.page.label}` : step.action}
-            </span>{" "}
+            {elsewhere ? (
+              <span className="font-semibold">Zu: {step.page.label}</span>
+            ) : (
+              // Removals are struck through, e.g. a deleted grade
+              <span
+                className={
+                  "font-semibold " + (step.removed ? "line-through" : "")
+                }
+              >
+                {step.action}
+              </span>
+            )}{" "}
             <span className="text-muted">
               {elsewhere ? step.action : step.description}
             </span>

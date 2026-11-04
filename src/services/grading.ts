@@ -2,6 +2,8 @@ import type { GradeEntry } from "../db";
 import {
   FAIL_GRADE,
   formatMark,
+  isExamDay,
+  MARK_KIND,
   getToolValue,
   type GradeTool,
   type LessonType,
@@ -10,35 +12,52 @@ import {
 /** The parts of a student's entry that can be changed while grading. */
 export type EntryValues = Pick<
   GradeEntry,
-  "grade" | "mark" | "absent" | "comment"
+  "grade" | "mark" | "projectMark" | "absent" | "comment"
 >;
 
+/** What a tap grades in a lesson: its oral grade, its exam or retake mark or its project mark. */
+export type GradeTarget = "oral" | "mark" | "projectMark";
+
 /**
- * Returns what a grading tool (all but the suggestion) changes on an entry, if it fits
- * the lesson type: exams take marks and "excused", regular lessons grades, projects both.
+ * Returns what a grading tool (all but the suggestion) changes on an entry, if it fits the
+ * lesson: an exam takes marks and "excused", other lessons oral grades and the marks of their
+ * retake or project.
+ * @param target The part tapped, e.g. a column of the overview; marks need one. Without one
+ *   erasing removes everything.
  */
 export function getToolValues(
   tool: GradeTool,
-  type: LessonType,
+  types: LessonType[],
+  target?: GradeTarget,
 ): Partial<EntryValues> | null {
   if (tool == "suggestion") return null;
+  const examDay = isExamDay(types);
   if (tool == "erase") {
-    return type == "exam"
-      ? { grade: null, mark: null, absent: false }
-      : { grade: null, absent: false };
+    if (examDay) return { grade: null, mark: null, absent: false };
+    if (target == "mark") return { mark: null, absent: false };
+    if (target == "projectMark") return { projectMark: null };
+    if (target == "oral") return { grade: null, absent: false };
+    return { grade: null, mark: null, projectMark: null, absent: false };
   }
-  if (tool == "eraseMark") return type == "normal" ? null : { mark: null };
   if (tool == "absent") {
-    return type == "exam"
-      ? { absent: true, grade: null, mark: null }
-      : { absent: true, grade: null };
+    if (examDay || target == "mark")
+      return { absent: true, grade: null, mark: null };
+    return { absent: true, grade: null };
   }
   if (tool.startsWith("mark:")) {
     const mark = getToolValue(tool);
-    if (type == "normal") return null;
-    return type == "exam" ? { mark, absent: false } : { mark };
+    if (examDay) return { mark, absent: false };
+    if (target == "mark" && types.includes("retake"))
+      return { mark, absent: false };
+    if (
+      target == "projectMark" &&
+      types.some((type) => MARK_KIND[type] == "project")
+    )
+      return { projectMark: mark };
+    return null;
   }
-  return type == "exam" ? null : { grade: getToolValue(tool), absent: false };
+  if (examDay || target == "mark" || target == "projectMark") return null;
+  return { grade: getToolValue(tool), absent: false };
 }
 
 /** Short text of what a change of an entry sets, for the undo history. */
@@ -46,6 +65,8 @@ export function describeValues(values: Partial<EntryValues>) {
   if (values.absent) return "entschuldigt";
   if (values.grade != null) return formatMark(values.grade);
   if (values.mark != null) return `Note ${formatMark(values.mark)}`;
+  if (values.projectMark != null)
+    return `Projektnote ${formatMark(values.projectMark)}`;
   return "gelöscht";
 }
 

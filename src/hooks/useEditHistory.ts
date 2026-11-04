@@ -12,7 +12,8 @@ import type { Report } from "../lib/reports";
 import type { EntryValues } from "../services/grading";
 
 /** What a step changed, named after the mode it was made in. */
-export type EditAction = "Ermahnung" | "Bewertung" | "Kommentar" | "Anordnung";
+export type EditAction =
+  "Ermahnung" | "Maßnahme" | "Bewertung" | "Kommentar" | "Anordnung";
 
 /** The page a step was made on, to return to it before taking it back or making it again. */
 export type EditPage = {
@@ -27,6 +28,8 @@ export type EditPage = {
 export type EditStep = {
   action: EditAction;
   description: string;
+  /** The step removed something, e.g. a grade or a warning. */
+  removed?: boolean;
   page: EditPage;
 };
 
@@ -105,14 +108,17 @@ export function useEditHistory(
     const before: EntryValues = {
       grade: entry?.grade ?? null,
       mark: entry?.mark ?? null,
+      projectMark: entry?.projectMark ?? null,
       absent: entry?.absent ?? false,
       comment: entry?.comment ?? null,
     };
     const after = { ...before, ...values };
     if (JSON.stringify(before) == JSON.stringify(after)) return;
+    const changed = Object.keys(values) as (keyof EntryValues)[];
     await apply({
       action,
       description,
+      removed: changed.every((key) => !after[key]),
       undo: () => setAssessment(classId!, studentId, date, before),
       redo: () => setAssessment(classId!, studentId, date, after),
     });
@@ -130,6 +136,8 @@ export function useEditHistory(
     await apply({
       action: "Bewertung",
       description,
+      // Erasing a grade set by hand brings the calculated one back
+      removed: after == null,
       undo: () => setReportGrade(classId!, report, studentId, before),
       redo: () => setReportGrade(classId!, report, studentId, after),
     });
@@ -144,8 +152,10 @@ export function useEditHistory(
     description: string,
   ) => {
     await apply({
-      action: "Ermahnung",
+      // A step to or from the second level concerns the measure, not the warning
+      action: Math.max(before, after) >= 2 ? "Maßnahme" : "Ermahnung",
       description,
+      removed: after == 0,
       undo: () => setWarnings(classId!, studentId, date, before),
       redo: () => setWarnings(classId!, studentId, date, after),
     });

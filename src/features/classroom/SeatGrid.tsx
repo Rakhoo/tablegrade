@@ -28,6 +28,8 @@ type SeatGridProps = {
   arranging: boolean;
   /** Comment mode: comments show their first words in a speech bubble. */
   showComments: boolean;
+  /** Students shown grayed out, e.g. already marked in a retake's exam. */
+  dimmed?: Set<number>;
   /** Enlarges the smallest part of the room holding all seated students (not while arranging). */
   zoomed?: boolean;
   /** Called when a student is tapped outside of arrange mode. */
@@ -60,6 +62,7 @@ export function SeatGrid({
   arranging,
   showComments,
   zoomed = false,
+  dimmed,
   onTap,
   onMove,
 }: SeatGridProps) {
@@ -148,6 +151,7 @@ export function SeatGrid({
               traits={traits}
               showPhoto={showPhotos}
               isDragged={drag?.student.id == student.id}
+              isDimmed={!!dimmed?.has(student.id)}
               onTap={onTap}
             />
           ))}
@@ -180,6 +184,7 @@ type SeatProps = {
   traits: Trait[];
   showPhoto: boolean;
   isDragged: boolean;
+  isDimmed: boolean;
   onTap: SeatGridProps["onTap"];
 };
 
@@ -193,6 +198,7 @@ function Seat({
   traits,
   showPhoto,
   isDragged,
+  isDimmed,
   onTap,
 }: SeatProps) {
   const grade = entry?.grade ?? null;
@@ -212,7 +218,7 @@ function Seat({
       className={
         "seat relative m-1 flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-1.5 text-center shadow-tile transition-[transform,opacity,background-color] active:scale-95 " +
         (arranging ? "cursor-grab " : "") +
-        (isDragged ? "opacity-30" : "")
+        (isDragged ? "opacity-30" : isDimmed ? "opacity-40 grayscale" : "")
       }
       style={{
         ...seatArea(student as Position),
@@ -289,11 +295,19 @@ function Seat({
           <SuggestedGradeIcon grade={suggestion} size={28} />
         </span>
       )}
-      {entry?.mark != null && (
-        <MarkBadge
-          mark={entry.mark}
-          className="absolute -bottom-1 -left-1 z-10 border-2 shadow-tile"
-        />
+      {(entry?.mark != null || entry?.projectMark != null) && (
+        // Exam or retake mark and project mark side by side
+        <span className="absolute -bottom-1 -left-1 z-10 flex gap-0.5">
+          {entry.mark != null && (
+            <MarkBadge mark={entry.mark} className="border-2 shadow-tile" />
+          )}
+          {entry.projectMark != null && (
+            <MarkBadge
+              mark={entry.projectMark}
+              className="border-2 shadow-tile"
+            />
+          )}
+        </span>
       )}
       {entry?.comment && showComment && (
         <span className="absolute inset-x-1 top-1 z-20 rounded-xl bg-surface px-1.5 py-1 text-left text-[11px] leading-tight font-medium text-ink shadow-tile ring-1 ring-brand-200">

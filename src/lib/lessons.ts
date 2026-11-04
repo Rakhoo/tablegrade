@@ -15,10 +15,40 @@ export type Lesson = { id: number; date: string };
 
 /** Display names of the lesson types. */
 export const LESSON_TYPE_LABELS: Record<LessonType, string> = {
-  normal: "Normal",
   exam: "Klausur",
+  retake: "Nachklausur",
   project: "Projekt",
+  extension: "Projektverlängerung",
 };
+
+/** The lesson types in the order they are offered: each follow-up after what it continues. */
+export const LESSON_TYPE_ORDER: LessonType[] = [
+  "exam",
+  "retake",
+  "project",
+  "extension",
+];
+
+/**
+ * The types of a lesson after toggling one: a second tap removes it. An exam replaces all
+ * others, as it has no oral grades; any other replaces an exam, and project and extension
+ * replace each other.
+ */
+export function toggleLessonType(types: LessonType[], type: LessonType) {
+  if (types.includes(type)) return types.filter((other) => other != type);
+  const kept =
+    type == "exam"
+      ? []
+      : types.filter(
+          (other) =>
+            other != "exam" &&
+            !(type == "project" && other == "extension") &&
+            !(type == "extension" && other == "project"),
+        );
+  return LESSON_TYPE_ORDER.filter(
+    (other) => other == type || kept.includes(other),
+  );
+}
 
 /** Everything marked as "Ausfall": dates of whole days and keys of single lessons. */
 export type CancelledDates = { days: string[]; lessons: string[] };

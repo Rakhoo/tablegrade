@@ -36,8 +36,8 @@ The only network request fetches school holidays from
   - Seating plans and overview tables share one undo/redo across their modes and pages, shown
     as two pills with the step's mode and description. A step made on another page first
     opens that page (the page change itself is no step); the main pages end the history. Each
-    step is named after its mode (*Ermahnung*, *Bewertung*,
-    *Kommentar*, *Anordnung*) and describes the student and value
+    step is named after its mode (*Ermahnung* or *Maßnahme*, *Bewertung*,
+    *Kommentar*, *Anordnung*; struck through for removals) and describes the student and value
     ([src/hooks/useEditHistory.ts](src/hooks/useEditHistory.ts)).
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
   selected week, one row per lesson.
@@ -47,7 +47,11 @@ The only network request fetches school holidays from
     vacations show `FERIEN`, public holidays `FEIERTAG`.
   - Long press on a day header or a lesson marks it as `AUSFALL` (illness, bridge day, …) or
     makes it regular again. Existing entries must be confirmed and are then deleted.
-  - Complete lessons (every student has a symbol) show a check mark, here and in the classroom.
+  - Complete lessons show a check mark, here, in the classroom and in the overview, judged by
+    the oral grades (or "entschuldigt") of all students; an exam by its marks. In the overview
+    the retake and project columns get their own check marks: complete once every student
+    without that mark on another date of the exam or project has one here. In a retake lesson
+    the oral grades only count for those not writing it.
   - Swiping the timetable switches weeks, swiping the calendar switches months.
   - In landscape the calendar column sits on the left and the week bar above the timetable;
     in portrait calendar and controls (week bar included) sit above it. "Neue Klasse" and
@@ -60,8 +64,9 @@ The only network request fetches school holidays from
     editor), *Namen lernen* (flash cards for classes with photos), "Stunde zurücksetzen" (in red) and the
     switches for zoom, photos and traits.
   - *Ermahnen*: each tap cycles a student through yellow → red → none.
-  - *Bewerten*: the tool bar (grade symbols, "entschuldigt", suggestion, delete, lesson type)
-    stays open below the header; tapping a student applies the tool. The suggestion is the
+  - *Bewerten*: the tool bar (grade symbols, "entschuldigt", suggestion, lesson type, marks for
+    exams and projects and one delete tool at the right for both) stays open below the header;
+    tapping a student applies the tool. The suggestion is the
     default tool; without previous grades it suggests the shown symbol closest to a plain 3,
     the better one of two equally close.
   - *Kommentieren*: the only place for comments. Speech bubbles show their first words, a tap
@@ -125,10 +130,21 @@ The only network request fetches school holidays from
   switches with the seating plan). Rows and columns are tinted,
   comments are marked with a small symbol, and a long press on a date cancels that lesson. A
   tap on a name covers the entries of all other students, to show a student their own.
-- **Exams and projects**: in the grading mode a lesson can become a *Klausur* (classic marks 1
-  to 6 with tendencies instead of symbols, plus "entschuldigt") or a *Projekt* (symbols and
-  marks). In the overview a tap on a date sets this for the column; marks only appear in its tool
-  bar once a column is an exam or project.
+- **Lesson types**: a lesson can be a *Klausur* (classic marks 1 to 6 with tendencies, plus
+  "entschuldigt", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
+  on the date in the overview and in the grading tool bar of the seating plan; a second tap
+  removes a type ([src/lib/lessons.ts](src/lib/lessons.ts)). Exam and retake marks are stored
+  in `mark`, project marks in `projectMark`, so a lesson keeps its oral grades next to them; in
+  the overview each takes its own column, in the seating plan a switch chooses the mark when a
+  retake and a project fall on one day.
+  - Follow-ups for students without a mark yet: a *Nachklausur* continues the latest exam, a
+    *Projektverlängerung* the latest project (the parts then show as "Projekt 1/2", "Projekt
+    2/2", …), each only while that exam or project (with its follow-ups so far) still lacks a
+    mark. A student's mark on one date of such a chain closes its other dates for them (grayed
+    out with the mark shown faintly, also grayed out in the seating plan), and the mark counts
+    as the exam's or project's ([src/lib/lessonChains.ts](src/lib/lessonChains.ts)).
+  - In a retake lesson only students with their exam mark already get oral grades; those
+    writing it get the retake mark (or "entschuldigt" for it) and no project mark that day.
 
 ## Stack
 
@@ -301,7 +317,8 @@ entries after the previous report: read-only columns show the rounded parts (*M�
 *Projekte*, *Klausuren*, only those that exist), the main column *Gesamt* the calculated grade (rounded to the closest grade; only a value
 exactly in the middle at two decimals, like 2,85, goes to the better one) with tendency
 by the rules in [src/lib/assessment.ts](src/lib/assessment.ts). Marks set on the main column in the
-grading mode replace it, with an arrow towards the correction; deleting brings the calculation
+grading mode replace it, with an arrow towards the correction (a yellow "!" where "n.b." was
+replaced); deleting brings the calculation
 back. The grade suggestions for lessons still use all entries.
 
 A half without partials works like a partial grade. With at least two partials it lists them and suggests

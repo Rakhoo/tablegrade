@@ -9,7 +9,8 @@ import type { SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
 import type { LessonType } from "../../lib/grades";
-import { lessonKey } from "../../lib/lessons";
+import { getLessonChains, getLessonTypeLabel } from "../../lib/lessonChains";
+import { lessonDateOf, lessonKey } from "../../lib/lessons";
 import {
   getClassOccurrences,
   getHoliday,
@@ -34,7 +35,7 @@ type TimetableGridProps = {
   /** Keys (see `lessonKey`) of lessons where every student has a symbol. */
   completedLessons: string[];
   /** Types of the special lessons (exam, project), by lesson key. */
-  lessonTypes: Record<string, LessonType>;
+  lessonTypes: Record<string, LessonType[]>;
   /** Long press on the header of a non-holiday day, to toggle "Ausfall". */
   onDayLongPress: (date: Date) => void;
   /** Long press on a lesson, to toggle "Ausfall" for it. */
@@ -92,7 +93,8 @@ type LessonTileProps = {
   schoolClass: SchoolClass;
   date: Date;
   isComplete: boolean;
-  lessonType: LessonType;
+  /** Labels of the lesson's types, e.g. with the part of a project. */
+  typeLabels: { type: LessonType; label: string }[];
   isCancelled: boolean;
   onLongPress: () => void;
 };
@@ -105,7 +107,7 @@ function LessonTile({
   schoolClass,
   date,
   isComplete,
-  lessonType,
+  typeLabels,
   isCancelled,
   onLongPress,
 }: LessonTileProps) {
@@ -153,8 +155,10 @@ function LessonTile({
       {...pressHandlers}
     >
       {texts}
-      <span className="absolute right-1 bottom-1 flex">
-        <LessonTypeBadge type={lessonType} />
+      <span className="absolute right-1 bottom-1 flex gap-0.5">
+        {typeLabels.map(({ type, label }) => (
+          <LessonTypeBadge key={type} type={type} label={label} />
+        ))}
       </span>
       {isComplete && (
         <span
@@ -229,6 +233,19 @@ export function TimetableGrid({
 }: TimetableGridProps) {
   const { lessonsPerDay } = useSettings();
   const cells: ReactNode[] = [<div key="corner" className="bg-surface" />];
+  /** Labels of a lesson's types, counting the parts of a project within its class. */
+  const typeLabelsOf = (classId: number, date: string) => {
+    const typesOf = (other: string) =>
+      lessonTypes[lessonKey(classId, other)] ?? [];
+    const classDates = Object.keys(lessonTypes)
+      .filter((key) => key.startsWith(`${classId}|`))
+      .map(lessonDateOf);
+    const chains = getLessonChains(classDates, typesOf);
+    return typesOf(date).map((type) => ({
+      type,
+      label: getLessonTypeLabel(chains, date, type),
+    }));
+  };
 
   for (let hour = 1; hour <= lessonsPerDay; hour++) {
     cells.push(
@@ -319,7 +336,7 @@ export function TimetableGrid({
                   schoolClass={cls}
                   date={date}
                   isComplete={completedLessons.includes(key)}
-                  lessonType={lessonTypes[key] ?? "normal"}
+                  typeLabels={typeLabelsOf(cls.id, toIsoDate(date))}
                   isCancelled={cancelledLessons.includes(key)}
                   onLongPress={() => onLessonLongPress(date, cls)}
                 />

@@ -181,4 +181,20 @@ export const MIGRATIONS: string[][] = [
     "UPDATE ReportGrades SET kind = 'partial' WHERE kind = 'quarter'",
     "DELETE FROM Reports WHERE kind = 'quarter'",
   ],
+  // A lesson can carry several types (e.g. a retake and a project), projects get their own mark
+  [
+    `CREATE TABLE LessonTypes2 (
+      classId INTEGER NOT NULL REFERENCES Classes(id) ON DELETE CASCADE,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL,
+      PRIMARY KEY (classId, date, type)
+    )`,
+    "INSERT INTO LessonTypes2 SELECT classId, date, type FROM LessonTypes",
+    "DROP TABLE LessonTypes",
+    "ALTER TABLE LessonTypes2 RENAME TO LessonTypes",
+    "ALTER TABLE Grades ADD COLUMN projectMark REAL",
+    `UPDATE Grades SET projectMark = mark, mark = NULL WHERE EXISTS (
+      SELECT 1 FROM LessonTypes t WHERE t.classId = Grades.classId
+        AND t.date = Grades.date AND t.type IN ('project', 'extension'))`,
+  ],
 ];
