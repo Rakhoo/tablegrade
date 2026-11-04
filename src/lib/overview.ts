@@ -16,7 +16,7 @@ export type OverviewColumn = LessonColumn | ReportColumn;
 
 /**
  * An exam takes one column of marks; other lessons one of oral grades, followed by one for
- * retake marks and one for project marks if they have them. The columns of a date's reports
+ * project marks and one for retake marks if they have them. The columns of a date's reports
  * follow its lesson.
  */
 export const getOverviewColumns = (
@@ -30,11 +30,11 @@ export const getOverviewColumns = (
       ? [{ date, kind: "mark" }]
       : [
           { date, kind: "oral" },
-          ...(types.includes("retake")
-            ? [{ date, kind: "mark" } as const]
-            : []),
           ...(types.some((type) => MARK_KIND[type] == "project")
             ? [{ date, kind: "projectMark" } as const]
+            : []),
+          ...(types.includes("retake")
+            ? [{ date, kind: "mark" } as const]
             : []),
         ];
     return [

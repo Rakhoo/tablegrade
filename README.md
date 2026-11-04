@@ -135,7 +135,7 @@ The only network request fetches school holidays from
   on the date in the overview and in the grading tool bar of the seating plan; a second tap
   removes a type ([src/lib/lessons.ts](src/lib/lessons.ts)). Exam and retake marks are stored
   in `mark`, project marks in `projectMark`, so a lesson keeps its oral grades next to them; in
-  the overview each takes its own column, in the seating plan a switch chooses the mark when a
+  the overview each takes its own column (the project before the retake), in the seating plan a switch chooses the mark when a
   retake and a project fall on one day.
   - Follow-ups for students without a mark yet: a *Nachklausur* continues the latest exam, a
     *Projektverlängerung* the latest project (the parts then show as "Projekt 1/2", "Projekt
