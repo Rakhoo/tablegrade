@@ -632,7 +632,7 @@ export function OverviewPage() {
     disabled: withPhotos.length == 0,
     to: viewLink("/names"),
   };
-  const tableEntries: SpeedDialEntry[] = [editEntry, namesEntry, "divider"];
+  const tableEntries: SpeedDialEntry[] = [editEntry, namesEntry];
   if (withPhotos.length > 0) {
     tableEntries.push({
       key: "photos",

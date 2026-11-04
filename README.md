@@ -17,8 +17,9 @@ The only network request fetches school holidays from
   collapsed it only shows *Hilfe*, the caret opening it and, on the pages of a class, buttons
   to its other pages (seating plan or overview table, labelled in landscape), which never
   cover the page (only the calendar card a bit); open it lists all further features of the page with their
-  labels on the left, above everything else. Display options are real switches, and
-  *Einstellungen* is always the last entry. Modes are no part of it: classroom and overview
+  labels on the left, above everything else. Display options are real switches showing the
+  icons of both states, and all icon buttons of the open dial share their width, as do the
+  labels (centered, as high as the buttons); *Einstellungen* is always the last entry. Modes are no part of it: classroom and overview
   table choose them with small text toggle buttons in the top left corner of the bar below the
   header, with undo/redo in its top right corner and the mode's hint or grading tools below.
   - *Hilfe* explains everything on the screen at once: each element with a `data-help` text
@@ -42,7 +43,9 @@ The only network request fetches school holidays from
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
   selected week, one row per lesson.
   - Lessons are colored tiles: the subject sets the hue, the level the shade (5 light, Q2
-    dark); double lessons span two rows.
+    dark); double lessons span two rows. Badges show the lesson types, shortened: a project
+    (extension) reads "Proj.", a retake "N.Klausur", or only "…" after a project on the same
+    date.
   - Lesson-free hours show `FREI` with dashed slots that create a new class for that slot;
     vacations show `FERIEN`, public holidays `FEIERTAG`.
   - Long press on a day header or a lesson marks it as `AUSFALL` (illness, bridge day, …) or

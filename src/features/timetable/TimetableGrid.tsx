@@ -8,9 +8,8 @@ import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import type { SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
-import type { LessonType } from "../../lib/grades";
-import { getLessonChains, getLessonTypeLabel } from "../../lib/lessonChains";
-import { lessonDateOf, lessonKey } from "../../lib/lessons";
+import { MARK_KIND, type LessonType } from "../../lib/grades";
+import { LESSON_TYPE_LABELS, lessonKey } from "../../lib/lessons";
 import {
   getClassOccurrences,
   getHoliday,
@@ -233,17 +232,26 @@ export function TimetableGrid({
 }: TimetableGridProps) {
   const { lessonsPerDay } = useSettings();
   const cells: ReactNode[] = [<div key="corner" className="bg-surface" />];
-  /** Labels of a lesson's types, counting the parts of a project within its class. */
+  /**
+   * Short labels of a lesson's types to fit the cell: a project or extension reads "Proj.", a
+   * retake "N.Klausur", or only "…" after a project on the same date.
+   */
   const typeLabelsOf = (classId: number, date: string) => {
-    const typesOf = (other: string) =>
-      lessonTypes[lessonKey(classId, other)] ?? [];
-    const classDates = Object.keys(lessonTypes)
-      .filter((key) => key.startsWith(`${classId}|`))
-      .map(lessonDateOf);
-    const chains = getLessonChains(classDates, typesOf);
-    return typesOf(date).map((type) => ({
+    const types = lessonTypes[lessonKey(classId, date)] ?? [];
+    const withProject = types.some((type) => MARK_KIND[type] == "project");
+    return [
+      ...types.filter((type) => type != "retake"),
+      ...types.filter((type) => type == "retake"),
+    ].map((type) => ({
       type,
-      label: getLessonTypeLabel(chains, date, type),
+      label:
+        type == "retake"
+          ? withProject
+            ? "…"
+            : "N.Klausur"
+          : MARK_KIND[type] == "project"
+            ? "Proj."
+            : LESSON_TYPE_LABELS[type],
     }));
   };
 

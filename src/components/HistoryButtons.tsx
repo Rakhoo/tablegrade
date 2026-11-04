@@ -27,10 +27,10 @@ function HistoryButton({
       aria-label={
         step ? `${label}: ${step.action}, ${step.description}` : label
       }
-      className="flex h-8 w-52 min-w-0 items-center gap-1.5 rounded-full bg-brand-50 pr-3 pl-2 text-xs text-brand-700 transition-transform active:scale-95 disabled:opacity-40 portrait:w-36"
+      className="flex h-7 w-52 min-w-0 items-center gap-1.5 rounded-full bg-brand-50 pr-3 pl-2 text-xs text-brand-700 transition-transform active:scale-95 disabled:opacity-40 portrait:w-36"
     >
       <span className="shrink-0">{icon}</span>
-      <span className="min-w-0 truncate text-left">
+      <span className="min-w-0 flex-1 truncate text-center">
         {step ? (
           <>
             {elsewhere ? (

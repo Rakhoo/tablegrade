@@ -347,7 +347,7 @@ export function ClassroomPage() {
     to: viewLink("/names"),
   };
   const planEntries: SpeedDialEntry[] = [editEntry, namesEntry];
-  planEntries.push("divider", {
+  planEntries.push({
     key: "clear",
     label: "Stunde zurücksetzen",
     icon: <TrashIcon />,
@@ -356,7 +356,6 @@ export function ClassroomPage() {
     disabled: grades.length == 0,
     onClick: () => setConfirmClear(true),
   });
-  if (hasPhotos || hasTraits || canZoom) planEntries.push("divider");
   if (canZoom) {
     planEntries.push({
       key: "zoom",

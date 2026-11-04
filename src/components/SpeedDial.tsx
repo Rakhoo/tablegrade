@@ -4,29 +4,27 @@ import { rememberReturnPage } from "../lib/returnPage";
 import { HelpOverlay } from "./HelpOverlay";
 import { ChevronDownIcon, HelpIcon, SettingsIcon } from "./icons";
 
-/** An entry of the speed dial: a link, an action, a toggle or a gap between groups. */
-export type SpeedDialEntry =
-  | "divider"
-  | {
-      key: string;
-      label: string;
-      /** Second line of the label, e.g. the date a link leads to. */
-      detail?: string;
-      icon: ReactNode;
-      disabled?: boolean;
-      /** Explanation shown by the help. */
-      help: string;
-      to?: string;
-      onClick?: (element: HTMLElement) => void;
-      /** State of a toggle; makes the entry a switch that keeps the dial open. */
-      checked?: boolean;
-      /** Icon of a toggle's off state, shown left of `icon` for the on state. */
-      offIcon?: ReactNode;
-      /** Keeps the dial open, e.g. for an entry opening a popover next to it. */
-      keepOpen?: boolean;
-      /** Marks an entry that deletes something in red. */
-      danger?: boolean;
-    };
+/** An entry of the speed dial: a link, an action or a toggle. */
+export type SpeedDialEntry = {
+  key: string;
+  label: string;
+  /** Second line of the label, e.g. the date a link leads to. */
+  detail?: string;
+  icon: ReactNode;
+  disabled?: boolean;
+  /** Explanation shown by the help. */
+  help: string;
+  to?: string;
+  onClick?: (element: HTMLElement) => void;
+  /** State of a toggle; makes the entry a switch that keeps the dial open. */
+  checked?: boolean;
+  /** Icon of a toggle's off state, shown left of `icon` for the on state. */
+  offIcon?: ReactNode;
+  /** Keeps the dial open, e.g. for an entry opening a popover next to it. */
+  keepOpen?: boolean;
+  /** Marks an entry that deletes something in red. */
+  danger?: boolean;
+};
 
 /** A page of the class, linked next to the help instead of inside the dial. */
 export type SpeedDialLink = {
@@ -42,7 +40,7 @@ export type SpeedDialLink = {
 const RAISED = "shadow-[0_2px_10px_rgb(0_0_0/0.28)] ring-1 ring-black/10";
 
 type SpeedDialItemProps = {
-  entry: Exclude<SpeedDialEntry, "divider">;
+  entry: SpeedDialEntry;
   onClose: () => void;
   /** Called with the target before a link is followed. */
   onNavigate: (to: string) => void;
@@ -50,7 +48,10 @@ type SpeedDialItemProps = {
   guard?: (go: () => void) => void;
 };
 
-/** One entry: its label on the left, the round icon on the right. */
+/**
+ * One entry: its label on the left, as wide as the widest of the dial and as high as the
+ * buttons, and its icon on the right, as wide as a toggle.
+ */
 function SpeedDialItem({
   entry,
   onClose,
@@ -76,7 +77,7 @@ function SpeedDialItem({
     <>
       <span
         className={
-          `flex flex-col rounded-full bg-surface px-3.5 py-1.5 text-right text-sm leading-tight font-medium ${RAISED} ` +
+          `flex h-11 flex-1 flex-col items-center justify-center rounded-full bg-surface px-3.5 text-center text-sm leading-tight font-medium ${RAISED} ` +
           (danger ? "text-red-600" : "text-ink")
         }
       >
@@ -118,7 +119,7 @@ function SpeedDialItem({
       ) : (
         <span
           className={
-            `flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${RAISED} ` +
+            `flex h-11 w-[5.5rem] shrink-0 items-center justify-center rounded-full ${RAISED} ` +
             (danger ? "bg-red-600 text-white" : "bg-surface text-brand-700")
           }
         >
@@ -128,7 +129,7 @@ function SpeedDialItem({
     </>
   );
   const className =
-    "flex items-center justify-end gap-2 transition-transform active:scale-95 " +
+    "flex w-full items-center justify-end gap-2 transition-transform active:scale-95 " +
     (disabled ? "pointer-events-none opacity-40" : "");
   if (to) {
     return (
@@ -201,7 +202,6 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
   const [dial, setDial] = useState<HTMLElement | null>(null);
   const all: SpeedDialEntry[] = [
     ...entries,
-    "divider",
     {
       key: "settings",
       label: "Einstellungen",
@@ -276,7 +276,7 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
           aria-label="Menü"
           aria-hidden={!open}
           className={
-            "flex max-h-[calc(100dvh-6rem)] flex-col items-end gap-2 overflow-y-auto p-1 " +
+            "flex max-h-[calc(100dvh-6rem)] flex-col items-stretch gap-2 overflow-y-auto p-1 " +
             (open ? "pointer-events-auto" : "")
           }
           style={{
@@ -286,7 +286,7 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
         >
           {all.map((entry, index) => (
             <div
-              key={entry == "divider" ? `divider-${index}` : entry.key}
+              key={entry.key}
               className={
                 "transition-[opacity,transform] duration-200 ease-out " +
                 (open
@@ -298,16 +298,12 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
                 transitionDelay: `${(open ? index : all.length - 1 - index) * STAGGER_MS}ms`,
               }}
             >
-              {entry == "divider" ? (
-                <div className="h-1" />
-              ) : (
-                <SpeedDialItem
-                  entry={entry}
-                  guard={guard}
-                  onClose={() => setOpen(false)}
-                  onNavigate={rememberFrom}
-                />
-              )}
+              <SpeedDialItem
+                entry={entry}
+                guard={guard}
+                onClose={() => setOpen(false)}
+                onNavigate={rememberFrom}
+              />
             </div>
           ))}
         </nav>
