@@ -233,10 +233,13 @@ function Seat({
           photos hidden it only holds the trait dots behind the name, which moves to the center */}
       <div
         className={
-          showPhoto ? "relative min-h-0 w-full flex-1" : "absolute inset-1.5"
+          (showPhoto
+            ? "relative min-h-0 w-full flex-1"
+            : "absolute inset-1.5") + " [container-type:size]"
         }
       >
-        <div className="absolute top-0 left-1/2 aspect-square h-full -translate-x-1/2">
+        {/* The largest square fitting the area, so the photo never leaves the seat */}
+        <div className="absolute inset-0 m-auto size-[min(100cqw,100cqh)]">
           {showPhoto && student.image && (
             <img
               src={student.image}
@@ -267,7 +270,7 @@ function Seat({
       </div>
       <FitText
         text={getStudentLabel(student)}
-        className="w-full shrink-0 leading-tight font-semibold"
+        className="w-full shrink-0 font-semibold"
       />
       {warning && (
         <span

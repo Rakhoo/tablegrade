@@ -81,8 +81,12 @@ The only network request fetches school holidays from
     fit; each direction grows on its own, so that part fills the plan from corner to corner,
     inside the same padding as unzoomed. The choice is kept per device;
     arranging always shows the whole room.
-  - Names too long for their seat get a smaller font (down to 10 px) and are only then cut
-    off with "…".
+  - Names too long for their seat (zoomed or not) first get a smaller font (down to 8 px);
+    only if one line is still not enough, they take two lines, breaking at spaces and
+    hyphens, then also splitting words with a hyphen; only if three lines would still be
+    needed, the name is cut off with "…"
+    ([src/components/FitText.tsx](src/components/FitText.tsx)). Photos are the largest
+    circle fitting the seat, so they keep the padding on all sides.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
     colors in the settings); "Legende" in the bottom left corner (while the traits are shown) explains the colors of this class
     and counts them. The plan then ends above the button (zoomed or not), and the legend opens
