@@ -108,8 +108,8 @@ export type CompletionEntry = {
  * - `lesson`: every student has an oral grade or "excused"; on an exam day a mark instead. In a
  *   retake only the students with their exam mark already get oral grades.
  * - `retake` and `project`: every student without that mark on another date of the exam or
- *   project has one here, or "excused". Those writing a retake take no part in a project on the
- *   same day.
+ *   project has one here. Those writing a retake take no part in a project on the same day.
+ * For marks (exam, retake, project) "excused" counts as no entry: the mark is still due.
  */
 export function getLessonCompletion(
   date: string,
@@ -129,11 +129,14 @@ export function getLessonCompletion(
   const settled = (
     due: number[],
     value: (entry: CompletionEntry) => number | null,
+    excusedCounts = false,
   ) =>
     studentIds.length > 0 &&
     due.every((id) => {
       const entry = entryOf(id, date);
-      return !!entry && (entry.absent || value(entry) != null);
+      return (
+        !!entry && ((excusedCounts && entry.absent) || value(entry) != null)
+      );
     });
 
   if (isExamDay(types)) {
@@ -152,6 +155,7 @@ export function getLessonCompletion(
         ? studentIds.filter((id) => !retakers.includes(id))
         : studentIds,
       (entry) => entry.grade,
+      true,
     ),
     retake: hasRetake && settled(retakers, (entry) => entry.mark),
     // Those writing the retake take no part in the project that day

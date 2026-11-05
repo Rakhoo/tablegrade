@@ -54,7 +54,8 @@ The only network request fetches school holidays from
     the oral grades (or "entschuldigt") of all students; an exam by its marks. In the overview
     the retake and project columns get their own check marks: complete once every student
     without that mark on another date of the exam or project has one here. In a retake lesson
-    the oral grades only count for those not writing it.
+    the oral grades only count for those not writing it. For exam, retake and project marks
+    "entschuldigt" counts as no entry, so the mark stays due (e.g. via a retake or extension).
   - Swiping the timetable switches weeks, swiping the calendar switches months.
   - In landscape the calendar column sits on the left and the week bar above the timetable;
     in portrait calendar and controls (week bar included) sit above it. "Neue Klasse" and
