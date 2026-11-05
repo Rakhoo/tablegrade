@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent } from "react";
+import { FitText } from "../../components/FitText";
 import { GradeIcon } from "../../components/GradeIcon";
 import { MarkBadge } from "../../components/MarkBadge";
 import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
@@ -264,9 +265,10 @@ function Seat({
           })}
         </div>
       </div>
-      <span className="w-full shrink-0 truncate text-sm leading-tight font-semibold">
-        {getStudentLabel(student)}
-      </span>
+      <FitText
+        text={getStudentLabel(student)}
+        className="w-full shrink-0 leading-tight font-semibold"
+      />
       {warning && (
         <span
           className="absolute -top-1 -left-1 z-10 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold border-2 text-white shadow-tile"

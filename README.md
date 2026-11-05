@@ -81,6 +81,8 @@ The only network request fetches school holidays from
     fit; each direction grows on its own, so that part fills the plan from corner to corner,
     inside the same padding as unzoomed. The choice is kept per device;
     arranging always shows the whole room.
+  - Names too long for their seat get a smaller font (down to 10 px) and are only then cut
+    off with "…".
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
     colors in the settings); "Legende" in the bottom left corner (while the traits are shown) explains the colors of this class
     and counts them. The plan then ends above the button (zoomed or not), and the legend opens
