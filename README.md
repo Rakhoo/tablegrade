@@ -27,6 +27,18 @@ The only network request fetches school holidays from
     placed so it covers neither the explained elements nor other callouts.
     With the dial collapsed it explains the page, open only the dial itself. Large areas like
     the seating plan cannot be avoided, they get their callout inside; a tap anywhere closes it.
+    Cards (`data-help-group`: mode bar, grading tools, timetable side bar, overview table and
+    class list) only get a short explanation with "Mehr anzeigen", which hides everything else
+    and explains the elements inside the card, with the callouts outside it where there is
+    room; "Zurück" returns. The open dial needs no such step. Lines may cross but never run
+    along each other or point at another line; they rather touch their element off the middle
+    of its side or come from another side. Swiping still scrolls the page below; callouts follow their elements,
+    elements scrolled into view get one, and explanations shared by many elements
+    (`data-help-repeat`, e.g. dates, names and cells of the overview table) sit at the fully
+    visible one (not cut off or covered, e.g. by the sticky header) closest to the middle of
+    the visible area. `data-help-place` asks for a callout inside its element (centered, e.g.
+    the settings sections) or above or below it, `data-help-skew` frames slanted elements like
+    the dates with their slant.
   - At the top left the seating plan always leads back to "Stundenplan" (in the week of the
     lesson) and the overview table to "Übersichten" ([src/lib/mainPage.ts](src/lib/mainPage.ts)
     keeps how they were last shown). The overview selection always leads back to the timetable,
@@ -51,11 +63,11 @@ The only network request fetches school holidays from
   - Long press on a day header or a lesson marks it as `AUSFALL` (illness, bridge day, …) or
     makes it regular again. Existing entries must be confirmed and are then deleted.
   - Complete lessons show a check mark, here, in the classroom and in the overview, judged by
-    the oral grades (or "entschuldigt") of all students; an exam by its marks. In the overview
+    the oral grades (or "abwesend") of all students; an exam by its marks. In the overview
     the retake and project columns get their own check marks: complete once every student
     without that mark on another date of the exam or project has one here. In a retake lesson
     the oral grades only count for those not writing it. For exam, retake and project marks
-    "entschuldigt" counts as no entry, so the mark stays due (e.g. via a retake or extension).
+    "abwesend" counts as no entry, so the mark stays due (e.g. via a retake or extension).
   - Swiping the timetable switches weeks, swiping the calendar switches months.
   - In landscape the calendar column sits on the left and the week bar above the timetable;
     in portrait calendar and controls (week bar included) sit above it. "Neue Klasse" and
@@ -68,7 +80,7 @@ The only network request fetches school holidays from
     editor), *Namen lernen* (flash cards for classes with photos), "Stunde zurücksetzen" (in red) and the
     switches for zoom, photos and traits.
   - *Ermahnen*: each tap cycles a student through yellow → red → none.
-  - *Bewerten*: the tool bar (grade symbols, "entschuldigt", suggestion, lesson type, marks for
+  - *Bewerten*: the tool bar (grade symbols, "abwesend", suggestion, lesson type, marks for
     exams and projects and one delete tool at the right for both) stays open below the header;
     tapping a student applies the tool. The suggestion is the
     default tool; without previous grades it suggests the shown symbol closest to a plain 3,
@@ -145,7 +157,7 @@ The only network request fetches school holidays from
   tap on a name covers the entries of all other students and hides all traits, to show a
   student their own.
 - **Lesson types**: a lesson can be a *Klausur* (classic marks 1 to 6 with tendencies, plus
-  "entschuldigt", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
+  "abwesend", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
   on the date in the overview and in the grading tool bar of the seating plan; a second tap
   removes a type ([src/lib/lessons.ts](src/lib/lessons.ts)). Exam and retake marks are stored
   in `mark`, project marks in `projectMark`, so a lesson keeps its oral grades next to them; in
@@ -158,7 +170,7 @@ The only network request fetches school holidays from
     out with the mark shown faintly, also grayed out in the seating plan), and the mark counts
     as the exam's or project's ([src/lib/lessonChains.ts](src/lib/lessonChains.ts)).
   - In a retake lesson only students with their exam mark already get oral grades; those
-    writing it get the retake mark (or "entschuldigt" for it) and no project mark that day.
+    writing it get the retake mark (or "abwesend" for it) and no project mark that day.
 
 ## Stack
 
@@ -296,8 +308,8 @@ also the way to move data to another device.
 - **Cancelled lessons** count for nobody, but in the overview single students can still get
   the X there, e.g. for skipping class; it then counts for them.
 - **Hidden students** stay in a class with their grades, but only show up in its editor. When
-  shown again they get a free seat and "entschuldigt" for lessons completed in the meantime.
-- **New students** added to a class get "entschuldigt" in all lessons that were complete
+  shown again they get a free seat and "abwesend" for lessons completed in the meantime.
+- **New students** added to a class get "abwesend" in all lessons that were complete
   before, so these stay complete; other lessons stay untouched.
 - **School years** are added in the settings, each with the start of its second half (no API
   exists for these dates; default February 1st). Possible are 2019/20 up to the latest year whose

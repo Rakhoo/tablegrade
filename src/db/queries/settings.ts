@@ -9,15 +9,18 @@ import {
   type Trait,
 } from "../schema";
 
-/** Returns all settings, unset ones with their default value. */
+/**
+ * Returns all settings, unset ones with their default value. The former letter E for absent
+ * students ("entschuldigt", also in old backups) becomes the letter A.
+ */
 export async function getSettings(): Promise<AppSettings> {
   const rows = await db.select().from(settings);
-  return {
-    ...DEFAULT_SETTINGS,
-    ...Object.fromEntries(
-      rows.map(({ key, value }) => [key, JSON.parse(value)]),
-    ),
-  };
+  const stored: Partial<AppSettings> = Object.fromEntries(
+    rows.map(({ key, value }) => [key, JSON.parse(value)]),
+  );
+  if ((stored.absentSymbol as string) == "letterE")
+    stored.absentSymbol = "letterA";
+  return { ...DEFAULT_SETTINGS, ...stored };
 }
 
 /** Saves the given settings. */

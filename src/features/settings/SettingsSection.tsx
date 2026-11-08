@@ -16,7 +16,11 @@ export function SettingsSection({
   children,
 }: SettingsSectionProps) {
   return (
-    <section className="card flex flex-col gap-3 p-5" data-help={help}>
+    <section
+      className="card flex flex-col gap-3 p-5"
+      data-help={help}
+      data-help-place="inside"
+    >
       <div>
         <h2 className="text-lg font-bold tracking-tight">{title}</h2>
         {hint && <p className="text-sm text-muted">{hint}</p>}

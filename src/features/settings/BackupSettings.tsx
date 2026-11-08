@@ -61,7 +61,7 @@ export function BackupSettings() {
     <SettingsSection
       title="Sicherung"
       hint={`Alle Daten liegen nur auf diesem Gerät. Letzte Sicherung: ${lastBackup ? format(parseISO(lastBackup), "dd.MM.yyyy") : "noch keine"}.`}
-      help="Sicherung aller Daten als Datei, Wiederherstellen aus einer Sicherung (auch zum Umzug auf ein anderes Gerät), die Erinnerung daran und ein Neustart der App für Updates."
+      help="Sicherung aller Daten als Datei und Wiederherstellen (auch für ein neues Gerät), Erinnerung und Neustart für Updates."
     >
       <div className="flex flex-wrap gap-2">
         <Button

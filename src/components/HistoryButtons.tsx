@@ -62,7 +62,7 @@ export function HistoryButtons({ history }: { history: EditHistory }) {
   return (
     <div
       className="flex min-w-0 items-center gap-1"
-      data-help="Rückgängig und Wiederholen für alle Änderungen in Sitzplänen und Übersichten. War die Änderung auf einer anderen Seite, öffnet der erste Tipp diese Seite."
+      data-help="Rückgängig und Wiederholen, auch für Änderungen auf anderen Seiten (der erste Tipp öffnet sie)."
     >
       <HistoryButton
         icon={<UndoIcon size={16} />}

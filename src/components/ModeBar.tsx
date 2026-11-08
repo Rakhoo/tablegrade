@@ -58,6 +58,8 @@ type ModeBarProps = {
   children?: ReactNode;
   /** A notice in a gray strip at the bottom, e.g. about a filter. */
   footer?: ReactNode;
+  /** Label of the current mode, named in the help. */
+  current: string;
 };
 
 /**
@@ -70,9 +72,14 @@ export function ModeBar({
   hint,
   children,
   footer,
+  current,
 }: ModeBarProps) {
   return (
-    <div className="card flex flex-col gap-1 overflow-hidden px-1.5 pt-1.5 pb-1.5">
+    <div
+      className="card flex flex-col gap-1 overflow-hidden px-1.5 pt-1.5 pb-1.5"
+      data-help-group
+      data-help={`Modus-Auswahl, Rückgängig und die Werkzeuge des Modus. Aktueller Modus: ${current}.`}
+    >
       <div className="flex items-start justify-between gap-2">
         {modes}
         {history}

@@ -85,28 +85,28 @@ const MODES: {
     label: "Ermahnen",
     help: "Modus Ermahnen: Antippen eines Schülers ermahnt ihn.",
     gridHelp:
-      "Antippen ermahnt einen Schüler, erneutes Antippen verhängt eine Maßnahme, ein drittes nimmt beides zurück.",
+      "Antippen ermahnt, ein zweites Mal verhängt eine Maßnahme, ein drittes nimmt beides zurück.",
   },
   {
     mode: "grade",
     label: "Bewerten",
     help: "Modus Bewerten: Symbole oder Noten für diese Stunde vergeben.",
     gridHelp:
-      "Antippen vergibt das oben gewählte Werkzeug. Gestrichelte Symbole sind Vorschläge aus den bisherigen Bewertungen.",
+      "Antippen vergibt das gewählte Werkzeug; gestrichelte Symbole sind Vorschläge.",
   },
   {
     mode: "comment",
     label: "Kommentieren",
     help: "Modus Kommentieren: Kommentare zu dieser Stunde lesen und schreiben.",
     gridHelp:
-      "Sprechblasen zeigen den Anfang der Kommentare. Antippen öffnet den Kommentar zum Bearbeiten oder legt einen neuen an.",
+      "Antippen bearbeitet oder beginnt einen Kommentar; Sprechblasen zeigen seinen Anfang.",
   },
   {
     mode: "arrange",
     label: "Anordnen",
     help: "Modus Anordnen: die Sitzordnung ändern.",
     gridHelp:
-      "Schüler auf einen ganzen oder halben Platz ziehen. Auf einem anderen Schüler tauschen beide die Plätze.",
+      "Schüler auf einen Platz ziehen; auf einem anderen Schüler tauschen beide.",
   },
 ];
 
@@ -449,7 +449,7 @@ export function ClassroomPage() {
 
         <div
           className="flex items-center gap-3"
-          data-help="Klasse, Fach und Datum der Stunde. Die Pfeile springen zur vorherigen oder nächsten Stunde, auch anderer Klassen."
+          data-help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
         >
           {
             <IconButton
@@ -512,6 +512,7 @@ export function ClassroomPage() {
       </header>
 
       <ModeBar
+        current={currentMode.label}
         modes={modes}
         history={<HistoryButtons history={history} />}
         hint={
@@ -601,7 +602,7 @@ export function ClassroomPage() {
             startIcon={<InfoIcon size={18} />}
             onClick={(event) => setTraitsAnchor(event.currentTarget)}
             className="absolute bottom-2 left-2 z-20 bg-brand-100 opacity-75 shadow-tile"
-            data-help="Erklärt die Farben der Eigenschaften in dieser Klasse und zählt sie."
+            data-help="Farben der Eigenschaften mit ihrer Anzahl."
           >
             Legende
           </Button>

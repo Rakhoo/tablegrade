@@ -164,7 +164,7 @@ export function TimetablePage() {
   const weekBar = (
     <div
       className="flex items-center justify-between rounded-full bg-brand-50 p-1"
-      data-help="Die gezeigte Kalenderwoche; die Pfeile oder Wischen über den Stundenplan wechseln die Woche."
+      data-help="Die gezeigte Woche; Pfeile oder Wischen über den Stundenplan wechseln sie."
     >
       <IconButton
         aria-label="Vorherige Woche"
@@ -201,7 +201,11 @@ export function TimetablePage() {
           the timetable; portrait: above the timetable with controls (week bar included) and
           calendar side by side to save height, the calendar lower so the speed dial in the top
           right corner covers nothing. */}
-      <aside className="card flex shrink-0 gap-3 px-3 landscape:w-[22rem] landscape:flex-col landscape:items-center landscape:pt-4 portrait:justify-center portrait:py-3">
+      <aside
+        className="card flex shrink-0 gap-3 px-3 landscape:w-[22rem] landscape:flex-col landscape:items-center landscape:pt-4 portrait:justify-center portrait:py-3"
+        data-help-group
+        data-help="Wochenauswahl, neue Klassen und die Übersichten."
+      >
         <div className="flex flex-col gap-3 px-3 landscape:w-full portrait:w-80 portrait:shrink-0">
           <div className="flex min-h-11 items-center justify-between gap-3">
             <h1 className="text-2xl font-bold tracking-tight">Stundenplan</h1>
@@ -236,7 +240,7 @@ export function TimetablePage() {
               variant="outlined"
               startIcon={<TableIcon size={18} />}
               className="flex-1 whitespace-nowrap"
-              data-help="Alle Klassen mit ihren Übersichtstabellen der Noten."
+              data-help="Alle Klassen mit ihren Notentabellen."
             >
               Übersichten
             </Button>
@@ -247,7 +251,7 @@ export function TimetablePage() {
         <div
           {...calendarSwipe}
           className="touch-pan-y portrait:mt-12"
-          data-help="Ein Tag wählt seine Woche; Wischen wechselt den Monat. Ferien und freie Tage stehen im Stundenplan."
+          data-help="Ein Tag wählt seine Woche; Wischen wechselt den Monat."
         >
           <StaticDatePicker
             displayStaticWrapperAs="desktop"
@@ -274,7 +278,7 @@ export function TimetablePage() {
         <section
           {...timetableSwipe}
           className="card relative min-h-0 flex-1 touch-pan-y p-3"
-          data-help="Stundenplan der Woche: eine Stunde öffnet ihren Sitzplan, ein leeres Feld legt dort eine Klasse an. Langes Drücken auf eine Stunde oder einen Tag setzt Ausfall; ein Haken zeigt vollständig bewertete Stunden."
+          data-help="Eine Stunde öffnet ihren Sitzplan, ein freies Feld legt eine Klasse an; lange drücken setzt Ausfall. ✓ = vollständig bewertet."
         >
           <TimetableGrid
             monday={monday}

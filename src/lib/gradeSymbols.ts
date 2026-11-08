@@ -31,7 +31,6 @@ export type GradeSymbol = keyof typeof GRADE_SYMBOLS;
 export const ABSENT_SYMBOLS = {
   slashed: "Durchgestrichen",
   dashed: "Gestrichelt",
-  letterE: "Buchstabe E",
   letterA: "Buchstabe A",
   dash: "Strich",
   blank: "Nur Farbe",

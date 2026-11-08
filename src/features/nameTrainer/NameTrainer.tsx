@@ -40,7 +40,7 @@ export function NameTrainer({ students }: NameTrainerProps) {
   return (
     <main
       className="card flex min-h-0 flex-1 flex-col items-center justify-center overflow-auto p-5"
-      data-help="Karteikarten: das Foto antippen deckt den Namen auf. „Nochmal“ bringt die Karte später in der Runde zurück, „Gewusst“ legt sie weg."
+      data-help="Foto antippen zeigt den Namen; „Nochmal“ bringt die Karte später zurück, „Gewusst“ legt sie weg."
     >
       <div className="flex w-full max-w-sm flex-col gap-4">
         <div className="text-center text-sm font-medium text-muted">

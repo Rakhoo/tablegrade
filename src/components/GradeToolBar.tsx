@@ -141,6 +141,7 @@ export function GradeToolBar({
       color="primary"
       value={lessonTypes}
       className="rounded-full bg-brand-50 p-0.5"
+      data-help="Typ der Stunde, z. B. Klausur oder Projekt; ein zweiter Tipp entfernt ihn."
     >
       {LESSON_TYPE_ORDER.filter(
         (type) =>
@@ -161,17 +162,8 @@ export function GradeToolBar({
   return (
     <div
       className="flex flex-col gap-1"
-      data-help={
-        "Werkzeuge zum Bewerten: erst ein Symbol" +
-        (marks.length > 0 && !hideMarks ? " oder eine Note" : "") +
-        " wählen, dann antippen. „Entschuldigt“ links, „Vorschlag“ am Ende der Symbole übernimmt das gestrichelte Symbol, „Löschen“ entfernt Symbol und Note." +
-        (typeToggle
-          ? " Hier bekommt die Stunde ihre Typen wie Klausur oder Projekt; ein zweiter Tipp entfernt einen."
-          : "") +
-        (hasBothMarks
-          ? " Bei Nachklausur und Projekt am selben Tag wählt der Schalter, welche Note gesetzt wird."
-          : "")
-      }
+      data-help-group
+      data-help="Werkzeuge zum Bewerten: erst wählen, dann antippen."
     >
       {/* The symbols and marks in the middle, erasing at the right between both rows; only wide
           screens have room for the lesson type next to the tools */}
@@ -179,13 +171,14 @@ export function GradeToolBar({
         <div className="flex items-center gap-1">
           <button
             type="button"
-            aria-label="entschuldigt"
+            aria-label="abwesend"
             aria-pressed={tool == "absent"}
+            data-help="Markiert als abwesend."
             className={`w-16 ${buttonClass("absent")}`}
             onClick={() => onChange("absent")}
           >
             <GradeIcon size={32} />
-            Entschuldigt
+            Abwesend
           </button>
           <div className="ml-2 max-[1169px]:hidden">{typeToggle}</div>
         </div>
@@ -195,6 +188,12 @@ export function GradeToolBar({
               symbols.length > 9
                 ? "grid grid-cols-9 justify-items-center gap-0.5"
                 : "flex items-center gap-1"
+            }
+            data-help={
+              "Symbole der mündlichen Bewertung." +
+              (offersSuggestion
+                ? " „Vorschlag“ übernimmt das gestrichelte Symbol."
+                : "")
             }
           >
             {symbols.map(renderSymbol)}
@@ -211,6 +210,7 @@ export function GradeToolBar({
                     value && onMarkTargetChange(value)
                   }
                   className="mr-2 rounded-full bg-brand-50 p-0.5"
+                  data-help="Welche Note gesetzt wird, wenn Nachklausur und Projekt auf einen Tag fallen."
                 >
                   <ToggleButton value="mark" className="toggle-pill">
                     Nachklausur
@@ -220,24 +220,34 @@ export function GradeToolBar({
                   </ToggleButton>
                 </ToggleButtonGroup>
               )}
-              {marks.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={option == tool}
-                  className={
-                    "flex h-8 w-9 items-center justify-center rounded-xl transition-transform active:scale-95 " +
-                    (option == tool ? "bg-brand-100 ring-2 ring-brand-300" : "")
-                  }
-                  onClick={() => onChange(option)}
-                >
-                  <MarkBadge mark={getToolValue(option)} />
-                </button>
-              ))}
+              <div
+                className="flex flex-wrap justify-center gap-1"
+                data-help="Noten für Klausur, Nachklausur und Projekt."
+              >
+                {marks.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    aria-pressed={option == tool}
+                    className={
+                      "flex h-8 w-9 items-center justify-center rounded-xl transition-transform active:scale-95 " +
+                      (option == tool
+                        ? "bg-brand-100 ring-2 ring-brand-300"
+                        : "")
+                    }
+                    onClick={() => onChange(option)}
+                  >
+                    <MarkBadge mark={getToolValue(option)} />
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
-        <div className="flex items-center justify-end">
+        <div
+          className="flex items-center justify-end"
+          data-help="Löscht Symbol und Noten."
+        >
           {renderExtra("erase")}
         </div>
       </div>

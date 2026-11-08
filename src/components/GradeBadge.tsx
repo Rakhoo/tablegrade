@@ -158,7 +158,7 @@ export function AbsentBadge({
   size,
   background = "var(--color-surface)",
 }: AbsentBadgeProps) {
-  const letter = { letterE: "E", letterA: "A" }[symbol as string];
+  const letter = symbol == "letterA" ? "A" : undefined;
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -166,7 +166,7 @@ export function AbsentBadge({
       height={size}
       viewBox="0 0 24 24"
       role="img"
-      aria-label="entschuldigt"
+      aria-label="abwesend"
     >
       <circle
         cx="12"

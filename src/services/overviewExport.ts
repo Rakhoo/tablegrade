@@ -43,11 +43,11 @@ const valueOf = (entry: GradeEntry | undefined, column: LessonColumn) =>
       ? entry?.mark
       : entry?.projectMark;
 
-/** Text of a cell: the grade or mark like "2+", or "E" for excused. */
+/** Text of a cell: the grade or mark like "2+", or "A" for absent. */
 function cellText(entry: GradeEntry | undefined, column: LessonColumn) {
   const value = valueOf(entry, column);
   if (value != null) return formatMark(value);
-  return entry?.absent ? "E" : "";
+  return entry?.absent ? "A" : "";
 }
 
 const columnTitle = (column: OverviewColumn, types: LessonType[]) => {

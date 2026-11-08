@@ -119,6 +119,13 @@ const entryKey = (studentId: number, date: string) => `${studentId}|${date}`;
 /** What a tap on a cell does: nothing (viewing), apply the grading tool or edit the comment. */
 type OverviewMode = "view" | "grade" | "comment";
 
+/** Names of the modes, as in the mode choice. */
+const MODE_LABELS: Record<OverviewMode, string> = {
+  view: "Betrachten",
+  grade: "Bewerten",
+  comment: "Kommentieren",
+};
+
 /** Cell tints like a soft checkerboard: the row picks the hue, the column the strength. */
 const CELL_TINTS = [
   ["var(--color-brand-50)", "var(--color-brand-100)"],
@@ -160,6 +167,8 @@ type DateHeaderProps = {
   /** Tap on the date, to pick the lesson type. */
   onTap?: (element: HTMLElement) => void;
   onLongPress: () => void;
+  /** Help text; the help shows it at the best visible date. */
+  help?: string;
 };
 
 /** Column header with the tilted date; a long press toggles "Ausfall" for the lesson. */
@@ -174,12 +183,17 @@ function DateHeader({
   typeLabel,
   onTap,
   onLongPress,
+  help,
 }: DateHeaderProps) {
   const pressHandlers = useLongPress(onLongPress);
   return (
     <th
       className="sticky top-0 h-24 min-w-11 border-b border-line bg-surface"
       data-date={date}
+      data-help={help}
+      data-help-repeat
+      // Framed in the help with the slant of the band
+      data-help-skew={-30}
       // Earlier columns stay on top, so their slanted headers are not covered
       style={{ zIndex: 10 + columns - index, WebkitTouchCallout: "none" }}
       onClick={(event) => onTap?.(event.currentTarget)}
@@ -671,18 +685,18 @@ export function OverviewPage() {
       options={[
         {
           value: "view",
-          label: "Betrachten",
+          label: MODE_LABELS.view,
           help: "Modus Betrachten: die Tabelle nur ansehen, ein Tipp in eine Zelle ändert nichts.",
         },
         {
           value: "grade",
-          label: "Bewerten",
+          label: MODE_LABELS.grade,
           help: "Modus Bewerten: Werkzeug wählen und Zellen antippen.",
           disabled: dates.length == 0,
         },
         {
           value: "comment",
-          label: "Kommentieren",
+          label: MODE_LABELS.comment,
           help: "Modus Kommentieren: Kommentare der Stunden lesen und schreiben.",
           disabled: dates.length == 0,
         },
@@ -690,14 +704,13 @@ export function OverviewPage() {
     />
   );
 
-  const tableHelp =
-    "Zeilen sind die Schüler, Spalten die Stunden. Ein Tipp auf ein Datum macht die Stunde zur Klausur oder zum Projekt oder fügt eine Teil- oder Halbjahresnote an, langes Drücken setzt Ausfall. " +
-    (mode == "grade"
-      ? "Antippen einer Zelle wendet das oben gewählte Werkzeug an; Teil- und Halbjahresnoten lassen sich mit den Noten korrigieren."
+  // The details of the table are explained once each, at the best visible date, name and cell
+  const cellHelp =
+    mode == "grade"
+      ? "Antippen wendet das gewählte Werkzeug an; Teil- und Halbjahresnoten lassen sich mit Noten korrigieren."
       : mode == "comment"
-        ? "Sprechblasen zeigen den Anfang der Kommentare; Antippen einer Zelle bearbeitet den Kommentar oder legt einen neuen an."
-        : "Zum Ändern oben „Bewerten“ oder „Kommentieren“ wählen.") +
-    " Ein Tipp auf einen Namen verdeckt die Einträge aller anderen, etwa um sie dem Schüler zu zeigen.";
+        ? "Antippen bearbeitet oder beginnt einen Kommentar; Sprechblasen zeigen seinen Anfang."
+        : "Zum Ändern oben „Bewerten“ oder „Kommentieren“ wählen.";
 
   return (
     <SpeedDialLayout entries={tableEntries} links={[seatingLink]}>
@@ -707,7 +720,7 @@ export function OverviewPage() {
         </div>
         <div
           className="flex items-center gap-3"
-          data-help="Klasse und Halbjahr der Tabelle. Die Pfeile wechseln zur Übersicht der Klasse, die laut Stundenplan vorher oder danach Unterricht hat."
+          data-help="Klasse und Halbjahr; die Pfeile wechseln zur Klasse davor oder danach im Stundenplan."
         >
           <IconButton
             component={Link}
@@ -751,6 +764,7 @@ export function OverviewPage() {
       </header>
 
       <ModeBar
+        current={MODE_LABELS[mode]}
         modes={modes}
         history={<HistoryButtons history={history} />}
         footer={
@@ -786,7 +800,8 @@ export function OverviewPage() {
         <main
           ref={tableArea}
           className="card h-full overflow-auto"
-          data-help={tableHelp}
+          data-help-group
+          data-help="Tabelle mit allen Stunden und Noten der Klasse."
         >
           {dates.length == 0 || students.length == 0 ? (
             <p className="p-5 text-muted">
@@ -798,10 +813,15 @@ export function OverviewPage() {
             <table className="border-separate border-spacing-0">
               <thead>
                 <tr>
-                  <th className="sticky top-0 left-0 z-40 bg-surface p-2 text-left align-top">
+                  {/* Above all date headers, whose layers grow with the columns */}
+                  <th
+                    className="sticky top-0 left-0 bg-surface p-2 text-left align-top"
+                    style={{ zIndex: 20 + columns.length }}
+                  >
                     <Button
                       size="small"
                       data-help="Exportiert die Tabelle als PDF oder CSV."
+                      data-help-place="above"
                       startIcon={<DownloadIcon size={16} />}
                       onClick={(event) => setExportMenu(event.currentTarget)}
                     >
@@ -856,6 +876,7 @@ export function OverviewPage() {
                         onLongPress={() =>
                           !days.includes(date) && setCancelTarget(date)
                         }
+                        help="Datum antippen: Typ der Stunde wählen oder eine Teil- oder Halbjahresnote anfügen; lange drücken: Ausfall."
                       />
                     );
                   })}
@@ -873,6 +894,9 @@ export function OverviewPage() {
                       <button
                         type="button"
                         aria-pressed={shownStudent == student.id}
+                        data-help="Name antippen zeigt nur dessen Einträge, etwa für den Schüler selbst."
+                        data-help-repeat
+                        data-help-place="below"
                         onClick={() =>
                           setShownStudent(
                             shownStudent == student.id ? null : student.id,
@@ -1028,6 +1052,8 @@ export function OverviewPage() {
                         <td
                           key={getColumnKey(column)}
                           className="h-11 min-w-11 border-r border-b border-line p-0 text-center"
+                          data-help={cellHelp}
+                          data-help-repeat
                           style={{
                             background:
                               cancelled || locked

@@ -448,8 +448,8 @@ export function ClassEditor({
       className="card flex min-h-0 flex-1 flex-col"
       data-help={
         cls
-          ? "Alle Angaben der Klasse und die Schülerliste. Änderungen werden sofort gespeichert."
-          : "Angaben der neuen Klasse und die Schülerliste. Erst „Speichern“ legt die Klasse an, „Abbrechen“ verwirft sie."
+          ? "Angaben und Schülerliste der Klasse; Änderungen werden sofort gespeichert."
+          : "Angaben und Schülerliste der neuen Klasse; erst „Speichern“ legt sie an."
       }
     >
       <div className="min-h-0 flex-1 overflow-auto p-5">

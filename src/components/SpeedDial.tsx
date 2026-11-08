@@ -247,7 +247,7 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
             type="button"
             aria-label="Hilfe"
             className={`${roundButton} bg-surface text-brand-700`}
-            data-help="Erklärt alles, was auf der Seite zu sehen ist. Bei geöffnetem Menü erklärt sie stattdessen das Menü."
+            data-help="Erklärt die Seite, bei offenem Menü das Menü."
             onClick={() => setHelpOpen(true)}
           >
             <HelpIcon />
@@ -257,7 +257,7 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
             aria-label={open ? "Menü schließen" : "Menü öffnen"}
             aria-expanded={open}
             className={`${roundButton} bg-brand-600 text-white`}
-            data-help="Öffnet und schließt das Menü mit allen weiteren Funktionen der Seite."
+            data-help="Öffnet das Menü mit allen weiteren Funktionen."
             onClick={() => setOpen(!open)}
           >
             {/* Points left while closed and down while open */}

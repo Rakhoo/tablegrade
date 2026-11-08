@@ -50,7 +50,8 @@ export function OverviewListPage() {
 
       <main
         className="card min-h-0 flex-1 overflow-auto p-5"
-        data-help="Alle Klassen nach Schuljahr und Halbjahr; eine Klasse öffnet ihre Übersichtstabelle mit allen Stunden und Noten."
+        data-help-group
+        data-help="Alle Klassen nach Halbjahr; eine Klasse öffnet ihre Notentabelle."
       >
         {schoolClasses.length == 0 && (
           <p className="text-muted">Noch keine Klassen angelegt.</p>
@@ -88,6 +89,7 @@ export function OverviewListPage() {
                 onClick={() => rememberCurrentPageFor("/classes/new")}
                 className="flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-brand-300 px-3 py-2 text-sm font-semibold text-brand-700 transition-transform active:scale-[0.97]"
                 data-help="Legt eine Klasse in diesem Schuljahr und Halbjahr an."
+                data-help-repeat
               >
                 <PlusIcon size={18} />
                 Neue Klasse

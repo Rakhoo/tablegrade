@@ -105,7 +105,7 @@ export function GradingSettings() {
       <TextField
         select
         size="small"
-        label="Symbol für entschuldigt"
+        label="Symbol für abwesend"
         value={absentSymbol}
         onChange={(event) =>
           save({ absentSymbol: event.target.value as AbsentSymbol })

@@ -62,7 +62,7 @@ export function getToolValues(
 
 /** Short text of what a change of an entry sets, for the undo history. */
 export function describeValues(values: Partial<EntryValues>) {
-  if (values.absent) return "entschuldigt";
+  if (values.absent) return "abwesend";
   if (values.grade != null) return formatMark(values.grade);
   if (values.mark != null) return `Note ${formatMark(values.mark)}`;
   if (values.projectMark != null)
