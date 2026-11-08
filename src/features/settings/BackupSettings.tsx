@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useRevalidator } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { DownloadIcon, RefreshIcon, UploadIcon } from "../../components/icons";
-import { importDatabase } from "../../db";
+import { BackupError, importDatabase } from "../../db";
 import { useSettings } from "../../hooks/useSettings";
 import { describeFile, isSqliteFile, saveBackup } from "../../services/backup";
 import { reloadApp } from "../../services/pwa";
@@ -31,8 +31,8 @@ export function BackupSettings() {
       }
     } catch (error) {
       console.error(error);
-      const { name, message } = error as Error;
-      setMessage(`Die Sicherung ist fehlgeschlagen (${name}: ${message}).`);
+      const { name, message: reason } = error as Error;
+      setMessage(`Die Sicherung ist fehlgeschlagen (${name}: ${reason}).`);
     }
   };
 
@@ -126,7 +126,11 @@ export function BackupSettings() {
             window.location.reload();
           } catch (error) {
             console.error(error);
-            setMessage("Der Import ist fehlgeschlagen.");
+            setMessage(
+              error instanceof BackupError
+                ? error.message
+                : "Der Import ist fehlgeschlagen.",
+            );
           }
         }}
       >

@@ -2,6 +2,7 @@ import { Button } from "@mui/material";
 import { Link, useNavigate, useRouteError } from "react-router";
 import { ChevronLeftIcon, RefreshIcon } from "../../components/icons";
 import { reloadApp } from "../../services/pwa";
+import { paths } from "../../lib/paths";
 
 /** Seating plan with one empty, dashed desk and a question mark badge (matches the app icon). */
 function EmptySeatIllustration() {
@@ -121,7 +122,7 @@ export function ErrorPage() {
           )}
           <Button
             component={Link}
-            to="/timetable"
+            to={paths.timetable()}
             variant="contained"
             size="large"
           >

@@ -1,5 +1,6 @@
 import { Button } from "@mui/material";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation } from "react-router";
+import { useGoBack } from "../hooks/useGoBack";
 import { getReturnPage } from "../lib/returnPage";
 import { ChevronLeftIcon } from "./icons";
 
@@ -15,23 +16,15 @@ export function ReturnButton({
   /** Asks first, e.g. about unsaved input; calls `goBack` to leave. */
   onBack?: (goBack: () => void) => void;
 }) {
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const back = getReturnPage(pathname, fallback);
+  const goBack = useGoBack(back.url);
   return (
     <Button
       startIcon={<ChevronLeftIcon />}
       className="pl-2"
       data-help={`Zurück zur vorherigen Seite (${back.name}).`}
-      onClick={() => {
-        const goBack = () => {
-          // A real step back keeps the scroll position and history of that page
-          if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-          else navigate(back.url, { replace: true });
-        };
-        if (onBack) onBack(goBack);
-        else goBack();
-      }}
+      onClick={() => (onBack ? onBack(goBack) : goBack())}
     >
       {back.name}
     </Button>

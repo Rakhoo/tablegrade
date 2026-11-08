@@ -3,13 +3,13 @@ const STORAGE_KEY = "return";
 /** Names of the pages a page with a real way back can be opened from, by their path. */
 const PAGE_NAMES: [RegExp, string][] = [
   [/^\/timetable/, "Stundenplan"],
-  [/^\/(classes|overview)\/\d+\/edit/, "Bearbeiten"],
   [/^\/classes\/new/, "Neue Klasse"],
-  [/\/names/, "Namen lernen"],
-  [/^\/settings/, "Einstellungen"],
-  [/^\/overview\/\d+/, "Übersicht"],
-  [/^\/overview/, "Übersichten"],
+  [/^\/classes\/\d+\/edit/, "Bearbeiten"],
+  [/^\/classes\/\d+\/names/, "Namen lernen"],
+  [/^\/classes\/\d+\/table/, "Übersicht"],
   [/^\/classes\/\d+/, "Sitzplan"],
+  [/^\/classes/, "Übersichten"],
+  [/^\/settings/, "Einstellungen"],
 ];
 
 /** Storage key per target page, without its query, so each target keeps its own way back. */

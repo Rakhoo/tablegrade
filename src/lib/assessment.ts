@@ -100,10 +100,10 @@ export function suggestGrade(
   date: string,
   visibleGrades: number[],
 ) {
-  const average =
+  const target =
     getOralAverage(
       entries.filter((entry) => entry.date < date),
       getSuggestionWeight,
     ) ?? DEFAULT_GRADE;
-  return getNearestGrade(average, visibleGrades);
+  return getNearestGrade(target, visibleGrades);
 }

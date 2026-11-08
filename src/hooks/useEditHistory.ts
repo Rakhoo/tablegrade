@@ -9,7 +9,7 @@ import {
   type SeatPosition,
 } from "../db";
 import type { Report } from "../lib/reports";
-import type { EntryValues } from "../services/grading";
+import type { EntryValues } from "../lib/gradeTools";
 
 /** What a step changed, named after the mode it was made in. */
 export type EditAction =

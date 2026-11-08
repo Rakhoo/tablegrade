@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { rememberReturnPage } from "../lib/returnPage";
-import { HelpOverlay } from "./HelpOverlay";
+import { HelpOverlay } from "./help/HelpOverlay";
 import { ChevronDownIcon, HelpIcon, SettingsIcon } from "./icons";
+import { paths } from "../lib/paths";
 
 /** An entry of the speed dial: a link, an action or a toggle. */
 export type SpeedDialEntry = {
@@ -184,14 +185,17 @@ type SpeedDialProps = {
   guard?: (go: () => void) => void;
 };
 
+/** No links next to the help; a constant, so the default stays the same between renders. */
+const NO_LINKS: SpeedDialLink[] = [];
+
 /**
- * Speed dial in the top right corner. Collapsed it only shows the help, the button that
- * opens it and links to the other pages of a class, if any; open it lists all features of the page, with their labels, above everything else.
- * The settings are always the last entry.
+ * Speed dial in the top right corner. Collapsed it only shows the help, the button that opens
+ * it and links to the other pages of a class, if any; open it lists all features of the page
+ * with their labels above everything else, the settings always last.
  */
-export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
+function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
   const { pathname, search } = useLocation();
-  // Pages with a real way back name the page they were opened from
+  /** Pages with a real way back name the page they were opened from */
   const rememberFrom = (to: string) =>
     rememberReturnPage(to, pathname + search);
   const [open, setOpen] = useState(false);
@@ -205,8 +209,8 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
       label: "Einstellungen",
       icon: <SettingsIcon />,
       help: "Schuljahre, Darstellung, Benotung, Sicherung und mehr.",
-      to: "/settings",
-      disabled: pathname == "/settings",
+      to: paths.settings(),
+      disabled: pathname == paths.settings(),
     },
   ];
 
@@ -233,9 +237,7 @@ export function SpeedDial({ entries, links = [], guard }: SpeedDialProps) {
               aria-label={label}
               data-help={help}
               onClick={() => rememberFrom(to)}
-              className={
-                "flex h-11 min-w-11 items-center justify-center gap-2 rounded-full bg-surface text-brand-700 shadow-card transition-transform active:scale-95 landscape:pr-4 landscape:pl-3 "
-              }
+              className="flex h-11 min-w-11 items-center justify-center gap-2 rounded-full bg-surface text-brand-700 shadow-card transition-transform active:scale-95 landscape:pr-4 landscape:pl-3"
             >
               {icon}
               <span className="text-sm font-medium portrait:hidden">

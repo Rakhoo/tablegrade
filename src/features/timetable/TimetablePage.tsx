@@ -41,6 +41,7 @@ import { BackupReminder } from "./BackupReminder";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
 import "./TimetablePage.css";
+import { paths } from "../../lib/paths";
 
 /** Start page: week picker and the timetable of the selected week. */
 export function TimetablePage() {
@@ -80,7 +81,7 @@ export function TimetablePage() {
   const maxDate = getCalendarEnd(
     Object.keys(calendar.secondHalfStarts).map(Number),
   );
-  const newClassUrl = `/classes/new?date=${toIsoDate(monday)}`;
+  const newClassUrl = paths.newClass({ date: toIsoDate(monday) });
 
   /**
    * Selects the week for a month switched to in the calendar header: the current week in the
@@ -226,7 +227,7 @@ export function TimetablePage() {
             <Button
               component={Link}
               to={newClassUrl}
-              onClick={() => rememberCurrentPageFor("/classes/new")}
+              onClick={() => rememberCurrentPageFor(paths.newClass())}
               variant="contained"
               startIcon={<PlusIcon size={18} />}
               className="flex-1 whitespace-nowrap"
@@ -236,7 +237,7 @@ export function TimetablePage() {
             </Button>
             <Button
               component={Link}
-              to="/overview"
+              to={paths.classes()}
               variant="outlined"
               startIcon={<TableIcon size={18} />}
               className="flex-1 whitespace-nowrap"

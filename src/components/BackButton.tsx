@@ -6,6 +6,7 @@ import {
   type MainPage,
 } from "../lib/mainPage";
 import { ChevronLeftIcon } from "./icons";
+import { paths } from "../lib/paths";
 
 type BackButtonProps = {
   /** The main page it leads to. */
@@ -20,7 +21,7 @@ export function BackButton({ target: page, timetableUrl }: BackButtonProps) {
     page == "timetable" && timetableUrl
       ? timetableUrl
       : (getRememberedMainPage(page)?.url ??
-        (page == "timetable" ? "/timetable" : "/overview"));
+        (page == "timetable" ? paths.timetable() : paths.classes()));
   return (
     <Button
       component={Link}

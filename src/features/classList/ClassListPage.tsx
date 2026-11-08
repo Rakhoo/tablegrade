@@ -9,7 +9,8 @@ import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getClassColor } from "../../lib/subjectColors";
 import { useRememberMainPage } from "../../hooks/useRememberMainPage";
 import { rememberCurrentPageFor } from "../../lib/returnPage";
-import type { OverviewListLoaderData } from "./overviewLoader";
+import type { ClassListLoaderData } from "./classListLoader";
+import { paths } from "../../lib/paths";
 
 /** Groups classes by school year and half, newest first, sorted by name within a group. */
 function groupClasses(classes: SchoolClass[]) {
@@ -35,9 +36,9 @@ function groupClasses(classes: SchoolClass[]) {
   }));
 }
 
-/** Start page of the overview: one tile per class and school year half. */
-export function OverviewListPage() {
-  const { schoolClasses } = useLoaderData<OverviewListLoaderData>();
+/** All classes (`/classes`), one tile per class and school year half, leading to its overview. */
+export function ClassListPage() {
+  const { schoolClasses } = useLoaderData<ClassListLoaderData>();
   const { levels } = useSettings();
   useRememberMainPage("overview");
 
@@ -67,7 +68,7 @@ export function OverviewListPage() {
                 return (
                   <Link
                     key={cls.id}
-                    to={`/overview/${cls.id}`}
+                    to={paths.table(cls.id)}
                     className="flex flex-col overflow-hidden rounded-xl border-l-4 px-3 py-2 shadow-tile transition-transform active:scale-[0.97]"
                     style={{
                       background: color.background,
@@ -85,8 +86,8 @@ export function OverviewListPage() {
                 );
               })}
               <Link
-                to={`/classes/new?year=${year}&part=${part}`}
-                onClick={() => rememberCurrentPageFor("/classes/new")}
+                to={paths.newClass({ year, part })}
+                onClick={() => rememberCurrentPageFor(paths.newClass())}
                 className="flex items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-brand-300 px-3 py-2 text-sm font-semibold text-brand-700 transition-transform active:scale-[0.97]"
                 data-help="Legt eine Klasse in diesem Schuljahr und Halbjahr an."
                 data-help-repeat

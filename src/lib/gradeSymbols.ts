@@ -27,7 +27,7 @@ export const GRADE_SYMBOLS = {
 
 export type GradeSymbol = keyof typeof GRADE_SYMBOLS;
 
-/** Symbols for "excused". */
+/** Symbols for absent students. */
 export const ABSENT_SYMBOLS = {
   slashed: "Durchgestrichen",
   dashed: "Gestrichelt",

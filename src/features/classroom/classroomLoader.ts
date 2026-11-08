@@ -1,4 +1,5 @@
 import { isValid, parseISO } from "date-fns";
+import { paths } from "../../lib/paths";
 import { redirect, type LoaderFunctionArgs } from "react-router";
 import {
   getCancelledDays,
@@ -29,7 +30,7 @@ export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
     new URL(request.url).searchParams.get("date") ?? "",
   );
   const cls = await getSchoolClass(Number(params.id));
-  if (!cls) return redirect("/404");
+  if (!cls) return redirect(paths.notFound());
   const [
     holidays,
     schoolYears,

@@ -23,7 +23,7 @@ The only network request fetches school holidays from
   table choose them with small text toggle buttons in the top left corner of the bar below the
   header, with undo/redo in its top right corner and the mode's hint or grading tools below.
   - *Hilfe* explains everything on the screen at once: each element with a `data-help` text
-    gets a callout connected to it by a line ([src/components/HelpOverlay.tsx](src/components/HelpOverlay.tsx)),
+    gets a callout connected to it by a line ([src/components/help/](src/components/help/HelpOverlay.tsx): component, collecting the elements, placement, geometry),
     placed so it covers neither the explained elements nor other callouts.
     With the dial collapsed it explains the page, open only the dial itself. Large areas like
     the seating plan cannot be avoided, they get their callout inside; a tap anywhere closes it.
@@ -106,7 +106,7 @@ The only network request fetches school holidays from
     in the row to its right, growing upwards only when that row is too narrow.
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
-- **Class editor** (`/classes/new`, `/classes/:id/edit`, `/overview/:id/edit`): a page of its
+- **Class editor** (`/classes/new`, `/classes/:id/edit`): a page of its
   own. Changes of an existing class are saved right away (text after a short pause); a new
   class has "Abbrechen" and "Speichern"; leaving it by "Abbrechen", the back button or a link
   to the settings asks first once something was entered. School
@@ -140,7 +140,7 @@ The only network request fetches school holidays from
 - New versions wait until the user confirms the update banner (or uses "Neu laden"). The app
   checks for updates hourly and whenever it comes back to the foreground.
 
-- **Overview** (`/overview`, `/overview/:id`): one table per class and school year
+- **Overview** (`/classes` for the selection, `/classes/:id/table`): one table per class and school year
   half with students in rows, lesson dates in columns and the symbols at the intersections.
   The selection groups the classes by school year half, each group ending with a "Neue
   Klasse" tile that presets that half.
@@ -168,7 +168,8 @@ The only network request fetches school holidays from
     2/2", …), each only while that exam or project (with its follow-ups so far) still lacks a
     mark. A student's mark on one date of such a chain closes its other dates for them (grayed
     out with the mark shown faintly, also grayed out in the seating plan), and the mark counts
-    as the exam's or project's ([src/lib/lessonChains.ts](src/lib/lessonChains.ts)).
+    as the exam's or project's ([src/lib/lessonChains.ts](src/lib/lessonChains.ts), `createMarkRules`
+    shared by seating plan and overview).
   - In a retake lesson only students with their exam mark already get oral grades; those
     writing it get the retake mark (or "abwesend" for it) and no project mark that day.
 
@@ -211,36 +212,43 @@ src/
 ├── main.tsx, router.tsx, App.tsx   entry point, routes, root layout (theme, German locale)
 ├── rootLoader.ts                   settings and storage check for every page
 ├── theme.ts, index.css             MUI theme and CSS design tokens
-├── components/                     shared UI: speed dial, help, mode bar, undo/redo, grade
-│                                   tool bar, the frame of a class's sub pages, icons, dialogs
+├── components/                     shared UI: speed dial (and its entries), page header, mode
+│                                   bar, undo/redo, grade tool bar, the frame of a class's sub
+│                                   pages, icons, dialogs
+│   └── help/                       help overlay: component, targets, placement, geometry
 ├── features/
 │   ├── timetable/                  timetable page, grid, backup reminder
 │   ├── classroom/                  seating plan page, seat grid, its dialogs
-│   ├── overview/                   class selection and overview table
-│   ├── classEdit/                  class editor page (new class and editing), student dialog
+│   ├── classList/                  class selection of the overviews
+│   ├── overview/                   overview table with its headers, cells and type menu
+│   ├── classEdit/                  class editor page (new class and editing): fields, roster
+│                                   list and tools, student dialog
 │   ├── nameTrainer/                name cards page
 │   ├── settings/                   settings page, one component per topic
 │   ├── install/                    install instructions in a browser tab
 │   └── errors/                     404, error page and storage error
 ├── db/
 │   ├── schema.ts                   Drizzle tables and row types
-│   ├── migrations.ts               ordered SQL migrations
+│   ├── migrations.ts               schema of the first release and later SQL migrations
 │   ├── client.ts                   SQLocal connection, migrations, import/export
 │   └── queries/                    data access per entity
-├── services/                       holiday API, backups, PWA, WebUntis PDF, overview export
+├── services/                       side effects: holiday API, backups, PWA, WebUntis PDF,
+│                                   overview export
 ├── hooks/                          shared state (undo history, display options, stored
-│                                   preferences), long press, swipe, settings
-└── lib/                            pure helpers: dates, school year, lessons, seating,
-                                    grades, reports, warnings, colors, formatters, page memory
+│                                   preferences), long press, swipe, settings, going back
+└── lib/                            pure helpers: dates, school year, lessons and their mark
+                                    rules, seating, grades and grading tools, reports,
+                                    warnings, colors, formatters, paths, page memory
 public/                             _headers and icons
 pwa-assets.config.ts                generator config for the PNG home screen icon
 ```
 
-Routes: `/timetable`, `/overview` (selection), `/overview/:id` (table), `/classes/:id`
-(seating plan), `/classes/new`, `/settings`. Editor and name cards exist under both class
-prefixes (`/classes/:id/edit`, `/overview/:id/edit`, `…/names`) as the same page components;
-the prefix only decides the way back. Each route has its own loader, pages only reload their
-data after changes (`useRevalidator`).
+Routes ([src/lib/paths.ts](src/lib/paths.ts) builds all URLs): `/timetable`, `/classes`
+(class selection of the overviews), `/classes/new`, `/classes/:id` (seating plan),
+`/classes/:id/table` (overview table), `/classes/:id/edit`, `/classes/:id/names`, `/settings`.
+`?date=` selects the week or lesson. Pages with a real way back (editor, name cards,
+settings) lead to the page they were opened from ([src/lib/returnPage.ts](src/lib/returnPage.ts)).
+Each route has its own loader, pages only reload their data after changes (`useRevalidator`).
 
 State: data lives in SQLite and comes through the loaders. Shared UI state lives in small
 stores outside React, read with `useSyncExternalStore`: the undo history across seating plans
@@ -278,17 +286,23 @@ The SQL table names are kept for compatibility; the TypeScript names differ (e.g
 
 ### Migrations
 
-[src/db/migrations.ts](src/db/migrations.ts) is an append-only list; the number of applied
-migrations is stored in `PRAGMA user_version`. To change the schema, append a new entry
-(never edit an existing one) and update `schema.ts` accordingly. Migrations run on every
-connect and after importing a backup, so older backups are upgraded automatically.
+[src/db/migrations.ts](src/db/migrations.ts) holds the schema of the first release
+(`BASELINE`, schema version `BASELINE_VERSION` = 20, which also the databases and backups
+made before keep) and an append-only list of later migrations; the schema version is stored
+in `PRAGMA user_version`. An empty database gets the baseline, then every newer migration
+runs in its own transaction. To change the schema, append a new entry (never edit an
+existing one) and update `schema.ts` accordingly. Migrations run on every connect and after
+importing a backup, so older backups of a release are upgraded automatically; backups of
+development versions (below 20) or of a newer app version are refused before anything is
+replaced.
 
 ### Backup and restore
 
 The settings ("Sicherung") export the database as `tablegrade-YYYY-MM-DD.sqlite3`
 through the share sheet on phones and tablets and as a direct download on desktop systems;
-PDF and CSV exports are always direct downloads. Importing checks the SQLite file signature, asks
-for confirmation, replaces the database, runs the migrations and reloads the app. This is
+PDF and CSV exports are always direct downloads. Importing asks for confirmation, checks the
+SQLite file signature and schema version, replaces the database, runs the migrations and
+reloads the app. This is
 also the way to move data to another device.
 
 ## Domain rules

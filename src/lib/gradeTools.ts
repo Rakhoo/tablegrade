@@ -7,7 +7,7 @@ import {
   getToolValue,
   type GradeTool,
   type LessonType,
-} from "../lib/grades";
+} from "./grades";
 
 /** The parts of a student's entry that can be changed while grading. */
 export type EntryValues = Pick<

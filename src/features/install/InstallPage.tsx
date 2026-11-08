@@ -83,7 +83,7 @@ export function InstallPage() {
   const steps = STEPS[platform];
 
   useEffect(() => {
-    // The browser may offer its install dialog only after the page was shown
+    /** The browser may offer its install dialog only after the page was shown */
     const update = () => setPlatform(getInstallPlatform());
     const finish = () => setInstalled(true);
     window.addEventListener("beforeinstallprompt", update);
@@ -125,6 +125,8 @@ export function InstallPage() {
             ) : steps ? (
               <ol className="flex flex-col gap-3">
                 {steps.map((step, index) => (
+                  // The steps are fixed, so their position identifies them
+                  // oxlint-disable-next-line react/no-array-index-key
                   <li key={index} className="flex gap-3">
                     <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
                       {index + 1}

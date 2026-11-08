@@ -1,67 +1,57 @@
-import { Button, IconButton } from "@mui/material";
+import { Button } from "@mui/material";
 import { format, parseISO } from "date-fns";
 import { de } from "date-fns/locale/de";
 import { useState } from "react";
-import { Link, useLoaderData, useRevalidator } from "react-router";
-import { clearLesson, type SeatedStudent } from "../../db";
+import { useLoaderData, useRevalidator } from "react-router";
 import { BackButton } from "../../components/BackButton";
 import { GradeToolBar } from "../../components/GradeToolBar";
 import { HistoryButtons } from "../../components/HistoryButtons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import { ModeBar, ModeToggle } from "../../components/ModeBar";
+import { PageHeader } from "../../components/PageHeader";
 import {
   SpeedDialLayout,
   type SpeedDialEntry,
-  type SpeedDialLink,
 } from "../../components/SpeedDial";
 import {
-  CardsIcon,
+  classPageEntries,
+  displaySwitch,
+} from "../../components/speedDialEntries";
+import {
   CheckIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
   ImageIcon,
+  ImageOffIcon,
   InfoIcon,
-  PencilIcon,
   TableIcon,
   TagIcon,
+  TagOffIcon,
   TrashIcon,
   ZoomInIcon,
   ZoomOutIcon,
-  ImageOffIcon,
-  TagOffIcon,
 } from "../../components/icons";
+import { clearLesson, type SeatedStudent } from "../../db";
+import { useDisplayOption } from "../../hooks/useDisplayOption";
 import { useEditHistory } from "../../hooks/useEditHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
-import {
-  DEFAULT_GRADE_TOOL,
-  getValidGradeTool,
-  isExamDay,
-  MARK_FIELD,
-  MARK_KIND,
-  type MarkKind,
-  type GradeTool,
-} from "../../lib/grades";
+import { useSettings } from "../../hooks/useSettings";
+import { suggestGrade } from "../../lib/assessment";
+import { formatClassName, formatStudentName } from "../../lib/formatters";
 import {
   describeValues,
   getToolValues,
   type GradeTarget,
-} from "../../services/grading";
-import { useSettings } from "../../hooks/useSettings";
-import { useDisplayOption } from "../../hooks/useDisplayOption";
-import { getVisibleGrades, type ClassroomMode } from "../../lib/settings";
-import { suggestGrade } from "../../lib/assessment";
-import { formatClassName, formatStudentName } from "../../lib/formatters";
-import type { Lesson } from "../../lib/lessons";
+} from "../../lib/gradeTools";
 import {
-  canBeFollowUp,
-  getLessonChains,
-  getLessonCompletion,
-  getLessonTypeLabel,
-  isMarkLocked,
-  type FollowUpType,
-} from "../../lib/lessonChains";
-import { LESSON_TYPE_ORDER } from "../../lib/lessons";
+  DEFAULT_GRADE_TOOL,
+  getValidGradeTool,
+  isExamDay,
+  MARK_KIND,
+  type GradeTool,
+} from "../../lib/grades";
+import { createMarkRules } from "../../lib/lessonChains";
+import { paths } from "../../lib/paths";
 import { getZoomedArea } from "../../lib/seating";
+import { getVisibleGrades, type ClassroomMode } from "../../lib/settings";
 import { getClassColor } from "../../lib/subjectColors";
 import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
 import type { ClassroomLoaderData } from "./classroomLoader";
@@ -79,6 +69,8 @@ const MODES: {
   help: string;
   /** What a tap on the seating plan does in this mode. */
   gridHelp: string;
+  /** Hint below the mode choice; grading shows its tools and warning its levels instead. */
+  hint?: string;
 }[] = [
   {
     mode: "warn",
@@ -100,6 +92,7 @@ const MODES: {
     help: "Modus Kommentieren: Kommentare zu dieser Stunde lesen und schreiben.",
     gridHelp:
       "Antippen bearbeitet oder beginnt einen Kommentar; Sprechblasen zeigen seinen Anfang.",
+    hint: "Schüler antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben",
   },
   {
     mode: "arrange",
@@ -107,8 +100,30 @@ const MODES: {
     help: "Modus Anordnen: die Sitzordnung ändern.",
     gridHelp:
       "Schüler auf einen Platz ziehen; auf einem anderen Schüler tauschen beide.",
+    hint: "Schüler zum Verschieben auf einen Platz ziehen",
   },
 ];
+
+/** Hint of the warning mode: the levels a tap cycles through. */
+function WarningLevels() {
+  return (
+    <div className="flex items-center gap-2">
+      Antippen:
+      {WARNING_LEVELS.map((level) => (
+        <span
+          key={level?.label ?? "none"}
+          className="rounded-full px-2.5 py-1 font-semibold"
+          style={{
+            background: level?.background ?? "var(--color-surface)",
+            color: level ? "var(--color-ink)" : "var(--color-muted)",
+          }}
+        >
+          {level?.label ?? "Normal"}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 /**
  * Classroom page: seating plan of one lesson for warning, grading, commenting and arranging
@@ -134,9 +149,11 @@ export function ClassroomPage() {
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
   const [markTarget, setMarkTarget] = useState<"mark" | "projectMark">("mark");
   const [confirmClear, setConfirmClear] = useState(false);
-  const [showTraits, setShowTraits] = useDisplayOption("traits");
-  const [showPhotos, setShowPhotos] = useDisplayOption("photos");
-  const [zoomed, setZoomed] = useDisplayOption("zoom");
+  const traitsOption = useDisplayOption("traits");
+  const photosOption = useDisplayOption("photos");
+  const zoomOption = useDisplayOption("zoom");
+  const [showTraits] = traitsOption;
+  const [showPhotos] = photosOption;
   const [traitsAnchor, setTraitsAnchor] = useState<HTMLElement | null>(null);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
   /** A student with several grades in this lesson, asked which one to erase. */
@@ -147,20 +164,25 @@ export function ClassroomPage() {
 
   const gradeMap = new Map(grades.map((entry) => [entry.studentId, entry]));
   const lessonDate = parseISO(date);
-  const lessonLink = (lesson: Lesson) =>
-    `/classes/${lesson.id}?date=${lesson.date}`;
-
+  const dateLabel = format(lessonDate, "EEEE, d. MMMM yyyy", { locale: de });
   const history = useEditHistory(
     cls.id,
     {
       key: `classes/${cls.id}/${date}`,
-      url: `/classes/${cls.id}?date=${date}`,
+      url: paths.seating(cls.id, date),
       label: `Sitzplan ${format(lessonDate, "dd.MM.")}`,
     },
     revalidate,
   );
+  const handleLessonChanged = () => {
+    history.reset();
+    revalidate();
+  };
+  const { requestLessonType, lessonTypeDialog } = useLessonTypeChange(
+    cls.id,
+    handleLessonChanged,
+  );
 
-  const accent = getClassColor(cls, settings.levels).accent;
   const visibleGrades = getVisibleGrades(settings);
   const activeTool = getValidGradeTool(
     tool,
@@ -172,56 +194,15 @@ export function ClassroomPage() {
   const hasRetake = lessonTypes.includes("retake");
   const hasProject = lessonTypes.some((type) => MARK_KIND[type] == "project");
   // The marks set by mark tools; with a retake and a project on one day the switch decides
-  const markField: GradeTarget | undefined =
+  const markField: GradeTarget =
     hasRetake && hasProject ? markTarget : hasRetake ? "mark" : "projectMark";
-
-  // Exams and projects with their follow-ups: a mark on one of their dates closes the others
-  const typesOf = (other: string) => classLessonTypes[other] ?? [];
-  const typedDates = Object.keys(classLessonTypes);
-  const chains = getLessonChains(typedDates, typesOf);
-  const hasMark = (kind: MarkKind, studentId: number, day: string) =>
-    classGrades.some(
-      (entry) =>
-        entry.studentId == studentId &&
-        entry.date == day &&
-        entry[MARK_FIELD[kind]] != null,
-    );
-  const lockedIn = (kind: MarkKind) =>
-    new Set(
-      students
-        .filter((student) =>
-          isMarkLocked(chains[kind], date, (day) =>
-            hasMark(kind, student.id, day),
-          ),
-        )
-        .map((student) => student.id),
-    );
-  const examLocked = lockedIn("exam");
-  const projectLocked = lockedIn("project");
-  /** Students who write the retake today: without their exam mark on another date. */
-  const isRetaker = (studentId: number) =>
-    hasRetake && !examLocked.has(studentId);
-  const isComplete = getLessonCompletion(
-    date,
-    lessonTypes,
+  const rules = createMarkRules(
+    Object.keys(classLessonTypes),
+    (day) => classLessonTypes[day] ?? [],
     students.map((student) => student.id),
     classGrades,
-    chains,
-  ).lesson;
-  /** The types the lesson can get now: follow-ups only after an incomplete exam or project. */
-  const availableTypes = LESSON_TYPE_ORDER.filter(
-    (type) =>
-      type == "exam" ||
-      type == "project" ||
-      canBeFollowUp(
-        type as FollowUpType,
-        date,
-        typedDates,
-        typesOf,
-        students.map((student) => student.id),
-        (studentId, day) => hasMark(MARK_KIND[type], studentId, day),
-      ),
   );
+  const isRetaker = (studentId: number) => rules.isRetaker(studentId, date);
 
   /** The part of a student's entry a tool sets, `undefined` for erasing everything. */
   const targetOf = (
@@ -235,14 +216,8 @@ export function ClassroomPage() {
   };
   /** Whether a tool cannot be used on a student: graded elsewhere, or a retaker's oral grade. */
   const isClosed = (studentId: number, option: GradeTool) => {
-    if (option == "erase") return false;
-    if (examDay) return examLocked.has(studentId);
     const target = targetOf(studentId, option);
-    if (target == "mark") return examLocked.has(studentId);
-    // Those writing the retake take part in nothing else that day
-    if (target == "projectMark")
-      return projectLocked.has(studentId) || isRetaker(studentId);
-    return isRetaker(studentId);
+    return !!target && rules.isClosed(studentId, date, target);
   };
   const closedStudents = new Set(
     mode == "grade"
@@ -253,7 +228,7 @@ export function ClassroomPage() {
   );
 
   // While grading, students without a symbol show what their previous ones suggest
-  const suggestions = new Map<number, number>(
+  const suggestions = new Map(
     mode == "grade" && !examDay && settings.suggestions
       ? students
           .filter((student) => {
@@ -272,37 +247,26 @@ export function ClassroomPage() {
           ])
       : [],
   );
-  const { requestLessonType, lessonTypeDialog } = useLessonTypeChange(
-    cls.id,
-    () => {
-      history.reset();
-      revalidate();
-    },
-  );
 
   /** The parts of a student's entry holding a grade; none on exam days, which have only one. */
   const filledParts = (studentId: number): GradeTarget[] => {
     const entry = gradeMap.get(studentId);
     if (!entry || examDay) return [];
     const retaker = isRetaker(studentId);
-    return [
-      ...(entry.grade != null || (entry.absent && !retaker)
-        ? (["oral"] as const)
-        : []),
-      ...(entry.projectMark != null ? (["projectMark"] as const) : []),
-      ...(entry.mark != null || (entry.absent && retaker)
-        ? (["mark"] as const)
-        : []),
-    ];
+    const parts: GradeTarget[] = [];
+    if (entry.grade != null || (entry.absent && !retaker)) parts.push("oral");
+    if (entry.projectMark != null) parts.push("projectMark");
+    if (entry.mark != null || (entry.absent && retaker)) parts.push("mark");
+    return parts;
   };
 
   /** Applies a grading tool to a student's entry, recorded in the undo history. */
   const applyTool = async (
     student: SeatedStudent,
-    tool: GradeTool,
+    option: GradeTool,
     target: GradeTarget | undefined,
   ) => {
-    const values = getToolValues(tool, lessonTypes, target);
+    const values = getToolValues(option, lessonTypes, target);
     if (!values) return;
     await history.change(
       "Bewertung",
@@ -316,37 +280,37 @@ export function ClassroomPage() {
 
   /** Applies the current mode (and grading tool) to a tapped student. */
   const handleTap = async (student: SeatedStudent) => {
-    const entry = gradeMap.get(student.id);
     if (mode == "warn") {
-      const warnings = entry?.warnings ?? 0;
+      const warnings = gradeMap.get(student.id)?.warnings ?? 0;
+      const level = nextWarningLevel(warnings);
       await history.changeWarnings(
         student.id,
         date,
         warnings,
-        nextWarningLevel(warnings),
-        `${formatStudentName(student)}: ${WARNING_LEVELS[nextWarningLevel(warnings)]?.label ?? "Normal"}`,
+        level,
+        `${formatStudentName(student)}: ${WARNING_LEVELS[level]?.label ?? "Normal"}`,
       );
     } else if (mode == "comment") {
       setCommenting(student);
-    } else if (mode == "grade") {
-      if (isClosed(student.id, activeTool)) return;
+    } else if (mode == "grade" && !isClosed(student.id, activeTool)) {
       const suggestion = suggestions.get(student.id);
-      const tool: GradeTool | null =
+      const option: GradeTool | null =
         activeTool != "suggestion"
           ? activeTool
           : suggestion == null
             ? null
             : `grade:${suggestion}`;
-      if (!tool) return;
+      if (!option) return;
       // With several grades, erasing asks which one goes
-      const parts = tool == "erase" ? filledParts(student.id) : [];
+      const parts = option == "erase" ? filledParts(student.id) : [];
       if (parts.length > 1) setErasing({ student, parts });
-      else await applyTool(student, tool, targetOf(student.id, tool));
+      else await applyTool(student, option, targetOf(student.id, option));
     }
   };
 
   const currentMode = MODES.find((option) => option.mode == mode)!;
-  const viewLink = (path: string) => `/classes/${cls.id}${path}?date=${date}`;
+  const hasPhotos = students.some((student) => student.image);
+  const hasTraits = students.some((student) => student.traitIds.length > 0);
   // Arranging needs the whole room, so it is never zoomed
   const canZoom =
     mode != "arrange" &&
@@ -355,202 +319,132 @@ export function ClassroomPage() {
         x != null && y != null ? [{ x, y }] : [],
       ),
     ) != null;
-  const hasPhotos = students.some((student) => student.image);
-  const hasTraits = students.some((student) => student.traitIds.length > 0);
-  const overviewLink: SpeedDialLink = {
-    key: "overview",
-    label: "Übersicht",
-    icon: <TableIcon />,
-    help: "Übersichtstabelle der Klasse mit allen Stunden und Noten.",
-    to: `/overview/${cls.id}?date=${date}`,
-  };
-  const editEntry: SpeedDialEntry = {
-    key: "edit",
-    label: "Bearbeiten",
-    icon: <PencilIcon />,
-    help: "Klasse bearbeiten: Fach, Stunden und Schülerliste.",
-    to: viewLink("/edit"),
-  };
-  const namesEntry: SpeedDialEntry = {
-    key: "names",
-    label: "Namen lernen",
-    icon: <CardsIcon />,
-    help: "Karteikarten mit den Fotos, um die Namen der Klasse zu lernen.",
-    disabled: !hasPhotos,
-    to: viewLink("/names"),
-  };
-  const planEntries: SpeedDialEntry[] = [editEntry, namesEntry];
-  planEntries.push({
-    key: "clear",
-    label: "Stunde zurücksetzen",
-    icon: <TrashIcon />,
-    danger: true,
-    help: "Löscht ausgewählte Einträge dieser Stunde: Ermahnungen, Bewertungen oder Kommentare.",
-    disabled: grades.length == 0,
-    onClick: () => setConfirmClear(true),
-  });
+
+  const entries: SpeedDialEntry[] = [
+    ...classPageEntries(cls.id, date, hasPhotos),
+    {
+      key: "clear",
+      label: "Stunde zurücksetzen",
+      icon: <TrashIcon />,
+      danger: true,
+      help: "Löscht ausgewählte Einträge dieser Stunde: Ermahnungen, Bewertungen oder Kommentare.",
+      disabled: grades.length == 0,
+      onClick: () => setConfirmClear(true),
+    },
+  ];
   if (canZoom) {
-    planEntries.push({
-      key: "zoom",
-      label: "Zoom",
-      icon: <ZoomInIcon />,
-      offIcon: <ZoomOutIcon />,
-      checked: zoomed,
-      help: "Zeigt nur den Teil des Raums, in dem Schüler sitzen, so groß wie möglich.",
-      onClick: () => setZoomed(!zoomed),
-    });
+    entries.push(
+      displaySwitch(
+        {
+          key: "zoom",
+          label: "Zoom",
+          icon: <ZoomInIcon />,
+          offIcon: <ZoomOutIcon />,
+          help: "Zeigt nur den Teil des Raums, in dem Schüler sitzen, so groß wie möglich.",
+        },
+        zoomOption,
+      ),
+    );
   }
   if (hasPhotos) {
-    planEntries.push({
-      key: "photos",
-      label: "Bilder",
-      icon: <ImageIcon />,
-      offIcon: <ImageOffIcon />,
-      checked: showPhotos,
-      help: "Zeigt die Fotos der Schüler im Sitzplan.",
-      onClick: () => setShowPhotos(!showPhotos),
-    });
+    entries.push(
+      displaySwitch(
+        {
+          key: "photos",
+          label: "Bilder",
+          icon: <ImageIcon />,
+          offIcon: <ImageOffIcon />,
+          help: "Zeigt die Fotos der Schüler im Sitzplan.",
+        },
+        photosOption,
+      ),
+    );
   }
   if (hasTraits) {
-    planEntries.push({
-      key: "traits",
-      label: "Eigenschaften",
-      icon: <TagIcon />,
-      offIcon: <TagOffIcon />,
-      checked: showTraits,
-      help: "Zeigt die Eigenschaften als farbige Punkte um die Fotos.",
-      onClick: () => setShowTraits(!showTraits),
-    });
+    entries.push(
+      displaySwitch(
+        {
+          key: "traits",
+          label: "Eigenschaften",
+          icon: <TagIcon />,
+          offIcon: <TagOffIcon />,
+          help: "Zeigt die Eigenschaften als farbige Punkte um die Fotos.",
+        },
+        traitsOption,
+      ),
+    );
   }
-  const modes = (
-    <ModeToggle
-      value={mode}
-      onChange={setMode}
-      options={MODES.map(({ mode: value, label, help }) => ({
-        value,
-        label,
-        help,
-      }))}
-    />
-  );
-
-  const title = `${formatClassName(cls)} · ${cls.subject}`;
 
   return (
-    <SpeedDialLayout entries={planEntries} links={[overviewLink]}>
-      {/* Equal outer columns keep the title centered */}
-      <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-        <div className="justify-self-start">
-          <BackButton
-            target="timetable"
-            timetableUrl={`/timetable?date=${date}`}
-          />
-        </div>
-
-        <div
-          className="flex items-center gap-3"
-          data-help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
-        >
-          {
-            <IconButton
-              component={Link}
-              to={previous ? lessonLink(previous) : ""}
-              replace
-              disabled={!previous}
-              aria-label="Vorherige Stunde"
-              className="bg-surface shadow-tile disabled:opacity-40"
-            >
-              <ChevronLeftIcon />
-            </IconButton>
-          }
-          <div className="min-w-56 text-center portrait:min-w-44">
-            <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight">
-              {accent && (
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{ background: accent }}
-                />
-              )}
-              {title}
-              {lessonTypes.map((type) => (
-                <LessonTypeBadge
-                  key={type}
-                  type={type}
-                  label={getLessonTypeLabel(chains, date, type)}
-                />
-              ))}
-              {isComplete && (
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-white"
-                  style={{ background: "#15803d" }}
-                  aria-label="Vollständig bewertet"
-                >
-                  <CheckIcon size={15} strokeWidth={3} />
-                </span>
-              )}
-            </div>
-            <div className="text-sm text-muted">
-              {format(lessonDate, "EEEE, d. MMMM yyyy", { locale: de })}
-            </div>
-          </div>
-          {
-            <IconButton
-              component={Link}
-              to={next ? lessonLink(next) : ""}
-              replace
-              disabled={!next}
-              aria-label="Nächste Stunde"
-              className="bg-surface shadow-tile disabled:opacity-40"
-            >
-              <ChevronRightIcon />
-            </IconButton>
-          }
-        </div>
-
-        {/* The right end stays free for the speed dial */}
-        <div />
-      </header>
+    <SpeedDialLayout
+      entries={entries}
+      links={[
+        {
+          key: "overview",
+          label: "Übersicht",
+          icon: <TableIcon />,
+          help: "Übersichtstabelle der Klasse mit allen Stunden und Noten.",
+          to: paths.table(cls.id, date),
+        },
+      ]}
+    >
+      <PageHeader
+        back={
+          <BackButton target="timetable" timetableUrl={paths.timetable(date)} />
+        }
+        previous={previous && paths.seating(previous.id, previous.date)}
+        next={next && paths.seating(next.id, next.date)}
+        help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
+        title={
+          <>
+            <span
+              className="h-3 w-3 rounded-full"
+              style={{ background: getClassColor(cls, settings.levels).accent }}
+            />
+            {formatClassName(cls)} · {cls.subject}
+            {lessonTypes.map((type) => (
+              <LessonTypeBadge
+                key={type}
+                type={type}
+                label={rules.typeLabel(date, type)}
+              />
+            ))}
+            {rules.completion(date).lesson && (
+              <span
+                className="flex h-6 w-6 items-center justify-center rounded-full text-white"
+                style={{ background: "#15803d" }}
+                aria-label="Vollständig bewertet"
+              >
+                <CheckIcon size={15} strokeWidth={3} />
+              </span>
+            )}
+          </>
+        }
+        subtitle={dateLabel}
+      />
 
       <ModeBar
         current={currentMode.label}
-        modes={modes}
-        history={<HistoryButtons history={history} />}
-        hint={
-          mode == "grade" ? null : (
-            <>
-              {mode == "warn" && (
-                <div className="flex items-center gap-2">
-                  Antippen:
-                  {WARNING_LEVELS.map((level, index) => (
-                    <span
-                      key={index}
-                      className="rounded-full px-2.5 py-1 font-semibold"
-                      style={{
-                        background: level?.background ?? "var(--color-surface)",
-                        color: level
-                          ? "var(--color-ink)"
-                          : "var(--color-muted)",
-                      }}
-                    >
-                      {level?.label ?? "Normal"}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {mode == "comment" &&
-                "Schüler antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"}
-              {mode == "arrange" &&
-                "Schüler zum Verschieben auf einen Platz ziehen"}
-            </>
-          )
+        modes={
+          <ModeToggle
+            value={mode}
+            onChange={setMode}
+            options={MODES.map(({ mode: value, label, help }) => ({
+              value,
+              label,
+              help,
+            }))}
+          />
         }
+        history={<HistoryButtons history={history} />}
+        hint={mode == "warn" ? <WarningLevels /> : currentMode.hint}
       >
         {mode == "grade" && (
           <GradeToolBar
             tool={activeTool}
             onChange={setTool}
             lessonTypes={lessonTypes}
-            availableTypes={availableTypes}
+            availableTypes={rules.availableTypes(date)}
             onToggleType={(type) =>
               requestLessonType(date, lessonTypes, type, grades)
             }
@@ -584,7 +478,7 @@ export function ClassroomPage() {
           suggestions={suggestions}
           arranging={mode == "arrange"}
           showComments={mode == "comment"}
-          zoomed={zoomed}
+          zoomed={zoomOption[0]}
           dimmed={closedStudents}
           onTap={handleTap}
           onMove={(student, x, y) =>
@@ -592,7 +486,11 @@ export function ClassroomPage() {
               student.id,
               x,
               y,
-              roster.map(({ id, x, y }) => ({ studentId: id, x, y })),
+              roster.map((seated) => ({
+                studentId: seated.id,
+                x: seated.x,
+                y: seated.y,
+              })),
               formatStudentName(student),
             )
           }
@@ -619,12 +517,11 @@ export function ClassroomPage() {
       {confirmClear && (
         <ClearLessonDialog
           entries={grades}
-          dateLabel={format(lessonDate, "EEEE, d. MMMM yyyy", { locale: de })}
+          dateLabel={dateLabel}
           onClose={() => setConfirmClear(false)}
           onConfirm={async (parts) => {
             await clearLesson(cls.id, date, parts);
-            history.reset();
-            revalidate();
+            handleLessonChanged();
           }}
         />
       )}

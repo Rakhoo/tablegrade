@@ -12,6 +12,7 @@ import { SchoolSettings } from "./SchoolSettings";
 import { SeatLayoutSettings } from "./SeatLayoutSettings";
 import type { SettingsLoaderData } from "./settingsLoader";
 import { TraitSettings } from "./TraitSettings";
+import { paths } from "../../lib/paths";
 
 /** Settings of the app, one card per topic; changes are saved right away. */
 export function SettingsPage() {
@@ -22,7 +23,7 @@ export function SettingsPage() {
   return (
     <SpeedDialLayout entries={[]}>
       <header className="flex items-center gap-3">
-        <ReturnButton fallback="/timetable" />
+        <ReturnButton fallback={paths.timetable()} />
         <h1 className="text-xl font-bold tracking-tight">Einstellungen</h1>
       </header>
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4">

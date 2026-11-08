@@ -5,7 +5,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@mui/material";
-import type { GradeTarget } from "../../services/grading";
+import type { GradeTarget } from "../../lib/gradeTools";
 
 /** Names of the parts of an entry that can be erased on their own. */
 const PART_LABELS: Record<GradeTarget, string> = {

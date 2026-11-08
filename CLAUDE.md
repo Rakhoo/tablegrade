@@ -49,16 +49,52 @@ von mehr-schulferien.de (ohne personenbezogene Daten). Die App läuft nur instal
   Rückfrage.
 - Die in VitePWA `includeAssets` und als apple-touch-icon genannten Dateien müssen existieren
   (Ausnahme: `mask-icon.svg`).
-- DB-Migrationen in `src/db/migrations.ts` sind append-only (nie bestehende ändern).
+- DB: `BASELINE` in `src/db/migrations.ts` ist das Schema des ersten Release (Version 20, wie die
+  Daten auf dem iPad). Neue Migrationen nur anhängen (append-only, nie bestehende ändern).
 
 ## Orientierung im Code
 
 - `README.md`: Features, Projektstruktur, Routen, State-Konzept, Datenmodell – zuerst dort
   nachsehen.
-- Seiten liegen in `src/features/*` (je Route eigene Seite + Loader), geteilte UI in
-  `src/components`, reine Logik in `src/lib`, DB-Zugriff in `src/db/queries`.
 - UI-Muster: Funktionen einer Seite im Speed Dial (`SpeedDial.tsx`) bzw. Modus-Leiste
   (`ModeBar.tsx`); jedes erklärbare Element bekommt ein `data-help`-Attribut mit deutschem Text
-  für die Hilfe.
+  für die Hilfe (Karten mit inneren Elementen: `data-help-group`; dieselbe Erklärung an vielen
+  Elementen: `data-help-repeat`; siehe README).
 - Geteilter Zustand: Rückgängig-Verlauf `useEditHistory`, Anzeige-Optionen `useDisplayOption`;
   Daten kommen über die Route-Loader und werden nach Änderungen per `useRevalidator` neu geladen.
+
+## Ordnerstruktur (einhalten)
+
+- `src/features/<seite>/`: je Route ein Ordner mit `<Name>Page.tsx` und `<name>Loader.ts`,
+  dazu die nur dort genutzten Komponenten (z. B. `overview/TableCells.tsx`). Wird eine Seite
+  groß, in Teilkomponenten im selben Ordner zerlegen statt eine Datei wachsen zu lassen
+  (Richtwert: Komponenten-Dateien unter ~500 Zeilen).
+- `src/components/`: von mehreren Seiten genutzte UI (`PageHeader`, `SpeedDial` +
+  `speedDialEntries`, `ModeBar`, Dialoge, Icons); zusammengehörige größere Teile als
+  Unterordner (`components/help/`).
+- `src/hooks/`: wiederverwendbare Hooks und geteilter UI-Zustand.
+- `src/lib/`: reine Logik ohne Seiteneffekte (keine DOM-/DB-Zugriffe), z. B. Notenregeln
+  (`createMarkRules` in `lessonChains.ts` – nicht in Seiten nachbauen), `gradeTools`, `paths`.
+- `src/services/`: Seiteneffekte nach außen (Ferien-API, Backup, PWA, PDF-Import/-Export).
+- `src/db/`: Schema, Migrationen, Client; Zugriffe nur über `src/db/queries/*`, exportiert
+  über `src/db/index.ts`.
+- URLs nur über `paths` (`src/lib/paths.ts`) bauen, nie als String-Literal; neue Routen in
+  `router.tsx`, `paths.ts` und den Seitennamen in `lib/returnPage.ts` eintragen.
+
+## Coding-Regeln (einhalten)
+
+- Funktionskomponenten mit benannten Exports, PascalCase-Dateien für Komponenten, camelCase
+  für alles andere. Props als eigener `type <Name>Props`.
+- React: abgeleitete Werte im Render berechnen statt in State/Effects zu spiegeln; Effects nur
+  für echte Synchronisation mit außen (DOM, Storage, Listener). Stabile Keys aus Daten, keine
+  Array-Indizes; keine Objekt-/Array-Literale als Default-Props (Modul-Konstante nutzen).
+- Wiederholtes (Kopfzeile, Speed-Dial-Einträge, Regeln, Rückweg) über die vorhandenen
+  Bausteine lösen statt kopieren; Doppeltes beim Anfassen zusammenführen.
+- Kurz und lesbar: frühe Returns, kleine benannte Hilfsfunktionen, keine toten Imports oder
+  Variablen, keine verdeckten Namen (no-shadow).
+- Kommentare: JSDoc (`/** … */`) an Exports, Komponenten, Props-Feldern und lokalen
+  Hilfsfunktionen; Inline-`//` nur für nicht offensichtliche Schritte innerhalb einer Funktion.
+  Englisch, knapp, erklärt das Warum statt das Was.
+- Lint-Regeln in `.oxlintrc.json` nicht abschwächen; Ausnahmen nur einzeln per
+  `oxlint-disable-next-line` mit kurzer Begründung darüber.
+- Prettier auf `src/` nach Änderungen ausführen.

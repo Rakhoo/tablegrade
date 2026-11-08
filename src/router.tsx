@@ -1,5 +1,6 @@
 import { createHashRouter, redirect } from "react-router";
 import { App } from "./App";
+import { paths } from "./lib/paths";
 import { rootLoader } from "./rootLoader";
 import { ErrorPage } from "./features/errors/ErrorPage";
 import { ClassEditPage } from "./features/classEdit/ClassEditPage";
@@ -9,11 +10,9 @@ import { classroomLoader } from "./features/classroom/classroomLoader";
 import { NameTrainerPage } from "./features/nameTrainer/NameTrainerPage";
 import { nameTrainerLoader } from "./features/nameTrainer/nameTrainerLoader";
 import { OverviewPage } from "./features/overview/OverviewPage";
-import { OverviewListPage } from "./features/overview/OverviewListPage";
-import {
-  overviewLoader,
-  overviewListLoader,
-} from "./features/overview/overviewLoader";
+import { overviewLoader } from "./features/overview/overviewLoader";
+import { ClassListPage } from "./features/classList/ClassListPage";
+import { classListLoader } from "./features/classList/classListLoader";
 import { SettingsPage } from "./features/settings/SettingsPage";
 import { settingsLoader } from "./features/settings/settingsLoader";
 import { TimetablePage } from "./features/timetable/TimetablePage";
@@ -35,7 +34,7 @@ export const createAppRouter = () =>
           // Errors render inside App, so they keep the theme and layout
           ErrorBoundary: ErrorPage,
           children: [
-            { index: true, loader: () => redirect("/timetable") },
+            { index: true, loader: () => redirect(paths.timetable()) },
             {
               path: "timetable",
               loader: timetableLoader,
@@ -52,8 +51,13 @@ export const createAppRouter = () =>
               Component: TimetablePage,
             },
             {
+              path: "classes",
+              loader: classListLoader,
+              Component: ClassListPage,
+            },
+            {
               path: "classes/new",
-              loader: (args) => classEditLoader(args, "classes"),
+              loader: classEditLoader,
               Component: ClassEditPage,
             },
             {
@@ -62,33 +66,18 @@ export const createAppRouter = () =>
               Component: ClassroomPage,
             },
             {
-              path: "classes/:id/edit",
-              loader: (args) => classEditLoader(args, "classes"),
-              Component: ClassEditPage,
-            },
-            {
-              path: "classes/:id/names",
-              loader: (args) => nameTrainerLoader(args, "classes"),
-              Component: NameTrainerPage,
-            },
-            {
-              path: "overview",
-              loader: overviewListLoader,
-              Component: OverviewListPage,
-            },
-            {
-              path: "overview/:id",
+              path: "classes/:id/table",
               loader: overviewLoader,
               Component: OverviewPage,
             },
             {
-              path: "overview/:id/edit",
-              loader: (args) => classEditLoader(args, "overview"),
+              path: "classes/:id/edit",
+              loader: classEditLoader,
               Component: ClassEditPage,
             },
             {
-              path: "overview/:id/names",
-              loader: (args) => nameTrainerLoader(args, "overview"),
+              path: "classes/:id/names",
+              loader: nameTrainerLoader,
               Component: NameTrainerPage,
             },
             {
@@ -97,7 +86,7 @@ export const createAppRouter = () =>
               Component: SettingsPage,
             },
             { path: "404", Component: ErrorPage },
-            { path: "*", loader: () => redirect("/404") },
+            { path: "*", loader: () => redirect(paths.notFound()) },
           ],
         },
       ],

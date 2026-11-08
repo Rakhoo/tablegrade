@@ -1,4 +1,5 @@
 import { redirect, type LoaderFunctionArgs } from "react-router";
+import { paths } from "../../lib/paths";
 import {
   getCancelledDays,
   getCancelledLessons,
@@ -23,12 +24,6 @@ import {
 import { toIsoDate } from "../../lib/dates";
 import { createCalendar } from "../../lib/schoolYear";
 
-/** Loads all classes for the selection page. */
-export async function overviewListLoader() {
-  await waitForDatabase();
-  return { schoolClasses: await getSchoolClasses() };
-}
-
 /**
  * Loads a class with its students, all grade entries, the lesson states and the table
  * columns: the lesson dates up to today or the table's lesson (`?date=`, else today's or the
@@ -37,7 +32,7 @@ export async function overviewListLoader() {
 export async function overviewLoader({ params, request }: LoaderFunctionArgs) {
   await waitForDatabase();
   const cls = await getSchoolClass(Number(params.id));
-  if (!cls) return redirect("/404");
+  if (!cls) return redirect(paths.notFound());
   const [
     students,
     entries,
@@ -113,9 +108,6 @@ export async function overviewLoader({ params, request }: LoaderFunctionArgs) {
   };
 }
 
-export type OverviewListLoaderData = Awaited<
-  ReturnType<typeof overviewListLoader>
->;
 export type OverviewLoaderData = Exclude<
   Awaited<ReturnType<typeof overviewLoader>>,
   Response

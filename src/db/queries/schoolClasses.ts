@@ -88,13 +88,13 @@ export async function saveSchoolClass(
   const seats = freeSeats(occupied, seatLayout);
 
   const classId = await client.transaction(async (tx) => {
-    let classId = id;
-    if (classId) {
+    let savedId = id;
+    if (savedId) {
       await tx.query(
         db
           .update(schoolClasses)
           .set(values)
-          .where(eq(schoolClasses.id, classId)),
+          .where(eq(schoolClasses.id, savedId)),
       );
     } else {
       const [row] = await tx.query(
@@ -103,12 +103,12 @@ export async function saveSchoolClass(
           .values(values)
           .returning({ id: schoolClasses.id }),
       );
-      classId = row.id as number;
+      savedId = row.id as number;
     }
 
     if (removedIds.length > 0) {
       const removed = and(
-        eq(classStudents.classId, classId),
+        eq(classStudents.classId, savedId),
         inArray(classStudents.studentId, removedIds),
       );
       await tx.query(db.delete(classStudents).where(removed));
@@ -117,7 +117,7 @@ export async function saveSchoolClass(
           .delete(grades)
           .where(
             and(
-              eq(grades.classId, classId),
+              eq(grades.classId, savedId),
               inArray(grades.studentId, removedIds),
             ),
           ),
@@ -160,7 +160,7 @@ export async function saveSchoolClass(
       }
       const member = members.get(studentId);
       const membership = and(
-        eq(classStudents.classId, classId),
+        eq(classStudents.classId, savedId),
         eq(classStudents.studentId, studentId),
       );
       if (hidden) {
@@ -170,7 +170,7 @@ export async function saveSchoolClass(
             ? db.update(classStudents).set(seatless).where(membership)
             : db
                 .insert(classStudents)
-                .values({ classId, studentId, ...seatless }),
+                .values({ classId: savedId, studentId, ...seatless }),
         );
       } else if (!member || member.hidden) {
         // New in the seating plan, also when shown again: a seat and the complete lessons
@@ -188,7 +188,9 @@ export async function saveSchoolClass(
                 .update(classStudents)
                 .set({ hidden: false, ...seat })
                 .where(membership)
-            : db.insert(classStudents).values({ classId, studentId, ...seat }),
+            : db
+                .insert(classStudents)
+                .values({ classId: savedId, studentId, ...seat }),
         );
         if (completedDates.length > 0) {
           await tx.query(
@@ -196,7 +198,7 @@ export async function saveSchoolClass(
               .insert(grades)
               .values(
                 completedDates.map((date) => ({
-                  classId,
+                  classId: savedId,
                   studentId,
                   date,
                   absent: true,
@@ -207,7 +209,7 @@ export async function saveSchoolClass(
         }
       }
     }
-    return classId;
+    return savedId;
   });
 
   if (removedIds.length > 0) await deleteOrphanStudents();

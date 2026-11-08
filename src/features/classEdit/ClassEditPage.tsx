@@ -1,6 +1,7 @@
 import { isValid, parseISO } from "date-fns";
 import {
   useLoaderData,
+  useLocation,
   useNavigate,
   useRevalidator,
   useSearchParams,
@@ -14,16 +15,18 @@ import {
   type SchoolYearPart,
 } from "../../db";
 import { resetEditHistory } from "../../hooks/useEditHistory";
+import { useGoBack } from "../../hooks/useGoBack";
+import { paths } from "../../lib/paths";
+import { getReturnPage } from "../../lib/returnPage";
 import { ClassEditor } from "./ClassEditor";
 import type { ClassEditLoaderData } from "./classEditLoader";
 
 /**
- * Page of the class editor (`/classes/new`, `/classes/:id/edit`, `/overview/:id/edit`). Leaving
- * a new class with input asks first.
+ * Page of the class editor (`/classes/new`, `/classes/:id/edit`). Leaving a new class with input
+ * asks first.
  */
 export function ClassEditPage() {
   const {
-    origin,
     class: cls,
     roster,
     allClasses,
@@ -34,6 +37,7 @@ export function ClassEditPage() {
     date,
   } = useLoaderData<ClassEditLoaderData>();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { revalidate } = useRevalidator();
   const [searchParams] = useSearchParams();
   const presetDate =
@@ -46,16 +50,12 @@ export function ClassEditPage() {
     if (dirty) setPendingLeave(() => leave);
     else leave();
   };
-  /** Leaves the creation of a class, preferring browser history so "back" keeps working. */
-  const leave = () => {
-    if ((window.history.state?.idx ?? 0) > 0) navigate(-1);
-    else navigate("/timetable", { replace: true });
-  };
+  /** Leaves the creation of a class. */
+  const leave = useGoBack(paths.timetable());
 
   return (
     <ClassSubPageLayout
       cls={cls}
-      origin={origin}
       date={date}
       page="edit"
       onLeave={confirmLeave}
@@ -89,12 +89,11 @@ export function ClassEditPage() {
         }}
         onDelete={async () => {
           await deleteSchoolClass(cls!.id);
-          navigate(
-            origin == "overview"
-              ? "/overview"
-              : `/timetable${date ? `?date=${date}` : ""}`,
-            { replace: true },
-          );
+          // Back to the class list if opened from there, as all pages of the class are gone
+          const { url } = getReturnPage(pathname, paths.timetable(date));
+          navigate(/^\/classes\/\d/.test(url) ? paths.timetable(date) : url, {
+            replace: true,
+          });
         }}
         onCreate={async (form, students) => {
           const id = await saveSchoolClass(form, students);
@@ -103,7 +102,7 @@ export function ClassEditPage() {
             !!date &&
             (presetDate.getDay() == form.day ||
               presetDate.getDay() == form.day2);
-          navigate(`/classes/${id}${keepDate ? `?date=${date}` : ""}`, {
+          navigate(paths.seating(id, keepDate ? date : null), {
             replace: true,
           });
         }}

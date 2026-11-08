@@ -21,6 +21,7 @@ import { getClassColor } from "../../lib/subjectColors";
 import { useLongPress } from "../../hooks/useLongPress";
 import { useSettings } from "../../hooks/useSettings";
 import "./TimetableGrid.css";
+import { paths } from "../../lib/paths";
 
 type TimetableGridProps = {
   /** Monday of the displayed week. */
@@ -45,9 +46,9 @@ type Slot = { day: number; weekday: string; date: Date };
 
 /** Link props for creating a new class preset to a weekday and lesson. */
 const newClassLink = ({ day, weekday, date }: Slot, hour: number) => ({
-  to: `/classes/new?day=${day}&hour=${hour}&date=${toIsoDate(date)}`,
+  to: paths.newClass({ day, hour, date: toIsoDate(date) }),
   "aria-label": `Neue Klasse am ${weekday}, ${hour}. Stunde`,
-  onClick: () => rememberCurrentPageFor("/classes/new"),
+  onClick: () => rememberCurrentPageFor(paths.newClass()),
 });
 
 /**
@@ -142,7 +143,7 @@ function LessonTile({
   const color = getClassColor(schoolClass, levels);
   return (
     <Link
-      to={`/classes/${schoolClass.id}?date=${toIsoDate(date)}`}
+      to={paths.seating(schoolClass.id, toIsoDate(date))}
       draggable={false}
       className={`${className} shadow-tile transition-transform active:scale-[0.97]`}
       style={{

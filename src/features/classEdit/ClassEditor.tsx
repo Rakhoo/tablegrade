@@ -1,37 +1,17 @@
-import {
-  Alert,
-  Autocomplete,
-  Avatar,
-  Button,
-  ButtonBase,
-  FormControlLabel,
-  IconButton,
-  MenuItem,
-  Switch,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
-} from "@mui/material";
+import { Alert, Button, TextField } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router";
-import { rememberReturnPage } from "../../lib/returnPage";
 import {
   getClassStudents,
   saveSchoolClass,
   type RosterEntry,
   type SchoolClass,
-  type SchoolClassInput,
   type SchoolYearPart,
   type SeatedStudent,
   type Trait,
 } from "../../db";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { useSettings } from "../../hooks/useSettings";
-import {
-  filterCopyClasses,
-  getCopyLabel,
-  sortCopyClasses,
-} from "../../lib/classCopy";
+import { sortCopyClasses } from "../../lib/classCopy";
 import {
   fillNicknames,
   getImportNickname,
@@ -39,27 +19,20 @@ import {
   parseStudentList,
   toRosterEntry,
 } from "../../lib/studentRoster";
+import { ClassFields, type ClassForm } from "./ClassFields";
+import { MissingYearAlert } from "./MissingYearAlert";
+import { RosterList, type RosterRow } from "./RosterList";
+import { RosterTools } from "./RosterTools";
 import { StudentDialog } from "./StudentDialog";
-import { EyeIcon, EyeOffIcon, TrashIcon } from "../../components/icons";
-import {
-  compareStudents,
-  formatClassName,
-  formatSchoolYear,
-  formatStudentName,
-} from "../../lib/formatters";
+import { TrashIcon } from "../../components/icons";
+import { formatClassName, formatStudentName } from "../../lib/formatters";
 import {
   doSchoolClassesCollide,
   getSchoolYear,
   getSchoolYearPart,
-  SCHOOL_YEAR_PART_LABELS,
-  WEEKDAY_NAMES,
   type SchoolCalendar,
 } from "../../lib/schoolYear";
 import { hasLetters, type AppSettings } from "../../lib/settings";
-
-type ClassForm = Omit<SchoolClassInput, "id">;
-/** Roster row with a stable React key, also for students not saved yet. */
-type RosterRow = RosterEntry & { key: string };
 
 type ClassEditorProps = {
   /** The edited class, `undefined` when creating a new one. */
@@ -101,79 +74,6 @@ const toRows = (students: SeatedStudent[]): RosterRow[] =>
     ...toRosterEntry(student),
     key: `s${student.id}`,
   }));
-
-type LessonTime = Pick<SchoolClass, "day" | "hour" | "double">;
-
-/** First weekday (1 = Monday) other than the given one. */
-const firstOtherDay = (day: number) => (day == 1 ? 2 : 1);
-
-type LessonFieldsProps = LessonTime & {
-  /** Weekday that cannot be chosen, as it already has the other lesson of the class. */
-  excludedDay?: number;
-  onChange: (lesson: LessonTime) => void;
-};
-
-/** Weekday, lesson and double lesson of one weekly lesson. */
-function LessonFields({
-  day,
-  hour,
-  double,
-  excludedDay,
-  onChange,
-}: LessonFieldsProps) {
-  const { lessonsPerDay } = useSettings();
-  return (
-    <>
-      <TextField
-        select
-        label="Wochentag"
-        value={day}
-        onChange={(event) =>
-          onChange({ day: Number(event.target.value), hour, double })
-        }
-      >
-        {WEEKDAY_NAMES.map((weekday, index) =>
-          index + 1 == excludedDay ? null : (
-            <MenuItem key={weekday} value={index + 1}>
-              {weekday}
-            </MenuItem>
-          ),
-        )}
-      </TextField>
-      <TextField
-        select
-        label="Schulstunde"
-        value={hour}
-        onChange={(event) => {
-          const newHour = Number(event.target.value);
-          onChange({
-            day,
-            hour: newHour,
-            double: double && newHour < lessonsPerDay,
-          });
-        }}
-      >
-        {Array.from({ length: lessonsPerDay }, (_, index) => (
-          <MenuItem key={index} value={index + 1}>
-            {index + 1}. Stunde
-          </MenuItem>
-        ))}
-      </TextField>
-      <FormControlLabel
-        label="Doppelstunde"
-        control={
-          <Switch
-            checked={double}
-            disabled={hour >= lessonsPerDay}
-            onChange={(event) =>
-              onChange({ day, hour, double: event.target.checked })
-            }
-          />
-        }
-      />
-    </>
-  );
-}
 
 /** Initial form values for a new class in the preset school year half, else the one of the preset date. */
 function emptyForm(
@@ -220,8 +120,6 @@ export function ClassEditor({
   onDelete,
 }: ClassEditorProps) {
   const settings = useSettings();
-  const location = useLocation();
-  const navigate = useNavigate();
   const years = schoolYears.map(({ year }) => year);
   const [form, setForm] = useState<ClassForm>(
     () => cls ?? emptyForm(calendar, settings, years, preset),
@@ -250,7 +148,6 @@ export function ClassEditor({
   const [editingStudent, setEditingStudent] = useState<
     RosterRow | "new" | null
   >(null);
-  const [copySearch, setCopySearch] = useState("");
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<{
     text: string;
@@ -342,9 +239,6 @@ export function ClassEditor({
       await persist(true);
     });
   };
-  // "Ganzes Jahr" only stays visible for classes that were created with it
-  const parts: SchoolYearPart[] =
-    form.part == "full" ? ["1", "2", "full"] : ["1", "2"];
   const hasNoLetter = !hasLetters(form.number);
 
   const draft = { ...form, id: cls?.id ?? -1 };
@@ -374,6 +268,22 @@ export function ClassEditor({
           .map(createRow),
       ]),
     );
+
+  /** Copies the visible students of another class with their seats. */
+  const copyFrom = async (source: SchoolClass) => {
+    const sourceStudents = await getClassStudents(source.id);
+    copyStudents(
+      sourceStudents
+        .filter((student) => !student.hidden)
+        .map((student) => ({
+          ...toRosterEntry(student),
+          seat:
+            student.x != null && student.y != null
+              ? { x: student.x, y: student.y }
+              : undefined,
+        })),
+    );
+  };
 
   /** Reads a WebUntis PDF and matches it with the roster by first and last name. */
   const importPdf = async (input: HTMLInputElement) => {
@@ -464,157 +374,19 @@ export function ClassEditor({
           </Alert>
         )}
         {missingYear && (
-          <Alert severity="warning" className="mb-3">
-            {years.length == 0
-              ? "Es ist noch kein Schuljahr angelegt."
-              : `Das Schuljahr ${formatSchoolYear(presetYear)} ist nicht angelegt.`}{" "}
-            Bitte zuerst in den{" "}
-            <Link
-              to="/settings"
-              className="font-semibold underline"
-              onClick={(event) => {
-                const leave = () =>
-                  rememberReturnPage(
-                    "/settings",
-                    location.pathname + location.search,
-                  );
-                if (!onLeave) return leave();
-                event.preventDefault();
-                onLeave(() => {
-                  leave();
-                  navigate("/settings");
-                });
-              }}
-            >
-              Einstellungen
-            </Link>{" "}
-            hinzufügen.
-            {years.length > 0 && (
-              <div className="mt-2">
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="inherit"
-                  onClick={() => setInExistingYear(true)}
-                >
-                  Stattdessen in einem bestehenden Schuljahr anlegen
-                </Button>
-              </div>
-            )}
-          </Alert>
+          <MissingYearAlert
+            years={years}
+            year={presetYear}
+            onLeave={onLeave}
+            onUseExistingYear={() => setInExistingYear(true)}
+          />
         )}
-        <h3 className="mb-3 text-sm font-semibold tracking-wider text-muted uppercase">
-          Unterricht
-        </h3>
-        <div className="grid grid-cols-2 gap-4 pt-1 portrait:grid-cols-1 landscape:grid-cols-3">
-          <TextField
-            select
-            label="Schuljahr"
-            value={form.year}
-            onChange={(event) => update({ year: Number(event.target.value) })}
-          >
-            {years.map((year) => (
-              <MenuItem key={year} value={year}>
-                {formatSchoolYear(year)}
-              </MenuItem>
-            ))}
-          </TextField>
-          <ToggleButtonGroup
-            exclusive
-            color="primary"
-            value={form.part}
-            onChange={(_, part: SchoolYearPart | null) =>
-              part && update({ part })
-            }
-            className="landscape:col-span-2"
-          >
-            {parts.map((part) => (
-              <ToggleButton key={part} value={part} className="flex-1">
-                {SCHOOL_YEAR_PART_LABELS[part]}
-              </ToggleButton>
-            ))}
-          </ToggleButtonGroup>
-
-          <TextField
-            select
-            label="Stufe"
-            value={form.number}
-            onChange={(event) => update({ number: event.target.value })}
-          >
-            {settings.levels.map((level) => (
-              <MenuItem key={level} value={level}>
-                {level}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Buchstabe"
-            disabled={hasNoLetter}
-            value={hasNoLetter ? "" : (form.letter ?? settings.letters[0])}
-            onChange={(event) => update({ letter: event.target.value })}
-          >
-            {settings.letters.map((letter) => (
-              <MenuItem key={letter} value={letter}>
-                {letter}
-              </MenuItem>
-            ))}
-          </TextField>
-          <Autocomplete
-            freeSolo
-            options={subjects}
-            inputValue={form.subject}
-            onInputChange={(_, subject) => update({ subject })}
-            renderInput={(params) => (
-              <TextField {...params} label="Fach" required />
-            )}
-          />
-
-          <LessonFields
-            day={form.day}
-            hour={form.hour}
-            double={form.double}
-            onChange={(lesson) => {
-              // The second lesson has to stay on another weekday
-              const isSameDay = lesson.day == form.day2;
-              update({
-                ...lesson,
-                day2: isSameDay ? firstOtherDay(lesson.day) : form.day2,
-              });
-            }}
-          />
-          <FormControlLabel
-            className="landscape:col-span-3"
-            label="Zweite Stunde pro Woche"
-            control={
-              <Switch
-                checked={form.day2 != null}
-                onChange={(event) =>
-                  update(
-                    event.target.checked
-                      ? {
-                          day2: firstOtherDay(form.day),
-                          hour2: form.hour,
-                          double2: false,
-                        }
-                      : { day2: null, hour2: null, double2: false },
-                  )
-                }
-              />
-            }
-          />
-          {form.day2 != null && form.hour2 != null && (
-            <LessonFields
-              day={form.day2}
-              hour={form.hour2}
-              double={form.double2}
-              excludedDay={form.day}
-              onChange={({ day, hour, double }) =>
-                update({ day2: day, hour2: hour, double2: double })
-              }
-            />
-          )}
-        </div>
+        <ClassFields
+          form={form}
+          onChange={update}
+          years={years}
+          subjects={subjects}
+        />
 
         {collisions.length > 0 && (
           <Alert severity="warning" className="mt-4">
@@ -625,74 +397,17 @@ export function ClassEditor({
           </Alert>
         )}
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold tracking-wider text-muted uppercase">
-            Schüler · {roster.length}
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {otherClasses.length > 0 && (
-              <Autocomplete
-                size="small"
-                className="w-72"
-                options={copyOptions}
-                value={null}
-                inputValue={copySearch}
-                onInputChange={(_, value, reason) => {
-                  if (reason != "reset") setCopySearch(value);
-                }}
-                getOptionLabel={getCopyLabel}
-                filterOptions={(options, { inputValue }) =>
-                  filterCopyClasses(
-                    options,
-                    inputValue,
-                    {
-                      ...form,
-                      letter: hasNoLetter ? null : form.letter,
-                    },
-                    settings.levels,
-                  )
-                }
-                noOptionsText="Keine Klasse gefunden"
-                onChange={async (_, selected) => {
-                  if (!selected) return;
-                  setCopySearch("");
-                  const source = await getClassStudents(selected.id);
-                  const visible = source.filter((student) => !student.hidden);
-                  copyStudents(
-                    visible.map((student) => ({
-                      ...toRosterEntry(student),
-                      seat:
-                        student.x != null && student.y != null
-                          ? { x: student.x, y: student.y }
-                          : undefined,
-                    })),
-                  );
-                }}
-                renderInput={(params) => (
-                  <TextField {...params} label="Aus Klasse übernehmen" />
-                )}
-              />
-            )}
-            <Button component="label" variant="outlined" disabled={importing}>
-              {importing ? "Wird gelesen …" : "WebUntis-PDF"}
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                hidden
-                onChange={(event) => importPdf(event.target)}
-              />
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setPasteText(pasteText == null ? "" : null)}
-            >
-              Liste einfügen
-            </Button>
-            <Button variant="outlined" onClick={() => setEditingStudent("new")}>
-              Schüler hinzufügen
-            </Button>
-          </div>
-        </div>
+        <RosterTools
+          count={roster.length}
+          classes={copyOptions}
+          target={{ ...form, letter: hasNoLetter ? null : form.letter }}
+          levels={settings.levels}
+          importing={importing}
+          onCopy={copyFrom}
+          onImport={importPdf}
+          onPaste={() => setPasteText(pasteText == null ? "" : null)}
+          onAdd={() => setEditingStudent("new")}
+        />
 
         {pasteText != null && (
           <div className="mt-2 flex flex-col gap-2">
@@ -727,60 +442,21 @@ export function ClassEditor({
           </Alert>
         )}
 
-        <div className="mt-3 grid grid-cols-1 gap-2 landscape:grid-cols-2">
-          {[...roster].sort(compareStudents).map((row) => (
-            <div key={row.key} className="flex items-center gap-1">
-              <ButtonBase
-                onClick={() => setEditingStudent(row)}
-                className={
-                  "flex min-w-0 flex-1 items-center justify-start gap-3 rounded-2xl border border-line p-2 text-left " +
-                  (row.hidden ? "opacity-50" : "")
-                }
-              >
-                <Avatar
-                  src={row.image ?? undefined}
-                  alt=""
-                  sx={{ width: 40, height: 40 }}
-                />
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">
-                    {formatStudentName(row)}
-                  </span>
-                  <span className="block truncate text-xs text-muted">
-                    {[
-                      row.hidden && "Ausgeblendet",
-                      row.nickname,
-                      ...traits
-                        .filter((trait) => row.traitIds.includes(trait.id))
-                        .map((trait) => trait.name),
-                    ]
-                      .filter(Boolean)
-                      .join(" · ") || "\u00a0"}
-                  </span>
-                </span>
-              </ButtonBase>
-              <IconButton
-                aria-label={`${formatStudentName(row)} ${row.hidden ? "einblenden" : "ausblenden"}`}
-                onClick={() =>
-                  setRoster((prev) =>
-                    prev.map((r) =>
-                      r.key == row.key ? { ...r, hidden: !r.hidden } : r,
-                    ),
-                  )
-                }
-              >
-                {row.hidden ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-              </IconButton>
-              <IconButton
-                color="error"
-                aria-label={`${formatStudentName(row)} entfernen`}
-                onClick={() => (row.id ? setRemoving(row) : removeRow(row))}
-              >
-                <TrashIcon size={18} />
-              </IconButton>
-            </div>
-          ))}
-        </div>
+        <RosterList
+          rows={roster}
+          traits={traits}
+          onEdit={setEditingStudent}
+          onToggleHidden={(row) =>
+            setRoster((prev) =>
+              prev.map((other) =>
+                other.key == row.key
+                  ? { ...other, hidden: !other.hidden }
+                  : other,
+              ),
+            )
+          }
+          onRemove={(row) => (row.id ? setRemoving(row) : removeRow(row))}
+        />
         {cls && (
           <div className="mt-8 border-t border-line pt-4">
             <Button
