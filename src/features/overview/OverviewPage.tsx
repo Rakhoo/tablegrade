@@ -82,6 +82,7 @@ import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getVisibleGrades } from "../../lib/settings";
 import { CommentDialog } from "../classroom/CommentDialog";
 import { LessonTypeMenu } from "./LessonTypeMenu";
+import { LetExportDialog } from "./LetExportDialog";
 import type { OverviewLoaderData } from "./overviewLoader";
 import { HiddenCell, LessonCell, NameCell, ReportCell } from "./TableCells";
 import { DateHeader, ReportHeader } from "./TableHeaders";
@@ -138,6 +139,7 @@ export function OverviewPage() {
     seatingDate,
     previous,
     next,
+    sameHalfClasses,
   } = useLoaderData<OverviewLoaderData>();
   const location = useLocation();
   const settings = useSettings();
@@ -164,6 +166,7 @@ export function OverviewPage() {
   const [showPhotos] = photosOption;
   const [showTraits] = traitsOption;
   const [exportMenu, setExportMenu] = useState<HTMLElement | null>(null);
+  const [letExport, setLetExport] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [typeMenu, setTypeMenu] = useState<{
@@ -603,7 +606,7 @@ export function OverviewPage() {
                   >
                     <Button
                       size="small"
-                      data-help="Exportiert die Tabelle als PDF oder CSV."
+                      data-help={`Exportiert die Tabelle als PDF oder CSV${settings.letHelper ? " oder für den LET-Helfer" : ""}.`}
                       data-help-place="above"
                       startIcon={<DownloadIcon size={16} />}
                       onClick={(event) => setExportMenu(event.currentTarget)}
@@ -725,7 +728,26 @@ export function OverviewPage() {
       >
         <MenuItem onClick={() => runExport("pdf")}>Als PDF</MenuItem>
         <MenuItem onClick={() => runExport("csv")}>Als CSV</MenuItem>
+        {settings.letHelper && (
+          <MenuItem
+            onClick={() => {
+              setExportMenu(null);
+              setLetExport(true);
+            }}
+          >
+            LET-Helfer
+          </MenuItem>
+        )}
       </Menu>
+
+      {letExport && (
+        <LetExportDialog
+          course={{ cls, students, entries, reports, dates, typesOf }}
+          otherClasses={sameHalfClasses}
+          onClose={() => setLetExport(false)}
+          onDone={setMessage}
+        />
+      )}
 
       <LessonTypeMenu
         anchor={typeMenu?.anchor ?? null}

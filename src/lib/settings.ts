@@ -92,6 +92,10 @@ export const DEFAULT_SETTINGS = {
   exportNoPhotos: false,
   /** Leaves the traits out of the PDF export, even if they are written out in the overview. */
   exportNoTraits: false,
+  /** Plugin: export for the "LET-Helfer" of the TMG Ahlen in the overview. */
+  letHelper: false,
+  /** Teacher's initials last used for the "LET-Helfer" export. */
+  letHelperInitials: "",
   /** Which state and years the holidays in the database belong to. */
   holidayCache: null as {
     state: string;

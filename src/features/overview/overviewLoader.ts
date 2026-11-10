@@ -1,4 +1,5 @@
 import { redirect, type LoaderFunctionArgs } from "react-router";
+import { formatClassName } from "../../lib/formatters";
 import { paths } from "../../lib/paths";
 import {
   getCancelledDays,
@@ -14,6 +15,7 @@ import {
   getSchoolClasses,
   getTraits,
   waitForDatabase,
+  type SchoolClass,
 } from "../../db";
 import { parseISO } from "date-fns";
 import {
@@ -23,6 +25,11 @@ import {
 } from "../../lib/lessons";
 import { toIsoDate } from "../../lib/dates";
 import { createCalendar } from "../../lib/schoolYear";
+
+/** Whether two classes take place in the same school year half (a whole year overlaps both). */
+const isSameHalf = (a: SchoolClass, b: SchoolClass) =>
+  a.year == b.year &&
+  (a.part == b.part || a.part == "full" || b.part == "full");
 
 /**
  * Loads a class with its students, all grade entries, the lesson states and the table
@@ -98,6 +105,15 @@ export async function overviewLoader({ params, request }: LoaderFunctionArgs) {
     traits,
     reports,
     reportGrades,
+    /** Other classes of the same school year half, for exporting them together. */
+    sameHalfClasses: allClasses
+      .filter((other) => other.id != cls.id && isSameHalf(cls, other))
+      .sort(
+        (a, b) =>
+          formatClassName(a).localeCompare(formatClassName(b), "de", {
+            numeric: true,
+          }) || a.subject.localeCompare(b.subject, "de"),
+      ),
     dates: [
       ...new Set([
         ...lessonDates,

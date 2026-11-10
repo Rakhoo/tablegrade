@@ -101,6 +101,9 @@ export function mergeStudents<Row extends RosterEntry>(
   };
 }
 
+/** First and last name of a student. */
+type StudentNameParts = { firstName: string; lastName: string };
+
 /** Shortest start of a last name that differs from all other last names, with "." if cut. */
 function getLastNamePrefix(lastName: string, others: string[]) {
   const name = lastName.trim();
@@ -157,5 +160,28 @@ export function fillNicknames<Row extends RosterEntry>(rows: Row[]) {
   return rows.map((row) => {
     const nickname = nicknames.get(row);
     return nickname ? { ...row, nickname } : row;
+  });
+}
+
+/**
+ * What tells students with the same first name apart: the shortest start of their last name
+ * that differs ("M.", "Mü."), as for the nicknames; the whole last name for namesakes, and
+ * nothing for a unique first name.
+ * @returns The distinguishing part for each student, in the given order.
+ */
+export function getDistinguishingInitials(students: StudentNameParts[]) {
+  return students.map((student) => {
+    const others = students.filter(
+      (other) =>
+        other != student &&
+        normalize(other.firstName) == normalize(student.firstName),
+    );
+    if (others.length == 0) return "";
+    const lastNames = others
+      .map((other) => other.lastName)
+      .filter((lastName) => normalize(lastName) != normalize(student.lastName));
+    return lastNames.length < others.length
+      ? student.lastName.trim()
+      : getLastNamePrefix(student.lastName, lastNames);
   });
 }

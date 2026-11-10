@@ -231,7 +231,7 @@ src/
 │   ├── timetable/                  timetable page, grid, backup reminder
 │   ├── classroom/                  seating plan page, seat grid, its dialogs
 │   ├── classList/                  class selection of the overviews
-│   ├── overview/                   overview table with its headers, cells and type menu
+│   ├── overview/                   overview table with its headers, cells, type menu and LET export
 │   ├── classEdit/                  class editor page (new class and editing): fields, roster
 │                                   list and tools, student dialog
 │   ├── nameTrainer/                name cards page
@@ -248,7 +248,7 @@ src/
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
 └── lib/                            pure helpers: dates, school year, lessons and their mark
-                                    rules, seating, grades and grading tools, reports,
+                                    rules, seating, grades and grading tools, reports, LET export,
                                     warnings, colors, formatters, paths, page memory
 public/                             _headers and icons
 pwa-assets.config.ts                generator config for the PNG home screen icon
@@ -356,7 +356,7 @@ also the way to move data to another device.
 
 `/settings`: federal state and school years, theme and light/dark mode, symbols per
 grade, grading shares, traits, levels, letters and lessons per day, default seating plan,
-backup, restore, backup reminder, "Neu laden" and the export format. They are stored as JSON in the `Settings` table
+backup, restore, backup reminder, "Neu laden", the export format and the plugins (*LET-Helfer der TMG Ahlen*, off by default). They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
 hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
 
@@ -385,6 +385,18 @@ trait colors and symbols or numbers are settings. PDFs contain photos and writte
 the overview shows them (never the trait dots), unless the settings exclude them; CSV files only
 contain names and grade values. PDFs are built with jsPDF in
 [src/services/overviewExport.ts](src/services/overviewExport.ts).
+
+With the plugin *LET-Helfer der TMG Ahlen* turned on, the menu also offers *LET-Helfer*: a
+dialog asks for the teacher's initials (up to three capitals, remembered in the settings), LET 1
+or 2 and per course the subject, a *Teilnote* (or *Halbjahresnote*) or a lesson date
+(*Zeitpunkt*) and the prefixes of exams ("KA") and projects ("Projekt"), shown only if the period
+has some. Any further courses of the same school year half can be added in the dialog. A report covers its
+period as in the overview, a date the time since the previous report. The JSON file
+`<Kürzel>LET<1|2>_<26-27>.json` (schema 2 of the "elternsprechtag-helfer") lists the courses (by class and subject) with
+exams and projects with marks in that period (numbered across the half, retakes and extensions
+included), and the students (alphabetically by first name and initial) with the first name, the distinguishing start of the last name for shared
+first names ("Mü.") and all marks written as "2+"; `solei` is the rounded oral grade. Built in
+[src/lib/letHelper.ts](src/lib/letHelper.ts).
 
 ## Styling
 

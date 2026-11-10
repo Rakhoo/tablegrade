@@ -39,11 +39,12 @@ export type ReportColumn = {
 const roundToGrade = (value: number) =>
   getNearestGrade(Math.round(value * 100) / 100, GRADE_VALUES);
 
-const roundGrade = (value: number | null) =>
+/** Rounds a calculated grade like `roundToGrade`, keeping `null`. */
+export const roundGrade = (value: number | null) =>
   value == null ? null : roundToGrade(value);
 
 /** Reports by date; on the same day the partial comes before the half. */
-const sortReports = (reports: Report[]) =>
+export const sortReports = (reports: Report[]) =>
   [...reports].sort(
     (a, b) =>
       a.date.localeCompare(b.date) ||
