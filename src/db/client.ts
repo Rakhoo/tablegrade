@@ -35,6 +35,7 @@ const ready = new Promise<void>((resolve) => (resolveReady = resolve));
 
 /** The SQLocal client, also used for transactions (`client.transaction(tx => tx.query(…))`). */
 export const client = new SQLocalDrizzle({
+  // The file name stems from the app's former name; renaming it would lose the stored data
   databasePath: "tablegrade.sqlite3",
   onInit: (sql) => [sql`PRAGMA foreign_keys = ON`],
   onConnect: () => {
@@ -66,7 +67,7 @@ async function checkBackup(file: File) {
   const header = new DataView(await file.slice(0, 64).arrayBuffer());
   const name = new TextDecoder().decode(header.buffer.slice(0, 15));
   if (header.byteLength < 64 || name != "SQLite format 3")
-    throw new BackupError("Die Datei ist keine Sicherung von tablegrade.");
+    throw new BackupError("Die Datei ist keine Sicherung von Notenfeder.");
   const version = header.getUint32(60);
   if (version < BASELINE_VERSION)
     throw new BackupError(

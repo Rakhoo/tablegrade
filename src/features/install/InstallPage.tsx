@@ -101,13 +101,13 @@ export function InstallPage() {
         <CssBaseline enableColorScheme={false} />
         <div className="flex min-h-dvh items-center justify-center p-4">
           <main className="card flex w-full max-w-md flex-col gap-4 p-6">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col items-center gap-3">
               <img
-                src="/apple-touch-icon.png"
+                src="/favicon.svg"
                 alt=""
-                className="h-14 w-14 rounded-2xl"
+                className="h-32 w-32 drop-shadow-xl"
               />
-              <h1 className="text-2xl font-bold tracking-tight">Tablegrade</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Notenfeder</h1>
             </div>
             <p className="text-muted">
               Diese App läuft nur installiert. So bleiben alle Daten sicher auf

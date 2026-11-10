@@ -4,6 +4,7 @@ import { de } from "date-fns/locale/de";
 import { useState } from "react";
 import { useLoaderData, useRevalidator } from "react-router";
 import { BackButton } from "../../components/BackButton";
+import { EmptyState } from "../../components/EmptyState";
 import { GradeToolBar } from "../../components/GradeToolBar";
 import { HistoryButtons } from "../../components/HistoryButtons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
@@ -463,11 +464,10 @@ export function ClassroomPage() {
         data-help={`Sitzplan: ${currentMode.gridHelp}`}
       >
         {students.length == 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center text-white/80">
-            <span className="text-lg font-semibold text-white">
-              Noch keine Schüler
-            </span>
-            Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
+          <div className="absolute inset-0">
+            <EmptyState title="Noch keine Schüler" tone="light">
+              Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
+            </EmptyState>
           </div>
         )}
         <SeatGrid

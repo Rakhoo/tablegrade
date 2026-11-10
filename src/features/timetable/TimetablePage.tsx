@@ -37,6 +37,7 @@ import { getWeekStart, nextSchoolDay, toIsoDate } from "../../lib/dates";
 import { lessonKey } from "../../lib/lessons";
 import { CALENDAR_START, getCalendarEnd } from "../../lib/schoolYear";
 import { CancelDialog } from "../../components/CancelDialog";
+import { Raven } from "../../components/brand/Raven";
 import { BackupReminder } from "./BackupReminder";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
@@ -209,7 +210,10 @@ export function TimetablePage() {
       >
         <div className="flex flex-col gap-3 px-3 landscape:w-full portrait:w-80 portrait:shrink-0">
           <div className="flex min-h-11 items-center justify-between gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">Stundenplan</h1>
+            <h1 className="flex items-center gap-2.5 text-2xl font-bold tracking-tight">
+              <Raven className="h-9 shrink-0 text-brand-500" />
+              Stundenplan
+            </h1>
             <Button
               variant="outlined"
               size="small"

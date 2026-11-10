@@ -12,7 +12,7 @@ import { useSettings } from "../hooks/useSettings";
 import { LESSON_TYPE_LABELS, LESSON_TYPE_ORDER } from "../lib/lessons";
 import { getVisibleGrades } from "../lib/settings";
 import { GradeIcon } from "./GradeIcon";
-import { TrashIcon, WandIcon } from "./icons";
+import { NibIcon, TrashIcon } from "./icons";
 import { MarkBadge } from "./MarkBadge";
 
 type ExtraTool = "suggestion" | "erase";
@@ -30,7 +30,7 @@ function ExtraToolIcon({ tool, size }: { tool: ExtraTool; size: number }) {
         className="flex items-center justify-center rounded-full border-2 border-dashed border-brand-500 bg-brand-50 text-brand-600"
         style={{ width: size, height: size }}
       >
-        <WandIcon size={size * 0.6} />
+        <NibIcon size={size * 0.6} />
       </span>
     );
   }

@@ -15,9 +15,9 @@ export default defineConfig({
       registerType: "prompt",
       includeAssets: ["favicon.svg", "apple-touch-icon.png", "mask-icon.svg"],
       manifest: {
-        name: "Sitzordnung & Noten",
-        short_name: "Noten",
-        description: "App für Sitzordnung und Notenverteilung",
+        name: "Notenfeder",
+        short_name: "Notenfeder",
+        description: "Notenfeder: Sitzordnung und Noten für Lehrkräfte",
         lang: "de",
         // Always launch on the timetable without URL parameters ("/" redirects there)
         start_url: "/",

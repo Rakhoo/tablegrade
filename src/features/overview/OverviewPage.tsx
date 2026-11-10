@@ -8,6 +8,7 @@ import {
   useSearchParams,
 } from "react-router";
 import { BackButton } from "../../components/BackButton";
+import { EmptyState } from "../../components/EmptyState";
 import { CancelDialog } from "../../components/CancelDialog";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { GradeToolBar } from "../../components/GradeToolBar";
@@ -583,12 +584,14 @@ export function OverviewPage() {
           data-help-group
           data-help="Tabelle mit allen Stunden und Noten der Klasse."
         >
-          {dates.length == 0 || students.length == 0 ? (
-            <p className="p-5 text-muted">
-              {students.length == 0
-                ? "Diese Klasse hat noch keine Schüler."
-                : "In diesem Halbjahr gab es noch keinen Unterricht."}
-            </p>
+          {students.length == 0 ? (
+            <EmptyState title="Noch keine Schüler" tone="muted">
+              Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
+            </EmptyState>
+          ) : dates.length == 0 ? (
+            <EmptyState title="Noch kein Unterricht" tone="muted">
+              In diesem Halbjahr gab es noch keine Stunde dieser Klasse.
+            </EmptyState>
           ) : (
             <table className="border-separate border-spacing-0">
               <thead>

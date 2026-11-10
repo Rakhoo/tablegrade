@@ -1,5 +1,6 @@
 import { createHashRouter, redirect } from "react-router";
 import { App } from "./App";
+import { StartupScreen } from "./components/brand/StartupScreen";
 import { paths } from "./lib/paths";
 import { rootLoader } from "./rootLoader";
 import { ErrorPage } from "./features/errors/ErrorPage";
@@ -29,6 +30,8 @@ export const createAppRouter = () =>
       path: "/",
       loader: rootLoader,
       Component: App,
+      // The first loaders wait for the database, which may take a moment on start
+      HydrateFallback: StartupScreen,
       children: [
         {
           // Errors render inside App, so they keep the theme and layout

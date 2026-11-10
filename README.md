@@ -1,8 +1,18 @@
-# Tablegrade
+# Notenfeder
 
 Offline-first PWA for teachers, built for an iPad: a weekly timetable and a classroom seating
 plan for recording symbol grades, comments and warnings per lesson. The UI is German only;
 code and comments are English.
+
+Design: the app icon shows a raven on a fountain pen nib whose slit ends in a check mark.
+The mascot appears as a silhouette in the current theme's colors next to the timetable's
+title and in empty seating plans and overview tables, the nib as the tool "Vorschlag" and as
+the loading indicator (on start while the database is prepared, and when a page takes a moment
+to load). The full icon is shown on the install page.
+
+The app was called "tablegrade" before. The repository, the Cloudflare Pages project, the
+database file in the browser (`tablegrade.sqlite3`) and the salt of the PIN hash keep that name,
+as renaming them would break the deployment or lose stored data.
 
 ## Privacy
 
@@ -82,7 +92,7 @@ The only network request fetches school holidays from
   - *Ermahnen*: each tap cycles a student through yellow → red → none.
   - *Bewerten*: the tool bar (grade symbols, "abwesend", suggestion, lesson type, marks for
     exams and projects and one delete tool at the right for both) stays open below the header;
-    tapping a student applies the tool. The suggestion is the
+    tapping a student applies the tool (the suggestion shows the nib of the app icon). The suggestion is the
     default tool; without previous grades it suggests the shown symbol closest to a plain 3,
     the better one of two equally close. Erasing a student with several grades in the lesson
     (oral, project, retake) first asks which one to delete, or all.
@@ -214,7 +224,8 @@ src/
 ├── theme.ts, index.css             MUI theme and CSS design tokens
 ├── components/                     shared UI: speed dial (and its entries), page header, mode
 │                                   bar, undo/redo, grade tool bar, the frame of a class's sub
-│                                   pages, icons, dialogs
+│                                   pages, empty states, icons, dialogs
+│   ├── brand/                      mascot (raven silhouette), loading nib, startup screen
 │   └── help/                       help overlay: component, targets, placement, geometry
 ├── features/
 │   ├── timetable/                  timetable page, grid, backup reminder
@@ -298,7 +309,7 @@ replaced.
 
 ### Backup and restore
 
-The settings ("Sicherung") export the database as `tablegrade-YYYY-MM-DD.sqlite3`
+The settings ("Sicherung") export the database as `notenfeder-YYYY-MM-DD.sqlite3`
 through the share sheet on phones and tablets and as a direct download on desktop systems;
 PDF and CSV exports are always direct downloads. Importing asks for confirmation, checks the
 SQLite file signature and schema version, replaces the database, runs the migrations and

@@ -101,3 +101,46 @@ body {
     color: white;
   }
 }
+
+/* Loading indicator: the check mark in the nib draws itself, then fades for the next round */
+@keyframes draw-check {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  60%,
+  80% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+.draw-check {
+  stroke-dasharray: 1;
+  animation: draw-check 1.4s ease-in-out infinite;
+}
+
+/* Shown only when loading takes a moment, so quick page changes do not flicker */
+@keyframes appear-late {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.appear-late {
+  animation: appear-late 0.2s ease-out 0.3s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draw-check {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}

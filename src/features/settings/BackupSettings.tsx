@@ -45,7 +45,7 @@ export function BackupSettings() {
       if (await isSqliteFile(file)) setPendingImport(file);
       else {
         setMessage(
-          `Die Datei ist keine gültige Tablegrade-Sicherung (${await describeFile(file)}).`,
+          `Die Datei ist keine gültige Notenfeder-Sicherung (${await describeFile(file)}).`,
         );
       }
     } catch (error) {

@@ -8,7 +8,8 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { de } from "date-fns/locale/de";
 import { StrictMode, useEffect, useState } from "react";
-import { Outlet, useLoaderData } from "react-router";
+import { Outlet, useLoaderData, useNavigation } from "react-router";
+import { LoadingFeather } from "./components/brand/LoadingFeather";
 import { LockScreen } from "./components/LockScreen";
 import { StorageErrorPage } from "./features/errors/StorageErrorPage";
 import { UpdateBanner } from "./components/UpdateBanner";
@@ -23,6 +24,7 @@ const LOCK_AFTER_MS = 5 * 60 * 1000;
 /** Root layout providing theme, German date localization and the PIN lock to all pages. */
 export function App() {
   const { settings, persistent } = useLoaderData<RootLoaderData>();
+  const navigation = useNavigation();
   const theme = useAppTheme(settings.theme, settings.colorMode);
   const [unlocked, setUnlocked] = useState(false);
 
@@ -57,6 +59,12 @@ export function App() {
                 <Outlet />
               )}
             </div>
+            {/* Loading the next page only shows after a moment, see `appear-late` */}
+            {navigation.state == "loading" && (
+              <div className="appear-late pointer-events-none fixed top-4 left-1/2 z-[1300] -translate-x-1/2 rounded-full bg-surface p-2 text-brand-600 shadow-card">
+                <LoadingFeather size={28} />
+              </div>
+            )}
             <UpdateBanner />
           </LocalizationProvider>
         </ThemeProvider>

@@ -52,7 +52,7 @@ async function saveFile(file: File) {
 }
 
 /**
- * Exports the database as `tablegrade-YYYY-MM-DD.sqlite3` and notes the date of the backup.
+ * Exports the database as `notenfeder-YYYY-MM-DD.sqlite3` and notes the date of the backup.
  * @returns `false` if the backup was cancelled.
  */
 export async function saveBackup() {
@@ -63,7 +63,7 @@ export async function saveBackup() {
     throw new Error(`Ungültige Daten (${await describeFile(database)})`);
   }
   const saved = await saveFile(
-    new File([database], `tablegrade-${today}.sqlite3`, {
+    new File([database], `notenfeder-${today}.sqlite3`, {
       type: "application/x-sqlite3",
     }),
   );

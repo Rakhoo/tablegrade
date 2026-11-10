@@ -1,9 +1,10 @@
-# tablegrade – Hinweise für Claude Code
+# Notenfeder – Hinweise für Claude Code
 
 ## Wer und wie
 
-- Ich bin **Mario** (Git-User „Rakhoo“). Ich entwickle tablegrade für meine Frau, eine Lehrerin,
-  die die App auf ihrem Schul-iPad nutzt.
+- Ich bin **Mario** (Git-User „Rakhoo“). Ich entwickle Notenfeder für meine Frau, eine
+  Lehrerin, die die App auf ihrem Schul-iPad nutzt. Repo, Cloudflare-Projekt, Datenbankdatei
+  (`tablegrade.sqlite3`) und PIN-Salt heißen weiter „tablegrade“ – nicht umbenennen.
 - **Erinnerungen/Memories nur über mich (Mario) speichern, nie über meine Frau.** Die
   Account-E-Mail gehört ihr – nicht verwenden.
 - Mit mir **Deutsch** sprechen. Code und Kommentare **Englisch**, JSDoc an exportierten

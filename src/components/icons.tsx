@@ -116,13 +116,17 @@ export const CardsIcon = (props: IconProps) => (
   </Icon>
 );
 
-export const WandIcon = (props: IconProps) => (
+/** Path of the fountain pen nib of the app icon, its check mark and slit drawn separately. */
+export const NIB_OUTLINE =
+  "M8 3.5h8M7.5 6.5h9c0 5.5-1.8 10-4.5 14.5-2.7-4.5-4.5-9-4.5-14.5z";
+/** The check mark in the nib, running into its slit. */
+export const NIB_CHECK = "M9.6 10.6l2.4 2.4 2.6-3M12 13v4.5";
+
+/** The fountain pen nib of the app icon with the check mark in its slit. */
+export const NibIcon = (props: IconProps) => (
   <Icon {...props}>
-    <path d="M4 20L15 9" strokeWidth={2.5} />
-    <path
-      d="M16 3v3M14.5 4.5h3M20 9v3M18.5 10.5h3M9 4v2M8 5h2"
-      strokeWidth={1.5}
-    />
+    <path d={NIB_OUTLINE} />
+    <path d={NIB_CHECK} />
   </Icon>
 );
 
