@@ -12,6 +12,7 @@ import {
   getHolidays,
   getSchoolClass,
   getSchoolClasses,
+  getDuties,
   getTraits,
   waitForDatabase,
 } from "../../db";
@@ -38,6 +39,7 @@ export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
     cancelledLessons,
     allClasses,
     traits,
+    duties,
   ] = await Promise.all([
     getHolidays(),
     getSchoolYears(),
@@ -45,6 +47,7 @@ export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
     getCancelledLessons(),
     getSchoolClasses(),
     getTraits(),
+    getDuties(),
   ]);
   const calendar = createCalendar(holidays, schoolYears);
   const date = toIsoDate(
@@ -68,6 +71,7 @@ export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
     // All students, also hidden ones, to restore their seats when a move is undone
     roster,
     traits,
+    duties,
     grades,
     classGrades,
     date,

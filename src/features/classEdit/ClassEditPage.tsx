@@ -34,6 +34,7 @@ export function ClassEditPage() {
     calendar,
     schoolYears,
     traits,
+    duties,
     date,
   } = useLoaderData<ClassEditLoaderData>();
   const navigate = useNavigate();
@@ -70,6 +71,7 @@ export function ClassEditPage() {
         calendar={calendar}
         schoolYears={schoolYears}
         traits={traits}
+        duties={duties}
         preset={{
           day: Number(searchParams.get("day")) || undefined,
           hour: Number(searchParams.get("hour")) || undefined,

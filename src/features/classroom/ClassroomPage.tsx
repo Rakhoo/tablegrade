@@ -26,6 +26,8 @@ import {
   TableIcon,
   TagIcon,
   TagOffIcon,
+  DutyIcon,
+  DutyOffIcon,
   TrashIcon,
   ZoomInIcon,
   ZoomOutIcon,
@@ -60,7 +62,7 @@ import { ClearLessonDialog } from "./ClearLessonDialog";
 import { CommentDialog } from "./CommentDialog";
 import { EraseChoiceDialog } from "./EraseChoiceDialog";
 import { SeatGrid } from "./SeatGrid";
-import { TraitsLegend } from "./TraitsLegend";
+import { SeatLegend } from "./SeatLegend";
 import "./ClassroomPage.css";
 
 /** The modes of the seating plan with their explanations. */
@@ -139,6 +141,7 @@ export function ClassroomPage() {
     classGrades,
     date,
     traits,
+    duties,
     lessonTypes,
     classLessonTypes,
     previous,
@@ -153,9 +156,11 @@ export function ClassroomPage() {
   const traitsOption = useDisplayOption("traits");
   const photosOption = useDisplayOption("photos");
   const zoomOption = useDisplayOption("zoom");
+  const dutiesOption = useDisplayOption("duties");
   const [showTraits] = traitsOption;
+  const [showDuties] = dutiesOption;
   const [showPhotos] = photosOption;
-  const [traitsAnchor, setTraitsAnchor] = useState<HTMLElement | null>(null);
+  const [legendAnchor, setLegendAnchor] = useState<HTMLElement | null>(null);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
   /** A student with several grades in this lesson, asked which one to erase. */
   const [erasing, setErasing] = useState<{
@@ -312,6 +317,11 @@ export function ClassroomPage() {
   const currentMode = MODES.find((option) => option.mode == mode)!;
   const hasPhotos = students.some((student) => student.image);
   const hasTraits = students.some((student) => student.traitIds.length > 0);
+  const hasDuties = students.some((student) =>
+    duties.some((duty) => duty.id == student.dutyId),
+  );
+  // The legend explains what is shown: traits and duties, each only if switched on
+  const hasLegend = (hasTraits && showTraits) || (hasDuties && showDuties);
   // Arranging needs the whole room, so it is never zoomed
   const canZoom =
     mode != "arrange" &&
@@ -361,6 +371,20 @@ export function ClassroomPage() {
       ),
     );
   }
+  if (hasDuties) {
+    entries.push(
+      displaySwitch(
+        {
+          key: "duties",
+          label: "Dienste",
+          icon: <DutyIcon />,
+          offIcon: <DutyOffIcon />,
+          help: "Zeigt die Dienste als farbige Symbole oben links an den Plätzen.",
+        },
+        dutiesOption,
+      ),
+    );
+  }
   if (hasTraits) {
     entries.push(
       displaySwitch(
@@ -390,9 +414,7 @@ export function ClassroomPage() {
       ]}
     >
       <PageHeader
-        back={
-          <BackButton target="timetable" timetableUrl={paths.timetable(date)} />
-        }
+        back={<BackButton timetableUrl={paths.timetable(date)} />}
         previous={previous && paths.seating(previous.id, previous.date)}
         next={next && paths.seating(next.id, next.date)}
         help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
@@ -459,7 +481,7 @@ export function ClassroomPage() {
       <main
         className={
           "card relative min-h-0 flex-1 bg-brand-400 p-2 " +
-          (hasTraits && showTraits ? "pb-13" : "")
+          (hasLegend ? "pb-13" : "")
         }
         data-help={`Sitzplan: ${currentMode.gridHelp}`}
       >
@@ -473,6 +495,7 @@ export function ClassroomPage() {
         <SeatGrid
           students={students}
           traits={showTraits ? traits : []}
+          duties={showDuties ? duties : []}
           showPhotos={showPhotos}
           grades={gradeMap}
           suggestions={suggestions}
@@ -495,22 +518,23 @@ export function ClassroomPage() {
             )
           }
         />
-        {hasTraits && showTraits && (
+        {hasLegend && (
           <Button
             startIcon={<InfoIcon size={18} />}
-            onClick={(event) => setTraitsAnchor(event.currentTarget)}
+            onClick={(event) => setLegendAnchor(event.currentTarget)}
             className="absolute bottom-2 left-2 z-20 bg-brand-100 opacity-75 shadow-tile"
-            data-help="Farben der Eigenschaften mit ihrer Anzahl."
+            data-help="Symbole der Dienste und Farben der Eigenschaften mit ihrer Anzahl."
           >
             Legende
           </Button>
         )}
       </main>
 
-      <TraitsLegend
-        anchor={traitsAnchor}
-        onClose={() => setTraitsAnchor(null)}
-        traits={traits}
+      <SeatLegend
+        anchor={legendAnchor}
+        onClose={() => setLegendAnchor(null)}
+        traits={showTraits ? traits : []}
+        duties={showDuties ? duties : []}
         students={students}
       />
 

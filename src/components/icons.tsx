@@ -250,3 +250,19 @@ export const ChevronDownIcon = (props: IconProps) => (
     <path d="M5 9l7 7 7-7" />
   </Icon>
 );
+
+/** A ribbon medal, for duties. */
+export const DutyIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="9" r="6" />
+    <path d="M8.5 14L7 22l5-3 5 3-1.5-8" />
+  </Icon>
+);
+
+/** A crossed out ribbon medal, for hidden duties. */
+export const DutyOffIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="9" r="6" />
+    <path d="M8.5 14L7 22l5-3 5 3-1.5-8M2 2l20 20" />
+  </Icon>
+);

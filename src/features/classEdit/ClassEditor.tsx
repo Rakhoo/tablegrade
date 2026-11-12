@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   getClassStudents,
   saveSchoolClass,
+  type Duty,
   type RosterEntry,
   type SchoolClass,
   type SchoolYearPart,
@@ -44,6 +45,8 @@ type ClassEditorProps = {
   /** The school years in use, the only ones a class can belong to. */
   schoolYears: { year: number }[];
   traits: Trait[];
+  /** Duties a student can get in this class. */
+  duties: Duty[];
   /** Presets for new classes: weekday and lesson from a timetable cell, or the half from the overview selection. */
   preset: {
     day?: number;
@@ -111,6 +114,7 @@ export function ClassEditor({
   calendar,
   schoolYears,
   traits,
+  duties,
   preset,
   onCreate,
   onCancel,
@@ -254,6 +258,14 @@ export function ClassEditor({
     key: `n${nextKey.current++}`,
   });
 
+  /** Changes fields of one roster row. */
+  const updateRow = (row: RosterRow, changes: Partial<RosterEntry>) =>
+    setRoster((prev) =>
+      prev.map((other) =>
+        other.key == row.key ? { ...other, ...changes } : other,
+      ),
+    );
+
   /** Merges a pasted list into the roster and prefills nicknames of equal first names. */
   const mergeList = (rows: RosterRow[], text: string) =>
     fillNicknames(mergeStudents(rows, parseStudentList(text), createRow).rows);
@@ -277,6 +289,8 @@ export function ClassEditor({
         .filter((student) => !student.hidden)
         .map((student) => ({
           ...toRosterEntry(student),
+          // Duties belong to the class they were given in
+          dutyId: null,
           seat:
             student.x != null && student.y != null
               ? { x: student.x, y: student.y }
@@ -445,16 +459,10 @@ export function ClassEditor({
         <RosterList
           rows={roster}
           traits={traits}
+          duties={duties}
           onEdit={setEditingStudent}
-          onToggleHidden={(row) =>
-            setRoster((prev) =>
-              prev.map((other) =>
-                other.key == row.key
-                  ? { ...other, hidden: !other.hidden }
-                  : other,
-              ),
-            )
-          }
+          onToggleHidden={(row) => updateRow(row, { hidden: !row.hidden })}
+          onDutyChange={(row, dutyId) => updateRow(row, { dutyId })}
           onRemove={(row) => (row.id ? setRemoving(row) : removeRow(row))}
         />
         {cls && (

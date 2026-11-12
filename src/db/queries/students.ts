@@ -3,6 +3,7 @@ import { seatsOverlap } from "../../lib/seating";
 import { client, db } from "../client";
 import {
   classStudents,
+  duties,
   students,
   studentTraits,
   traits,
@@ -14,12 +15,19 @@ export type SeatedStudent = Student & {
   x: number | null;
   y: number | null;
   hidden: boolean;
+  dutyId: number | null;
   traitIds: number[];
 };
 
 /** Returns all selectable traits, sorted alphabetically (ignoring case). */
 export async function getTraits() {
   const rows = await db.select().from(traits);
+  return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
+}
+
+/** Returns all duties, sorted alphabetically (ignoring case). */
+export async function getDuties() {
+  const rows = await db.select().from(duties);
   return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
@@ -33,6 +41,7 @@ export async function getClassStudents(
       x: classStudents.x,
       y: classStudents.y,
       hidden: classStudents.hidden,
+      dutyId: classStudents.dutyId,
     })
     .from(classStudents)
     .innerJoin(students, eq(students.id, classStudents.studentId))

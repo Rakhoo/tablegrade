@@ -6,6 +6,7 @@ import { resetEditHistory } from "../../hooks/useEditHistory";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BackupSettings } from "./BackupSettings";
 import { DataSettings } from "./DataSettings";
+import { DutySettings } from "./DutySettings";
 import { GradingSettings } from "./GradingSettings";
 import { LocationSettings } from "./LocationSettings";
 import { PluginSettings } from "./PluginSettings";
@@ -17,7 +18,7 @@ import { paths } from "../../lib/paths";
 
 /** Settings of the app, one card per topic; changes are saved right away. */
 export function SettingsPage() {
-  const { schoolClasses, traits } = useLoaderData<SettingsLoaderData>();
+  const { schoolClasses, traits, duties } = useLoaderData<SettingsLoaderData>();
   // Settings can delete entries, which the undo history might restore
   useEffect(resetEditHistory, []);
 
@@ -32,6 +33,7 @@ export function SettingsPage() {
         <AppearanceSettings />
         <GradingSettings />
         <TraitSettings traits={traits} />
+        <DutySettings duties={duties} />
         <SchoolSettings schoolClasses={schoolClasses} />
         <SeatLayoutSettings />
         <PluginSettings />

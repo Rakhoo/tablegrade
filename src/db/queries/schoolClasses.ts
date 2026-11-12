@@ -25,6 +25,8 @@ export type RosterEntry = {
   traitIds: number[];
   /** Hidden from the seating plan and overview, while the grades stay. */
   hidden: boolean;
+  /** The student's duty in this class. */
+  dutyId: number | null;
   /** Preferred seat for a new member, taken over from the class it was copied from. */
   seat?: { x: number; y: number };
 };
@@ -136,6 +138,7 @@ export async function saveSchoolClass(
         id: entryId,
         traitIds,
         hidden,
+        dutyId,
         seat: copiedSeat,
         ...fields
       } = entry;
@@ -164,7 +167,7 @@ export async function saveSchoolClass(
         eq(classStudents.studentId, studentId),
       );
       if (hidden) {
-        const seatless = { hidden, x: null, y: null };
+        const seatless = { hidden, dutyId, x: null, y: null };
         await tx.query(
           member
             ? db.update(classStudents).set(seatless).where(membership)
@@ -179,9 +182,12 @@ export async function saveSchoolClass(
           copiedSeat &&
           !occupied.some((seat) => seatsOverlap(seat, copiedSeat));
         if (useCopiedSeat) occupied.push(copiedSeat);
-        const seat = useCopiedSeat
-          ? copiedSeat
-          : (seats.next().value ?? { x: null, y: null });
+        const seat = {
+          dutyId,
+          ...(useCopiedSeat
+            ? copiedSeat
+            : (seats.next().value ?? { x: null, y: null })),
+        };
         await tx.query(
           member
             ? db
@@ -207,6 +213,10 @@ export async function saveSchoolClass(
               .onConflictDoNothing(),
           );
         }
+      } else {
+        await tx.query(
+          db.update(classStudents).set({ dutyId }).where(membership),
+        );
       }
     }
     return savedId;

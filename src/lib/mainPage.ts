@@ -9,8 +9,18 @@ export const MAIN_PAGE_LABELS: Record<MainPage, string> = {
 
 const STORAGE_KEY = "mainPage";
 
+/**
+ * The main page shown last since the app started. Kept in memory only, so after a reload
+ * (an update, or the app reopening its last page) the way back is unknown.
+ */
+let lastMainPage: MainPage | null = null;
+
+/** The main page the pages of a class lead back to: the one shown last, else the timetable. */
+export const getLastMainPage = (): MainPage => lastMainPage ?? "timetable";
+
 /** Remembers the URL a main page was last shown with (e.g. the selected week). */
 export function rememberMainPage(page: MainPage, url: string) {
+  lastMainPage = page;
   try {
     sessionStorage.setItem(`${STORAGE_KEY}:${page}`, url);
   } catch {

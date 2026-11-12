@@ -27,6 +27,7 @@ export function SeatLayoutSettings() {
     y,
     hidden: false,
     traitIds: [],
+    dutyId: null,
   }));
 
   const move = (seat: SeatedStudent, x: number, y: number) => {
@@ -60,6 +61,7 @@ export function SeatLayoutSettings() {
         <SeatGrid
           students={seats}
           traits={[]}
+          duties={[]}
           showPhotos={false}
           grades={new Map()}
           suggestions={new Map()}

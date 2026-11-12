@@ -6,6 +6,8 @@ const DISPLAY_OPTIONS = {
   photos: true,
   /** Traits: dots on the seats, written out below the names in the overview. */
   traits: true,
+  /** Duties: colored symbols on the seats (seating plan only). */
+  duties: true,
   /** Nicknames instead of full names in the overview. */
   nicknames: false,
   /** Seating plan zoomed in on the seated students. */
@@ -18,6 +20,7 @@ export type DisplayOption = keyof typeof DISPLAY_OPTIONS;
 const STORAGE_KEYS: Record<DisplayOption, string> = {
   photos: "showPhotos",
   traits: "showTraits",
+  duties: "showDuties",
   nicknames: "overviewNicknames",
   zoom: "seatZoom",
 };

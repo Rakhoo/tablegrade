@@ -4,7 +4,8 @@ import { GradeIcon } from "../../components/GradeIcon";
 import { MarkBadge } from "../../components/MarkBadge";
 import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
 import { CommentIcon } from "../../components/icons";
-import type { GradeEntry, SeatedStudent, Trait } from "../../db";
+import type { Duty, GradeEntry, SeatedStudent, Trait } from "../../db";
+import { DutyBadge } from "../../components/dutySymbols";
 import { getCommentPreview, getStudentLabel } from "../../lib/formatters";
 import { getGradeColor } from "../../lib/grades";
 import {
@@ -19,6 +20,8 @@ type SeatGridProps = {
   students: SeatedStudent[];
   /** All traits in display order; their position decides the slot around the photo. */
   traits: Trait[];
+  /** Duties shown on the seats; empty while they are hidden. */
+  duties: Duty[];
   /** Whether the seats show the students' photos. */
   showPhotos: boolean;
   /** Grade entries of the current lesson, by student id. */
@@ -57,6 +60,7 @@ const seatArea = ({ x, y }: Position) => ({
 export function SeatGrid({
   students,
   traits,
+  duties,
   showPhotos,
   grades,
   suggestions,
@@ -150,6 +154,7 @@ export function SeatGrid({
               arranging={arranging}
               showComment={showComments}
               traits={traits}
+              duty={duties.find((duty) => duty.id == student.dutyId)}
               showPhoto={showPhotos}
               isDragged={drag?.student.id == student.id}
               isDimmed={!!dimmed?.has(student.id)}
@@ -183,13 +188,14 @@ type SeatProps = {
   arranging: boolean;
   showComment: boolean;
   traits: Trait[];
+  duty?: Duty;
   showPhoto: boolean;
   isDragged: boolean;
   isDimmed: boolean;
   onTap: SeatGridProps["onTap"];
 };
 
-/** A placed student with photo, name, warning color and badges for grade and comment. */
+/** A placed student with photo, name, warning color and badges for duty, grade and comment. */
 function Seat({
   student,
   entry,
@@ -197,6 +203,7 @@ function Seat({
   arranging,
   showComment,
   traits,
+  duty,
   showPhoto,
   isDragged,
   isDimmed,
@@ -272,16 +279,32 @@ function Seat({
         text={getStudentLabel(student)}
         className="w-full shrink-0 font-semibold"
       />
-      {warning && (
-        <span
-          className="absolute -top-1 -left-1 z-10 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold border-2 text-white shadow-tile"
-          style={{
-            background: warning.accent,
-            borderColor: tileColor,
-          }}
-          title={warning.label}
-        >
-          {warning.mark}
+      {(duty || warning) && (
+        // Duty and warning side by side, slightly overlapping with the duty in front
+        <span className="absolute -top-1 -left-1 z-10 flex">
+          {duty && (
+            <DutyBadge
+              duty={duty}
+              size={24}
+              className="relative z-1 border-2 shadow-tile"
+              style={{ borderColor: tileColor }}
+            />
+          )}
+          {warning && (
+            <span
+              className={
+                "flex h-6 min-w-6 items-center justify-center rounded-full border-2 px-1 text-xs font-bold text-white shadow-tile " +
+                (duty ? "-ml-1.5" : "")
+              }
+              style={{
+                background: warning.accent,
+                borderColor: tileColor,
+              }}
+              title={warning.label}
+            >
+              {warning.mark}
+            </span>
+          )}
         </span>
       )}
       {hasSymbol && (

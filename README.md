@@ -49,9 +49,11 @@ The only network request fetches school holidays from
     the visible area. `data-help-place` asks for a callout inside its element (centered, e.g.
     the settings sections) or above or below it, `data-help-skew` frames slanted elements like
     the dates with their slant.
-  - At the top left the seating plan always leads back to "Stundenplan" (in the week of the
-    lesson) and the overview table to "Übersichten" ([src/lib/mainPage.ts](src/lib/mainPage.ts)
-    keeps how they were last shown). The overview selection always leads back to the timetable,
+  - At the top left seating plan and overview table lead back to the main page shown last,
+    "Stundenplan" (in the week of the lesson) or "Übersichten"; after a reload (an update, or
+    the app reopening its last page) that is unknown and both lead to "Stundenplan"
+    ([src/lib/mainPage.ts](src/lib/mainPage.ts) keeps the last one in memory and how the main
+    pages were last shown). The overview selection always leads back to the timetable,
     in the week last shown; settings, class editor and name cards go one real step back
     and name the page they came from ([src/lib/returnPage.ts](src/lib/returnPage.ts)); editor
     and name cards are pages of their own (`…/edit`, `…/names`) whose speed dial only holds the
@@ -88,7 +90,7 @@ The only network request fetches school holidays from
   - Modes: *Ermahnen* (default, set in the settings), *Bewerten*, *Kommentieren* and
     *Anordnen*. The speed dial holds *Bearbeiten* (class
     editor), *Namen lernen* (flash cards for classes with photos), "Stunde zurücksetzen" (in red) and the
-    switches for zoom, photos and traits.
+    switches for zoom, photos, duties and traits.
   - *Ermahnen*: each tap cycles a student through yellow → red → none.
   - *Bewerten*: the tool bar (grade symbols, "abwesend", suggestion, lesson type, marks for
     exams and projects and one delete tool at the right for both) stays open below the header;
@@ -111,8 +113,10 @@ The only network request fetches school holidays from
     ([src/components/FitText.tsx](src/components/FitText.tsx)). Photos are the largest
     circle fitting the seat, so they keep the padding on all sides.
   - Seats show the photo with one colored dot per trait around it (fixed slot per trait,
-    colors in the settings); "Legende" in the bottom left corner (while the traits are shown) explains the colors of this class
-    and counts them. The plan then ends above the button (zoomed or not), and the legend opens
+    colors in the settings) and a student's duty as a white symbol on its color at the top
+    left; with a warning both sit side by side, slightly overlapping, the duty in front.
+    "Legende" in the bottom left corner (while traits or duties of this class are shown)
+    explains the duty symbols and trait colors shown and counts them. The plan then ends above the button (zoomed or not), and the legend opens
     in the row to its right, growing upwards only when that row is too narrow.
   - Arrows jump to the previous/next lesson of any class, skipping weekends, holidays and
     cancelled days. "Stunde zurücksetzen" deletes the selected parts of this lesson's entries.
@@ -131,6 +135,8 @@ The only network request fetches school holidays from
     level this year or the level below last year). The seating plan is copied along if the
     class has none yet.
   - **Student dialog**: first and last name, nickname, photo and traits per student.
+  - **Duties**: next to the eye and delete buttons of each student (once duties exist), a
+    menu picks one duty for this class or "Kein Dienst"; copied students lose theirs.
   - Nicknames are prefilled: new PDF students with several given names ("Anna-Maria") get the
     first one. Students sharing a given name get as much of the last name as needed ("Anna M.",
     "Anna Mü."), same names are numbered ("Anna 1", "Anna 2").
@@ -283,7 +289,8 @@ else in camelCase files; JSDoc on exported functions and components.
 | `Students`         | names, nickname, photo (base64); shared when copied to another class    |
 | `Traits`           | student properties with a unique color, edited in the settings          |
 | `Students2Traits`  | traits assigned to students                                             |
-| `Classes2Students` | class membership and seat (`x`, `y` in half-seat cells)                 |
+| `Duties`           | class duties with name, symbol key and color, edited in the settings    |
+| `Classes2Students` | class membership, seat (`x`, `y` in half-seat cells) and `dutyId`       |
 | `Grades`           | per class, student and date: grade, mark, absent, comment, warnings     |
 | `Holidays`         | cached holiday periods, flagged as summer vacation / public holiday     |
 | `CancelledDays`    | dates marked as "Ausfall"; nothing is graded on these days              |
@@ -355,7 +362,9 @@ also the way to move data to another device.
 ## Settings
 
 `/settings`: federal state and school years, theme and light/dark mode, symbols per
-grade, grading shares, traits, levels, letters and lessons per day, default seating plan,
+grade, grading shares, traits, duties (symbol, color and name up to 24 characters; colors
+avoid the yellow and red of the warnings; the usual class duties are offered as suggestions),
+levels, letters and lessons per day, default seating plan,
 backup, restore, backup reminder, "Neu laden", the export format and the plugins (*LET-Helfer der TMG Ahlen*, off by default). They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
 hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.

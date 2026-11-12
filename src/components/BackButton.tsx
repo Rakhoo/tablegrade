@@ -1,6 +1,7 @@
 import { Button } from "@mui/material";
 import { Link } from "react-router";
 import {
+  getLastMainPage,
   getRememberedMainPage,
   MAIN_PAGE_LABELS,
   type MainPage,
@@ -9,14 +10,17 @@ import { ChevronLeftIcon } from "./icons";
 import { paths } from "../lib/paths";
 
 type BackButtonProps = {
-  /** The main page it leads to. */
-  target: MainPage;
+  /** The main page it leads to; by default the one shown last (see `getLastMainPage`). */
+  target?: MainPage;
   /** Overrides the URL of the timetable, e.g. with the week of the shown lesson. */
   timetableUrl?: string;
 };
 
 /** Leads to a main page, as it was last shown (e.g. the selected week). */
-export function BackButton({ target: page, timetableUrl }: BackButtonProps) {
+export function BackButton({
+  target: page = getLastMainPage(),
+  timetableUrl,
+}: BackButtonProps) {
   const url =
     page == "timetable" && timetableUrl
       ? timetableUrl

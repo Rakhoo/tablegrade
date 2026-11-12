@@ -524,7 +524,7 @@ export function OverviewPage() {
       ]}
     >
       <PageHeader
-        back={<BackButton target="overview" />}
+        back={<BackButton timetableUrl={paths.timetable(lessonDate)} />}
         previous={previous && paths.table(previous.id, previous.date)}
         next={next && paths.table(next.id, next.date)}
         help="Klasse und Halbjahr; die Pfeile wechseln zur Klasse davor oder danach im Stundenplan."

@@ -104,4 +104,16 @@ export const BASELINE: string[] = [
  * Migrations after the first release, applied in order: entry `i` brings the database to
  * version `BASELINE_VERSION + i + 1`. Never change an existing entry, always append a new one.
  */
-export const MIGRATIONS: string[][] = [];
+export const MIGRATIONS: string[][] = [
+  // 21: class duties, one per student and class
+  [
+    `CREATE TABLE Duties (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      symbol TEXT NOT NULL,
+      color TEXT NOT NULL
+    )`,
+    `ALTER TABLE Classes2Students
+      ADD COLUMN dutyId INTEGER REFERENCES Duties(id) ON DELETE SET NULL`,
+  ],
+];

@@ -16,6 +16,7 @@ export const toRosterEntry = ({
   image,
   traitIds,
   hidden,
+  dutyId,
   seat,
 }: RosterEntry): RosterEntry => ({
   id,
@@ -25,6 +26,7 @@ export const toRosterEntry = ({
   image,
   traitIds,
   hidden,
+  dutyId,
   seat,
 });
 
@@ -85,6 +87,7 @@ export function mergeStudents<Row extends RosterEntry>(
           image: student.image ?? null,
           traitIds: [],
           hidden: false,
+          dutyId: null,
         }),
       );
       added++;

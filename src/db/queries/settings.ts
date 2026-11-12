@@ -2,10 +2,13 @@ import { eq } from "drizzle-orm";
 import { DEFAULT_SETTINGS, type AppSettings } from "../../lib/settings";
 import { db } from "../client";
 import {
+  classStudents,
+  duties,
   schoolYears,
   settings,
   traits,
   studentTraits,
+  type Duty,
   type Trait,
 } from "../schema";
 
@@ -72,5 +75,27 @@ export async function countTraitUses(id: number) {
     .select()
     .from(studentTraits)
     .where(eq(studentTraits.traitId, id));
+  return rows.length;
+}
+
+/** Adds a duty or changes its name, symbol and color. */
+export async function saveDuty({
+  id,
+  ...values
+}: Omit<Duty, "id"> & { id?: number }) {
+  if (id) await db.update(duties).set(values).where(eq(duties.id, id));
+  else await db.insert(duties).values(values);
+}
+
+/** Deletes a duty; students lose it through the foreign key. */
+export const deleteDuty = (id: number) =>
+  db.delete(duties).where(eq(duties.id, id));
+
+/** Counts how many students have a duty, over all classes. */
+export async function countDutyUses(id: number) {
+  const rows = await db
+    .select()
+    .from(classStudents)
+    .where(eq(classStudents.dutyId, id));
   return rows.length;
 }

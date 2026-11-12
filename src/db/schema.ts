@@ -75,6 +75,8 @@ export const classStudents = sqliteTable(
     y: int("y"),
     /** Hidden students stay in the class with their grades, but only show up in its editor. */
     hidden: int("hidden", { mode: "boolean" }).notNull().default(false),
+    /** The duty the student has in this class, if any. */
+    dutyId: int("dutyId").references(() => duties.id, { onDelete: "set null" }),
   },
   (table) => [primaryKey({ columns: [table.classId, table.studentId] })],
 );
@@ -136,6 +138,16 @@ export const traits = sqliteTable("Traits", {
   id: int("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   /** Unique color of the dot on the seating plan. */
+  color: text("color").notNull(),
+});
+
+/** Class duties ("Dienste"), edited in the settings and given to students per class. */
+export const duties = sqliteTable("Duties", {
+  id: int("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  /** Key of its symbol, see `DUTY_SYMBOLS` in `src/components/dutySymbols.tsx`. */
+  symbol: text("symbol").notNull(),
+  /** Background color of the symbol on the seating plan. */
   color: text("color").notNull(),
 });
 
@@ -243,3 +255,4 @@ export type SchoolYearPart = SchoolClass["part"];
 export type Student = typeof students.$inferSelect;
 export type GradeEntry = typeof grades.$inferSelect;
 export type Trait = typeof traits.$inferSelect;
+export type Duty = typeof duties.$inferSelect;
