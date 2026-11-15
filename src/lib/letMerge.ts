@@ -85,10 +85,14 @@ export function parseLetFile(text: string): LetFile {
 export const formatLetCourse = (course: LetFileCourse) =>
   `${course.name} ${course.fach}`.trim();
 
+/** Whether a course of a file belongs to the class named `name` (e.g. "7b"). */
+export const isSameLetClass = (course: LetFileCourse, name: string) =>
+  normalize(course.name) == normalize(name);
+
 /**
- * The course of a file a class goes into: the one with the same class and subject, else the
- * first of the same class, else the first one; never one in `taken`.
- * @returns Its id, or `null` (a new course) if all are taken.
+ * The course of a file a class goes into: of the same class only, the one with the same
+ * subject, else the first; never one in `taken`.
+ * @returns Its id, or `null` (a new course) without a free course of the class.
  */
 export function findLetTarget(
   courses: LetFileCourse[],
@@ -96,17 +100,14 @@ export function findLetTarget(
   subject: string,
   taken: string[],
 ) {
-  const free = courses.filter((course) => !taken.includes(course.id));
-  const sameClass = free.filter(
-    (course) => normalize(course.name) == normalize(name),
+  const sameClass = courses.filter(
+    (course) => isSameLetClass(course, name) && !taken.includes(course.id),
   );
   return (
     (
       sameClass.find(
         (course) => normalize(course.fach) == normalize(subject),
-      ) ??
-      sameClass[0] ??
-      free[0]
+      ) ?? sameClass[0]
     )?.id ?? null
   );
 }

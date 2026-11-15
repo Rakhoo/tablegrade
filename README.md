@@ -409,9 +409,9 @@ first names ("Mü.") and all marks written as "2+". `solei` is the rounded oral 
 all exams and projects are exported; with one kind switched off the calculated grade as if
 it did not exist (its columns and marks are left out); with no marks exported at all (none in
 the period, or both switched off) the grade set by hand for the report, else the calculated one. *Bestehende Datei ergänzen* loads such a file (its initials and LET are taken over): each
-course then chooses the course of the file it goes into (same class and subject, else the
-first of the same class, else the first one; each at most once) or *Neu*, which brings back the
-subject field. Columns with the same type and label are reused, others appended; matched
+course then chooses the course of the file it goes into, offering only those of the same
+class (preselected: same subject, else the first; each at most once), or *– Neu erstellen –* at the end
+(also the choice without such a course), which brings back the subject field. Columns with the same type and label are reused, others appended; matched
 students (first name and initial, else the only one with that first name) get the new marks
 and `solei` where there is one, new students are appended. Everything else in the file
 (other columns and courses, remarks, praise, tips, `done`, ids) stays as it is. The result is

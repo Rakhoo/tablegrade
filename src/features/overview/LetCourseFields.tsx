@@ -15,7 +15,11 @@ import {
   type LetBasis,
   type LetMarkSelection,
 } from "../../lib/letHelper";
-import { formatLetCourse, type LetFileCourse } from "../../lib/letMerge";
+import {
+  formatLetCourse,
+  isSameLetClass,
+  type LetFileCourse,
+} from "../../lib/letMerge";
 import { REPORT_LABELS, sortReports } from "../../lib/reports";
 import {
   formatDay,
@@ -132,16 +136,22 @@ export function LetCourseFields({
             })
           }
         >
-          {fileCourses.map((course) => (
-            <MenuItem
-              key={course.id}
-              value={course.id}
-              disabled={takenTargets.includes(course.id)}
-            >
-              {formatLetCourse(course)}
-            </MenuItem>
-          ))}
-          <MenuItem value={NEW_COURSE}>Neu</MenuItem>
+          {fileCourses
+            .filter((course) =>
+              isSameLetClass(course, formatClassName(data.cls)),
+            )
+            .map((course) => (
+              <MenuItem
+                key={course.id}
+                value={course.id}
+                disabled={takenTargets.includes(course.id)}
+              >
+                {formatLetCourse(course)}
+              </MenuItem>
+            ))}
+          <MenuItem value={NEW_COURSE} className="text-brand-700">
+            – Neu erstellen –
+          </MenuItem>
         </TextField>
       )}
       {form.target == null && (
