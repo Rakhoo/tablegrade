@@ -166,8 +166,9 @@ The only network request fetches school holidays from
   highlighted and scrolled to the middle when a table or lesson is opened. Its modes are
   *Betrachten* (default, cells do not react), *Bewerten* and *Kommentieren*. The seating plan
   button opens the lesson the table was opened from, else today's or the next one; the speed
-  dial holds *Bearbeiten*, *Namen lernen* and switches for photos, nicknames and the traits,
-  which are either written out below the names or hidden (photos and traits share their
+  dial holds *Bearbeiten*, *Namen lernen* and switches for photos, nicknames, *Nach Nachname*
+  (rows sorted by last name, shown or not, else by the shown names; exports follow it) and the
+  traits, which are either written out below the names or hidden (photos and traits share their
   switches with the seating plan). Rows and columns are tinted,
   comments are marked with a small symbol, and a long press on a date cancels that lesson. A
   tap on a name covers the entries of all other students and hides all traits, to show a
@@ -237,7 +238,7 @@ src/
 │   ├── timetable/                  timetable page, grid, backup reminder
 │   ├── classroom/                  seating plan page, seat grid, its dialogs
 │   ├── classList/                  class selection of the overviews
-│   ├── overview/                   overview table with its headers, cells, type menu and LET export
+│   ├── overview/                   overview table with its headers, cells and type menu
 │   ├── classEdit/                  class editor page (new class and editing): fields, roster
 │                                   list and tools, student dialog
 │   ├── nameTrainer/                name cards page
@@ -254,7 +255,7 @@ src/
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
 └── lib/                            pure helpers: dates, school year, lessons and their mark
-                                    rules, seating, grades and grading tools, reports, LET export,
+                                    rules, seating, grades and grading tools, reports,
                                     warnings, colors, formatters, paths, page memory
 public/                             _headers and icons
 pwa-assets.config.ts                generator config for the PNG home screen icon
@@ -365,7 +366,7 @@ also the way to move data to another device.
 grade, grading shares, traits, duties (symbol, color and name up to 24 characters; colors
 avoid the yellow and red of the warnings; the usual class duties are offered as suggestions),
 levels, letters and lessons per day, default seating plan,
-backup, restore, backup reminder, "Neu laden", the export format and the plugins (*LET-Helfer der TMG Ahlen*, off by default). They are stored as JSON in the `Settings` table
+backup, restore, backup reminder, "Neu laden" and the export format. They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
 hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
 
@@ -394,29 +395,6 @@ trait colors and symbols or numbers are settings. PDFs contain photos and writte
 the overview shows them (never the trait dots), unless the settings exclude them; CSV files only
 contain names and grade values. PDFs are built with jsPDF in
 [src/services/overviewExport.ts](src/services/overviewExport.ts).
-
-With the plugin *LET-Helfer der TMG Ahlen* turned on, the menu also offers *LET-Helfer*
-(saved like the backup: through the share sheet on phones and tablets, else downloaded): a
-dialog asks for the teacher's initials (up to three capitals, remembered in the settings), LET 1
-or 2 and per course the subject, a *Teilnote* (or *Halbjahresnote*) or a lesson date
-(*Zeitpunkt*) and, only if the period has some, a switch and a prefix each for exams ("KA")
-and projects ("Projekt"). Any further courses of the same school year half can be added in the dialog. A report covers its
-period as in the overview, a date the time since the previous report. The JSON file
-`<Kürzel>LET<1|2>_<26-27>.json` (schema 2 of the "elternsprechtag-helfer") lists the courses (by class and subject) with
-exams and projects with marks in that period (numbered across the half, retakes and extensions
-included), and the students (alphabetically by first name and initial) with the first name, the distinguishing start of the last name for shared
-first names ("Mü.") and all marks written as "2+". `solei` is the rounded oral grade while
-all exams and projects are exported; with one kind switched off the calculated grade as if
-it did not exist (its columns and marks are left out); with no marks exported at all (none in
-the period, or both switched off) the grade set by hand for the report, else the calculated one. *Bestehende Datei ergänzen* loads such a file (its initials and LET are taken over): each
-course then chooses the course of the file it goes into, offering only those of the same
-class (preselected: same subject, else the first; each at most once), or *– Neu erstellen –* at the end
-(also the choice without such a course), which brings back the subject field. Columns with the same type and label are reused, others appended; matched
-students (first name and initial, else the only one with that first name) get the new marks
-and `solei` where there is one, new students are appended. Everything else in the file
-(other columns and courses, remarks, praise, tips, `done`, ids) stays as it is. The result is
-saved like a new export, so overwriting the old file is up to the user. Built in
-[src/lib/letHelper.ts](src/lib/letHelper.ts) and [src/lib/letMerge.ts](src/lib/letMerge.ts).
 
 ## Styling
 

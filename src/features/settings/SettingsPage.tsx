@@ -9,7 +9,6 @@ import { DataSettings } from "./DataSettings";
 import { DutySettings } from "./DutySettings";
 import { GradingSettings } from "./GradingSettings";
 import { LocationSettings } from "./LocationSettings";
-import { PluginSettings } from "./PluginSettings";
 import { SchoolSettings } from "./SchoolSettings";
 import { SeatLayoutSettings } from "./SeatLayoutSettings";
 import type { SettingsLoaderData } from "./settingsLoader";
@@ -36,7 +35,6 @@ export function SettingsPage() {
         <DutySettings duties={duties} />
         <SchoolSettings schoolClasses={schoolClasses} />
         <SeatLayoutSettings />
-        <PluginSettings />
         <BackupSettings />
         <DataSettings />
       </main>

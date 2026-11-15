@@ -30,6 +30,8 @@ import {
   ImageOffIcon,
   SeatsIcon,
   SmileIcon,
+  SortIcon,
+  SortOffIcon,
   TagIcon,
   TagOffIcon,
 } from "../../components/icons";
@@ -82,7 +84,6 @@ import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getVisibleGrades } from "../../lib/settings";
 import { CommentDialog } from "../classroom/CommentDialog";
 import { LessonTypeMenu } from "./LessonTypeMenu";
-import { LetExportDialog } from "./LetExportDialog";
 import type { OverviewLoaderData } from "./overviewLoader";
 import { HiddenCell, LessonCell, NameCell, ReportCell } from "./TableCells";
 import { DateHeader, ReportHeader } from "./TableHeaders";
@@ -139,7 +140,6 @@ export function OverviewPage() {
     seatingDate,
     previous,
     next,
-    sameHalfClasses,
   } = useLoaderData<OverviewLoaderData>();
   const location = useLocation();
   const settings = useSettings();
@@ -162,11 +162,12 @@ export function OverviewPage() {
   const nicknamesOption = useDisplayOption("nicknames");
   const photosOption = useDisplayOption("photos");
   const traitsOption = useDisplayOption("traits");
+  const lastNameSortOption = useDisplayOption("lastNameSort");
   const [useNicknames] = nicknamesOption;
+  const [sortByLastName] = lastNameSortOption;
   const [showPhotos] = photosOption;
   const [showTraits] = traitsOption;
   const [exportMenu, setExportMenu] = useState<HTMLElement | null>(null);
-  const [letExport, setLetExport] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [typeMenu, setTypeMenu] = useState<{
@@ -257,8 +258,11 @@ export function OverviewPage() {
   }, [cls.id, lessonDate]);
 
   const nameOf = useNicknames ? getStudentLabel : formatStudentName;
-  const rows = [...students].sort((a, b) =>
-    nameOf(a).localeCompare(nameOf(b), "de"),
+  // By last name the shown name only decides between equal last names
+  const rows = [...students].sort(
+    (a, b) =>
+      (sortByLastName ? a.lastName.localeCompare(b.lastName, "de") : 0) ||
+      nameOf(a).localeCompare(nameOf(b), "de"),
   );
   const hasPhotos = students.some((student) => student.image);
   const hasTraits = students.some((student) => student.traitIds.length > 0);
@@ -487,9 +491,19 @@ export function OverviewPage() {
         label: "Spitznamen",
         icon: <SmileIcon />,
         offIcon: <BadgeIcon />,
-        help: "Zeigt Spitznamen statt der vollen Namen; die Reihenfolge folgt den Namen.",
+        help: "Zeigt Spitznamen statt der vollen Namen; ohne „Nach Nachname“ folgt die Reihenfolge den angezeigten Namen.",
       },
       nicknamesOption,
+    ),
+    displaySwitch(
+      {
+        key: "lastNameSort",
+        label: "Nach Nachname",
+        icon: <SortIcon />,
+        offIcon: <SortOffIcon />,
+        help: "Sortiert die Schüler nach Nachnamen, auch wenn sie nicht angezeigt werden; sonst nach den angezeigten Namen.",
+      },
+      lastNameSortOption,
     ),
   );
   if (hasTraits) {
@@ -606,7 +620,7 @@ export function OverviewPage() {
                   >
                     <Button
                       size="small"
-                      data-help={`Exportiert die Tabelle als PDF oder CSV${settings.letHelper ? " oder für den LET-Helfer" : ""}.`}
+                      data-help="Exportiert die Tabelle als PDF oder CSV."
                       data-help-place="above"
                       startIcon={<DownloadIcon size={16} />}
                       onClick={(event) => setExportMenu(event.currentTarget)}
@@ -728,34 +742,7 @@ export function OverviewPage() {
       >
         <MenuItem onClick={() => runExport("pdf")}>Als PDF</MenuItem>
         <MenuItem onClick={() => runExport("csv")}>Als CSV</MenuItem>
-        {settings.letHelper && (
-          <MenuItem
-            onClick={() => {
-              setExportMenu(null);
-              setLetExport(true);
-            }}
-          >
-            LET-Helfer
-          </MenuItem>
-        )}
       </Menu>
-
-      {letExport && (
-        <LetExportDialog
-          course={{
-            cls,
-            students,
-            entries,
-            reports,
-            reportGrades,
-            dates,
-            typesOf,
-          }}
-          otherClasses={sameHalfClasses}
-          onClose={() => setLetExport(false)}
-          onDone={setMessage}
-        />
-      )}
 
       <LessonTypeMenu
         anchor={typeMenu?.anchor ?? null}

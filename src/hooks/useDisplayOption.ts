@@ -10,6 +10,8 @@ const DISPLAY_OPTIONS = {
   duties: true,
   /** Nicknames instead of full names in the overview. */
   nicknames: false,
+  /** Overview rows sorted by last name, whether it is shown or not. */
+  lastNameSort: false,
   /** Seating plan zoomed in on the seated students. */
   zoom: true,
 };
@@ -22,6 +24,7 @@ const STORAGE_KEYS: Record<DisplayOption, string> = {
   traits: "showTraits",
   duties: "showDuties",
   nicknames: "overviewNicknames",
+  lastNameSort: "overviewLastNameSort",
   zoom: "seatZoom",
 };
 

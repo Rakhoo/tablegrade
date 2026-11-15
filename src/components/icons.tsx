@@ -266,3 +266,17 @@ export const DutyOffIcon = (props: IconProps) => (
     <path d="M8.5 14L7 22l5-3 5 3-1.5-8M2 2l20 20" />
   </Icon>
 );
+
+/** Lines growing downwards with an arrow, for sorting by last name. */
+export const SortIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M7 4v16M3 16l4 4 4-4M14 6h3M14 11h5M14 16h7" />
+  </Icon>
+);
+
+/** Crossed out sorting lines, for the usual order by the shown names. */
+export const SortOffIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M7 4v16M3 16l4 4 4-4M14 6h3M14 11h5M14 16h7M2 2l20 20" />
+  </Icon>
+);
