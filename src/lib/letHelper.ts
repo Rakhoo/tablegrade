@@ -9,6 +9,12 @@ import {
   type Report,
   type ReportOverride,
 } from "./reports";
+import {
+  byText,
+  mergeLetCourse,
+  type LetFile,
+  type LetFileCourse,
+} from "./letMerge";
 import { getDistinguishingInitials } from "./studentRoster";
 
 /** What the grades of a course are taken from: a report or the state on a lesson date. */
@@ -39,6 +45,8 @@ export type LetCourseChoice = {
   /** Whether the projects are exported; without them they are left out of `solei` as well. */
   includeProjects: boolean;
   basis: LetBasis;
+  /** Id of the course of a loaded file to merge into; `null` adds a new course. */
+  target: string | null;
 };
 
 /** An exam or project of a period, with its follow-ups. */
@@ -119,12 +127,6 @@ export function getLetMarkColumns(
   );
 }
 
-/** Compares items alphabetically by a text, numbers by value ("5a" before "10a"). */
-const byText =
-  <Item>(getText: (item: Item) => string) =>
-  (a: Item, b: Item) =>
-    getText(a).localeCompare(getText(b), "de", { numeric: true });
-
 /** A grade written as a mark ("2+"), or empty without one. */
 const writeGrade = (value: number | null) =>
   value == null ? "" : formatMark(value);
@@ -173,7 +175,7 @@ function buildCourse(
   letNr: number,
   rules: GradingRules,
   now: string,
-) {
+): LetFileCourse {
   const { data, basis } = choice;
   const period = getPeriod(data.reports, basis);
   const allColumns = getLetMarkColumns(data, basis);
@@ -259,7 +261,8 @@ function buildCourse(
  * Builds the file for the "LET-Helfer" of the TMG Ahlen (parent-teacher days): per course its
  * exams and projects of the chosen period, unless left out, and `solei` (see `LetMarkSelection`),
  * written as marks ("2+").
- * The school year is the one of the first course.
+ * The school year is the one of the first course. With an `existing` file the courses are
+ * merged into the chosen ones of it (see `mergeLetCourse`), all else in it stays.
  * @returns The file name and its JSON content.
  */
 export function buildLetExport(
@@ -267,20 +270,34 @@ export function buildLetExport(
   letNr: 1 | 2,
   courses: LetCourseChoice[],
   rules: GradingRules,
+  existing: LetFile | null = null,
   now = new Date(),
 ) {
   const schoolYear = getLetSchoolYear(courses[0].data.cls.year);
   const exported = now.toISOString();
+  const built = courses.map((choice) => ({
+    target: existing ? choice.target : null,
+    course: buildCourse(choice, letNr, rules, exported),
+  }));
+  const merged = (existing?.courses ?? []).map((course) => {
+    const update = built.find(({ target }) => target == course.id);
+    return update ? mergeLetCourse(course, update.course, exported) : course;
+  });
+  const added = built.flatMap(({ target, course }) =>
+    target == null ? [course] : [],
+  );
+  const existingLet = existing?.let as Record<string, unknown> | undefined;
   const content = {
+    ...existing,
     app: "elternsprechtag-helfer",
     schema: 2,
     exported,
     kuerzel: initials,
     gruppe: `LET${letNr}_${schoolYear}`,
-    let: { letNr, sj: schoolYear },
-    courses: courses
-      .map((choice) => buildCourse(choice, letNr, rules, exported))
-      .sort(byText((course) => `${course.name} ${course.fach}`)),
+    let: { ...existingLet, letNr, sj: schoolYear },
+    courses: [...merged, ...added].sort(
+      byText((course) => `${course.name} ${course.fach}`),
+    ),
   };
   return {
     fileName: `${initials}_LET${letNr}_${schoolYear}.json`,

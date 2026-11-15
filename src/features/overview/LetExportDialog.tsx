@@ -1,86 +1,29 @@
 import {
+  Alert,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControlLabel,
-  IconButton,
   Menu,
   MenuItem,
-  Switch,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
 } from "@mui/material";
-import { format, parseISO } from "date-fns";
-import { de } from "date-fns/locale/de";
 import { useState } from "react";
 import { useRevalidator } from "react-router";
-import { PlusIcon, TrashIcon } from "../../components/icons";
+import { PlusIcon, UploadIcon } from "../../components/icons";
 import { saveSettings, type SchoolClass } from "../../db";
 import { useSettings } from "../../hooks/useSettings";
-import { toIsoDate } from "../../lib/dates";
 import { formatClassName, formatSchoolYear } from "../../lib/formatters";
-import {
-  buildLetExport,
-  getLetMarkColumns,
-  getLetMarkSelection,
-  type LetBasis,
-  type LetCourseChoice,
-  type LetCourseData,
-  type LetMarkSelection,
-} from "../../lib/letHelper";
-import { REPORT_LABELS, sortReports, type Report } from "../../lib/reports";
-import { downloadFile } from "../../services/backup";
+import { buildLetExport, type LetCourseData } from "../../lib/letHelper";
+import { findLetTarget, parseLetFile, type LetFile } from "../../lib/letMerge";
+import { saveFile } from "../../services/backup";
+import { LetCourseFields } from "./LetCourseFields";
+import { createForm, getBasis, type CourseForm } from "./letCourseForm";
 import { loadLetCourse } from "./letCourseLoader";
-
-/** A course in the dialog: its choices, with the basis split into the two kinds' selections. */
-type CourseForm = Omit<LetCourseChoice, "basis"> & {
-  basisKind: LetBasis["kind"];
-  /** Selected report as `reportKey`. */
-  report: string;
-  /** Selected lesson date. */
-  date: string;
-};
-
-/** Key of a report within a class. */
-const reportKey = ({ date, kind }: Report) => `${date}|${kind}`;
-
-/** Readable date, e.g. "Mo, 10.11.2026". */
-const formatDay = (date: string) =>
-  format(parseISO(date), "EEEEEE, dd.MM.yyyy", { locale: de });
-
-/** Lesson dates up to today, newest first; today if there is none yet. */
-function getDateOptions(data: LetCourseData) {
-  const today = toIsoDate(new Date());
-  const past = data.dates.filter((date) => date <= today).reverse();
-  return past.length > 0 ? past : [today];
-}
-
-/** Defaults of a course: its subject, the latest report or else the latest lesson. */
-function createForm(data: LetCourseData): CourseForm {
-  const latestReport = sortReports(data.reports).at(-1);
-  return {
-    data,
-    subject: data.cls.subject,
-    examPrefix: "KA",
-    projectPrefix: "Projekt",
-    includeExams: true,
-    includeProjects: true,
-    basisKind: latestReport ? "report" : "date",
-    report: latestReport ? reportKey(latestReport) : "",
-    date: getDateOptions(data)[0],
-  };
-}
-
-/** The basis selected in a course form. */
-function getBasis(form: CourseForm): LetBasis {
-  const report = form.data.reports.find((r) => reportKey(r) == form.report);
-  return form.basisKind == "report" && report
-    ? { kind: "report", report }
-    : { kind: "date", date: form.date };
-}
 
 /** Initials as the export wants them: up to three capital letters. */
 const cleanInitials = (value: string) =>
@@ -89,162 +32,27 @@ const cleanInitials = (value: string) =>
     .replace(/[^A-ZÄÖÜ]/g, "")
     .slice(0, 3);
 
-/** What the oral grade column ("solei") of the file holds, see `LetMarkSelection`. */
-const SOLEI_HINTS: Record<LetMarkSelection["solei"], string> = {
-  oral: "Als mündliche Note wird die mündliche Note übernommen.",
-  total:
-    "Als mündliche Note wird die Gesamtnote übernommen, berechnet ohne die ausgelassenen Noten.",
-  report:
-    "Ohne Klausuren und Projekte wird als mündliche Note die Gesamtnote übernommen, bei einer Teilnote die von Hand korrigierte.",
-};
-
-type MarkKindFieldProps = {
-  label: string;
-  included: boolean;
-  prefix: string;
-  onChange: (included: boolean, prefix: string) => void;
-};
-
-/** Switch whether exams or projects are exported, with the prefix of their names. */
-function MarkKindField({
-  label,
-  included,
-  prefix,
-  onChange,
-}: MarkKindFieldProps) {
-  return (
-    <div className="flex items-center gap-2">
-      <FormControlLabel
-        label={label}
-        className="w-44 shrink-0"
-        control={
-          <Switch
-            checked={included}
-            onChange={(event) => onChange(event.target.checked, prefix)}
-          />
-        }
-      />
-      <TextField
-        label="Präfix"
-        size="small"
-        value={prefix}
-        disabled={!included}
-        className="flex-1"
-        onChange={(event) => onChange(included, event.target.value)}
-      />
-    </div>
-  );
-}
-
-type CourseFieldsProps = {
-  form: CourseForm;
-  onChange: (changes: Partial<CourseForm>) => void;
-  /** Removes the course; missing for the shown class, which always stays. */
-  onRemove?: () => void;
-};
-
-/** Settings of one course: subject, period and the prefixes of its exams and projects. */
-function CourseFields({ form, onChange, onRemove }: CourseFieldsProps) {
-  const { data } = form;
-  const columns = getLetMarkColumns(data, getBasis(form));
-  const selection = getLetMarkSelection(
-    { ...form, basis: getBasis(form) },
-    columns,
-  );
-  const exams = columns.filter((column) => column.kind == "exam").length;
-  const projects = columns.length - exams;
-  const reports = sortReports(data.reports).reverse();
-
-  return (
-    <section className="flex flex-col gap-3 rounded-2xl border border-line p-3">
-      <div className="flex min-h-10 items-center justify-between gap-2">
-        <h3 className="font-bold">
-          {formatClassName(data.cls)} {data.cls.subject}
-        </h3>
-        {onRemove && (
-          <IconButton aria-label="Kurs entfernen" onClick={onRemove}>
-            <TrashIcon size={18} />
-          </IconButton>
-        )}
-      </div>
-      <TextField
-        label="Fach"
-        size="small"
-        value={form.subject}
-        onChange={(event) => onChange({ subject: event.target.value })}
-      />
-      <ToggleButtonGroup
-        exclusive
-        size="small"
-        value={form.basisKind}
-        onChange={(_, value: LetBasis["kind"] | null) =>
-          value && onChange({ basisKind: value })
-        }
-        className="self-start rounded-full bg-brand-50 p-0.5"
-      >
-        <ToggleButton
-          value="report"
-          className="toggle-pill"
-          disabled={reports.length == 0}
-        >
-          Teilnote
-        </ToggleButton>
-        <ToggleButton value="date" className="toggle-pill">
-          Zeitpunkt
-        </ToggleButton>
-      </ToggleButtonGroup>
-      {form.basisKind == "report" ? (
-        <TextField
-          select
-          size="small"
-          label="Teilnote"
-          value={form.report}
-          onChange={(event) => onChange({ report: event.target.value })}
-        >
-          {reports.map((report) => (
-            <MenuItem key={reportKey(report)} value={reportKey(report)}>
-              {REPORT_LABELS[report.kind]} vom {formatDay(report.date)}
-            </MenuItem>
-          ))}
-        </TextField>
-      ) : (
-        <TextField
-          select
-          size="small"
-          label="Stand vom"
-          value={form.date}
-          onChange={(event) => onChange({ date: event.target.value })}
-        >
-          {getDateOptions(data).map((date) => (
-            <MenuItem key={date} value={date}>
-              {formatDay(date)}
-            </MenuItem>
-          ))}
-        </TextField>
-      )}
-      {exams > 0 && (
-        <MarkKindField
-          label={`Klausuren (${exams})`}
-          included={form.includeExams}
-          prefix={form.examPrefix}
-          onChange={(includeExams, examPrefix) =>
-            onChange({ includeExams, examPrefix })
-          }
-        />
-      )}
-      {projects > 0 && (
-        <MarkKindField
-          label={`Projekte (${projects})`}
-          included={form.includeProjects}
-          prefix={form.projectPrefix}
-          onChange={(includeProjects, projectPrefix) =>
-            onChange({ includeProjects, projectPrefix })
-          }
-        />
-      )}
-      <p className="text-sm text-muted">{SOLEI_HINTS[selection.solei]}</p>
-    </section>
-  );
+/**
+ * Points each form at the course of a file it fits best, one course per form at most.
+ * @param courses The file's courses; `null` sets all forms to new courses.
+ */
+function assignTargets(
+  forms: CourseForm[],
+  courses: LetFile["courses"] | null,
+) {
+  const taken: string[] = [];
+  return forms.map((form) => {
+    const target = courses
+      ? findLetTarget(
+          courses,
+          formatClassName(form.data.cls),
+          form.subject,
+          taken,
+        )
+      : null;
+    if (target) taken.push(target);
+    return { ...form, target };
+  });
 }
 
 type LetExportDialogProps = {
@@ -259,7 +67,8 @@ type LetExportDialogProps = {
 
 /**
  * Asks for what the "LET-Helfer" file needs (initials, subject, LET 1 or 2, period and
- * prefixes per course) and downloads it.
+ * prefixes per course) and downloads it; a loaded file of the LET-Helfer gets the courses
+ * merged in instead.
  */
 export function LetExportDialog({
   course,
@@ -274,11 +83,46 @@ export function LetExportDialog({
   const [forms, setForms] = useState(() => [createForm(course)]);
   const [loading, setLoading] = useState(false);
   const [addMenu, setAddMenu] = useState<HTMLElement | null>(null);
+  /** A file of the LET-Helfer to merge into, with its name. */
+  const [file, setFile] = useState<{ name: string; content: LetFile } | null>(
+    null,
+  );
+  const [fileError, setFileError] = useState<string | null>(null);
   const addable = otherClasses.filter((cls) =>
     forms.every((form) => form.data.cls.id != cls.id),
   );
   const valid =
-    initials.length > 0 && forms.every((form) => form.subject.trim() != "");
+    initials.length > 0 &&
+    forms.every((form) => form.target != null || form.subject.trim() != "");
+  const targetsOf = (except: CourseForm) =>
+    forms.flatMap((form) =>
+      form != except && form.target != null ? [form.target] : [],
+    );
+
+  /** Reads a file to merge into, takes over its initials and LET and matches the courses. */
+  const loadFile = async (input: HTMLInputElement) => {
+    const selected = input.files?.[0];
+    // Lets the same file be chosen again
+    input.value = "";
+    if (!selected) return;
+    try {
+      const content = parseLetFile(await selected.text());
+      const fileInitials = cleanInitials(String(content.kuerzel ?? ""));
+      const fileLet = (content.let as { letNr?: unknown } | undefined)?.letNr;
+      if (fileInitials) setInitials(fileInitials);
+      if (fileLet == 1 || fileLet == 2) setLetNr(fileLet as 1 | 2);
+      setFile({ name: selected.name, content });
+      setFileError(null);
+      setForms((current) => assignTargets(current, content.courses));
+    } catch (error) {
+      setFileError((error as Error).message);
+    }
+  };
+
+  const removeFile = () => {
+    setFile(null);
+    setForms((current) => assignTargets(current, null));
+  };
 
   const updateForm = (index: number, changes: Partial<CourseForm>) =>
     setForms((current) =>
@@ -291,7 +135,18 @@ export function LetExportDialog({
     setLoading(true);
     try {
       const data = await loadLetCourse(cls);
-      setForms((current) => [...current, createForm(data)]);
+      setForms((current) => {
+        const form = createForm(data);
+        const target = file
+          ? findLetTarget(
+              file.content.courses,
+              formatClassName(data.cls),
+              data.cls.subject,
+              current.flatMap((other) => other.target ?? []),
+            )
+          : null;
+        return [...current, { ...form, target }];
+      });
     } finally {
       setLoading(false);
     }
@@ -304,10 +159,16 @@ export function LetExportDialog({
         letNr,
         forms.map((form) => ({ ...form, basis: getBasis(form) })),
         settings,
+        file?.content ?? null,
       );
-      downloadFile(new File([json], fileName, { type: "application/json" }));
+      // Like the backup: the share sheet on the iPad, so it can go straight to "Dateien"
+      const saved = await saveFile(
+        new File([json], fileName, { type: "application/json" }),
+      );
+      // Closing the share sheet keeps the dialog with its input for another try
+      if (!saved) return;
       onClose();
-      onDone("Die Datei für den LET-Helfer wurde heruntergeladen.");
+      onDone("Die Datei für den LET-Helfer wurde gespeichert.");
       if (initials != settings.letHelperInitials) {
         await saveSettings({ letHelperInitials: initials });
         await revalidate();
@@ -349,10 +210,33 @@ export function LetExportDialog({
               </ToggleButton>
             </ToggleButtonGroup>
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<UploadIcon size={18} />}
+            >
+              {file ? "Andere Datei wählen" : "Bestehende Datei ergänzen"}
+              <input
+                type="file"
+                accept=".json,application/json"
+                hidden
+                onChange={(event) => loadFile(event.target)}
+              />
+            </Button>
+            {file && <Chip label={file.name} onDelete={removeFile} />}
+          </div>
+          {fileError && (
+            <Alert severity="error" onClose={() => setFileError(null)}>
+              {fileError}
+            </Alert>
+          )}
           {forms.map((form, index) => (
-            <CourseFields
+            <LetCourseFields
               key={form.data.cls.id}
               form={form}
+              fileCourses={file?.content.courses ?? null}
+              takenTargets={targetsOf(form)}
               onChange={(changes) => updateForm(index, changes)}
               onRemove={
                 index == 0

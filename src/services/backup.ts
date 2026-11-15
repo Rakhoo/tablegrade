@@ -38,7 +38,7 @@ export function downloadFile(file: File) {
  * "Dateien" and the like, and downloads it elsewhere or if sharing is not possible.
  * @returns `false` if the user closed the share sheet without saving.
  */
-async function saveFile(file: File) {
+export async function saveFile(file: File) {
   if (isMobileDevice() && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file] });

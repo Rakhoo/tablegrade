@@ -395,7 +395,8 @@ the overview shows them (never the trait dots), unless the settings exclude them
 contain names and grade values. PDFs are built with jsPDF in
 [src/services/overviewExport.ts](src/services/overviewExport.ts).
 
-With the plugin *LET-Helfer der TMG Ahlen* turned on, the menu also offers *LET-Helfer*: a
+With the plugin *LET-Helfer der TMG Ahlen* turned on, the menu also offers *LET-Helfer*
+(saved like the backup: through the share sheet on phones and tablets, else downloaded): a
 dialog asks for the teacher's initials (up to three capitals, remembered in the settings), LET 1
 or 2 and per course the subject, a *Teilnote* (or *Halbjahresnote*) or a lesson date
 (*Zeitpunkt*) and, only if the period has some, a switch and a prefix each for exams ("KA")
@@ -407,8 +408,15 @@ included), and the students (alphabetically by first name and initial) with the 
 first names ("Mü.") and all marks written as "2+". `solei` is the rounded oral grade while
 all exams and projects are exported; with one kind switched off the calculated grade as if
 it did not exist (its columns and marks are left out); with no marks exported at all (none in
-the period, or both switched off) the grade set by hand for the report, else the calculated one. Built in
-[src/lib/letHelper.ts](src/lib/letHelper.ts).
+the period, or both switched off) the grade set by hand for the report, else the calculated one. *Bestehende Datei ergänzen* loads such a file (its initials and LET are taken over): each
+course then chooses the course of the file it goes into (same class and subject, else the
+first of the same class, else the first one; each at most once) or *Neu*, which brings back the
+subject field. Columns with the same type and label are reused, others appended; matched
+students (first name and initial, else the only one with that first name) get the new marks
+and `solei` where there is one, new students are appended. Everything else in the file
+(other columns and courses, remarks, praise, tips, `done`, ids) stays as it is. The result is
+saved like a new export, so overwriting the old file is up to the user. Built in
+[src/lib/letHelper.ts](src/lib/letHelper.ts) and [src/lib/letMerge.ts](src/lib/letMerge.ts).
 
 ## Styling
 
