@@ -42,6 +42,7 @@ import {
   type SeatedStudent,
 } from "../../db";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
+import { PointsContext } from "../../hooks/useGradeFormat";
 import { useEditHistory } from "../../hooks/useEditHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import { useSettings } from "../../hooks/useSettings";
@@ -55,7 +56,7 @@ import {
 import { describeValues, FAIL_TOOL, getToolValues } from "../../lib/gradeTools";
 import {
   DEFAULT_GRADE_TOOL,
-  formatMark,
+  formatGrade,
   getToolValue,
   getValidGradeTool,
   isExamDay,
@@ -81,7 +82,7 @@ import {
   type ReportKind,
 } from "../../lib/reports";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
-import { getVisibleGrades } from "../../lib/settings";
+import { getVisibleGrades, usesPoints } from "../../lib/settings";
 import { CommentDialog } from "../classroom/CommentDialog";
 import { LessonTypeMenu } from "./LessonTypeMenu";
 import type { OverviewLoaderData } from "./overviewLoader";
@@ -143,6 +144,7 @@ export function OverviewPage() {
   } = useLoaderData<OverviewLoaderData>();
   const location = useLocation();
   const settings = useSettings();
+  const points = usesPoints(settings, cls);
   const visibleGrades = getVisibleGrades(settings);
   const { revalidate } = useRevalidator();
   const [searchParams] = useSearchParams();
@@ -325,7 +327,7 @@ export function OverviewPage() {
       date,
       entry,
       values,
-      `${describeCell(student, date)}: ${describeValues(values)}`,
+      `${describeCell(student, date)}: ${describeValues(values, points)}`,
     );
   };
 
@@ -350,7 +352,7 @@ export function OverviewPage() {
       before,
       after,
       `${formatStudentName(student)}, ${REPORT_LABELS[kind]}: ${
-        after == null ? "Vorschlag" : formatMark(after)
+        after == null ? "Vorschlag" : formatGrade(after, points)
       }`,
     );
   };
@@ -525,303 +527,305 @@ export function OverviewPage() {
   const menuDate = typeMenu?.date;
 
   return (
-    <SpeedDialLayout
-      entries={dialEntries}
-      links={[
-        {
-          key: "seating",
-          label: "Sitzplan",
-          icon: <SeatsIcon />,
-          help: "Sitzplan der Klasse: in der Stunde, aus der diese Übersicht geöffnet wurde, sonst in der heutigen oder nächsten.",
-          to: paths.seating(cls.id, lessonDate),
-        },
-      ]}
-    >
-      <PageHeader
-        back={<BackButton timetableUrl={paths.timetable(lessonDate)} />}
-        previous={previous && paths.table(previous.id, previous.date)}
-        next={next && paths.table(next.id, next.date)}
-        help="Klasse und Halbjahr; die Pfeile wechseln zur Klasse davor oder danach im Stundenplan."
-        title={`${formatClassName(cls)} · ${cls.subject}`}
-        subtitle={[
-          formatSchoolYear(cls.year),
-          SCHOOL_YEAR_PART_LABELS[cls.part],
-          lessonDate && format(parseISO(lessonDate), "dd.MM."),
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-      />
-
-      <ModeBar
-        current={currentMode.label}
-        modes={
-          <ModeToggle
-            value={mode}
-            onChange={setMode}
-            options={MODES.map((option) => ({
-              ...option,
-              disabled: option.value != "view" && dates.length == 0,
-            }))}
-          />
-        }
-        history={<HistoryButtons history={history} />}
-        footer={
-          shown && (
-            <>
-              Nur die Einträge von{" "}
-              <span className="font-semibold text-ink">{nameOf(shown)}</span>{" "}
-              sind sichtbar.
-              <Button size="small" onClick={() => setShownStudent(null)}>
-                Alle zeigen
-              </Button>
-            </>
-          )
-        }
-        hint={
-          grading
-            ? null
-            : mode == "comment"
-              ? "Zelle antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"
-              : "Ein Tipp auf einen Namen zeigt nur dessen Einträge"
-        }
+    <PointsContext value={points}>
+      <SpeedDialLayout
+        entries={dialEntries}
+        links={[
+          {
+            key: "seating",
+            label: "Sitzplan",
+            icon: <SeatsIcon />,
+            help: "Sitzplan der Klasse: in der Stunde, aus der diese Übersicht geöffnet wurde, sonst in der heutigen oder nächsten.",
+            to: paths.seating(cls.id, lessonDate),
+          },
+        ]}
       >
-        {grading && (
-          <GradeToolBar
-            tool={activeTool}
-            onChange={setTool}
-            hideMarks={!hasMarkColumns}
-          />
-        )}
-      </ModeBar>
+        <PageHeader
+          back={<BackButton timetableUrl={paths.timetable(lessonDate)} />}
+          previous={previous && paths.table(previous.id, previous.date)}
+          next={next && paths.table(next.id, next.date)}
+          help="Klasse und Halbjahr; die Pfeile wechseln zur Klasse davor oder danach im Stundenplan."
+          title={`${formatClassName(cls)} · ${cls.subject}`}
+          subtitle={[
+            formatSchoolYear(cls.year),
+            SCHOOL_YEAR_PART_LABELS[cls.part],
+            lessonDate && format(parseISO(lessonDate), "dd.MM."),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
 
-      <div className="relative min-h-0 flex-1">
-        <main
-          ref={tableArea}
-          className="card h-full overflow-auto"
-          data-help-group
-          data-help="Tabelle mit allen Stunden und Noten der Klasse."
+        <ModeBar
+          current={currentMode.label}
+          modes={
+            <ModeToggle
+              value={mode}
+              onChange={setMode}
+              options={MODES.map((option) => ({
+                ...option,
+                disabled: option.value != "view" && dates.length == 0,
+              }))}
+            />
+          }
+          history={<HistoryButtons history={history} />}
+          footer={
+            shown && (
+              <>
+                Nur die Einträge von{" "}
+                <span className="font-semibold text-ink">{nameOf(shown)}</span>{" "}
+                sind sichtbar.
+                <Button size="small" onClick={() => setShownStudent(null)}>
+                  Alle zeigen
+                </Button>
+              </>
+            )
+          }
+          hint={
+            grading
+              ? null
+              : mode == "comment"
+                ? "Zelle antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"
+                : "Ein Tipp auf einen Namen zeigt nur dessen Einträge"
+          }
         >
-          {students.length == 0 ? (
-            <EmptyState title="Noch keine Schüler" tone="muted">
-              Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
-            </EmptyState>
-          ) : dates.length == 0 ? (
-            <EmptyState title="Noch kein Unterricht" tone="muted">
-              In diesem Halbjahr gab es noch keine Stunde dieser Klasse.
-            </EmptyState>
-          ) : (
-            <table className="border-separate border-spacing-0">
-              <thead>
-                <tr>
-                  {/* Above all date headers, whose layers grow with the columns */}
-                  <th
-                    className="sticky top-0 left-0 bg-surface p-2 text-left align-top"
-                    style={{ zIndex: 20 + columns.length }}
-                  >
-                    <Button
-                      size="small"
-                      data-help="Exportiert die Tabelle als PDF oder CSV."
-                      data-help-place="above"
-                      startIcon={<DownloadIcon size={16} />}
-                      onClick={(event) => setExportMenu(event.currentTarget)}
+          {grading && (
+            <GradeToolBar
+              tool={activeTool}
+              onChange={setTool}
+              hideMarks={!hasMarkColumns}
+            />
+          )}
+        </ModeBar>
+
+        <div className="relative min-h-0 flex-1">
+          <main
+            ref={tableArea}
+            className="card h-full overflow-auto"
+            data-help-group
+            data-help="Tabelle mit allen Stunden und Noten der Klasse."
+          >
+            {students.length == 0 ? (
+              <EmptyState title="Noch keine Schüler" tone="muted">
+                Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
+              </EmptyState>
+            ) : dates.length == 0 ? (
+              <EmptyState title="Noch kein Unterricht" tone="muted">
+                In diesem Halbjahr gab es noch keine Stunde dieser Klasse.
+              </EmptyState>
+            ) : (
+              <table className="border-separate border-spacing-0">
+                <thead>
+                  <tr>
+                    {/* Above all date headers, whose layers grow with the columns */}
+                    <th
+                      className="sticky top-0 left-0 bg-surface p-2 text-left align-top"
+                      style={{ zIndex: 20 + columns.length }}
                     >
-                      Export
-                    </Button>
-                  </th>
-                  {columns.map((column, index) => {
-                    if (column.kind == "report") {
+                      <Button
+                        size="small"
+                        data-help="Exportiert die Tabelle als PDF oder CSV."
+                        data-help-place="above"
+                        startIcon={<DownloadIcon size={16} />}
+                        onClick={(event) => setExportMenu(event.currentTarget)}
+                      >
+                        Export
+                      </Button>
+                    </th>
+                    {columns.map((column, index) => {
+                      if (column.kind == "report") {
+                        return (
+                          <ReportHeader
+                            key={getColumnKey(column)}
+                            column={column}
+                            index={index}
+                            columns={columns.length}
+                            onTap={(anchor) =>
+                              setTypeMenu({ date: column.date, anchor })
+                            }
+                          />
+                        );
+                      }
+                      const { date, kind } = column;
+                      // A mark column carries the type it belongs to, the oral one none
+                      const columnType =
+                        kind == "oral"
+                          ? null
+                          : (typesOf(date).find(
+                              (type) =>
+                                MARK_KIND[type] ==
+                                (kind == "projectMark" ? "project" : "exam"),
+                            ) ?? null);
                       return (
-                        <ReportHeader
+                        <DateHeader
                           key={getColumnKey(column)}
-                          column={column}
+                          date={date}
                           index={index}
                           columns={columns.length}
-                          onTap={(anchor) =>
-                            setTypeMenu({ date: column.date, anchor })
+                          isComplete={isComplete(column)}
+                          isCancelled={isCancelled(date)}
+                          isCurrent={date == lessonDate}
+                          lessonType={columnType}
+                          typeLabel={
+                            columnType ? rules.typeLabel(date, columnType) : ""
                           }
+                          onTap={
+                            isCancelled(date)
+                              ? undefined
+                              : (anchor) => setTypeMenu({ date, anchor })
+                          }
+                          // Whole cancelled days are managed in the timetable
+                          onLongPress={() =>
+                            !days.includes(date) && setCancelTarget(date)
+                          }
+                          help="Datum antippen: Typ der Stunde wählen oder eine Teil- oder Halbjahresnote anfügen; lange drücken: Ausfall."
                         />
                       );
-                    }
-                    const { date, kind } = column;
-                    // A mark column carries the type it belongs to, the oral one none
-                    const columnType =
-                      kind == "oral"
-                        ? null
-                        : (typesOf(date).find(
-                            (type) =>
-                              MARK_KIND[type] ==
-                              (kind == "projectMark" ? "project" : "exam"),
-                          ) ?? null);
+                    })}
+                    {/* Room for the tilted date of the last column */}
+                    <th className="sticky top-0 min-w-16 border-b border-line bg-surface" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((student, rowIndex) => {
+                    const hidden = !!shown && student.id != shown.id;
                     return (
-                      <DateHeader
-                        key={getColumnKey(column)}
-                        date={date}
-                        index={index}
-                        columns={columns.length}
-                        isComplete={isComplete(column)}
-                        isCancelled={isCancelled(date)}
-                        isCurrent={date == lessonDate}
-                        lessonType={columnType}
-                        typeLabel={
-                          columnType ? rules.typeLabel(date, columnType) : ""
-                        }
-                        onTap={
-                          isCancelled(date)
-                            ? undefined
-                            : (anchor) => setTypeMenu({ date, anchor })
-                        }
-                        // Whole cancelled days are managed in the timetable
-                        onLongPress={() =>
-                          !days.includes(date) && setCancelTarget(date)
-                        }
-                        help="Datum antippen: Typ der Stunde wählen oder eine Teil- oder Halbjahresnote anfügen; lange drücken: Ausfall."
-                      />
+                      <tr key={student.id}>
+                        <NameCell
+                          student={student}
+                          rowIndex={rowIndex}
+                          name={nameOf(student)}
+                          photoColumn={showPhotos && hasPhotos}
+                          // Nor does the student shown their own entries see them
+                          traits={showTraits && !shown ? traitsOf(student) : []}
+                          shown={shownStudent == student.id}
+                          hidden={hidden}
+                          onTap={() =>
+                            setShownStudent(
+                              shownStudent == student.id ? null : student.id,
+                            )
+                          }
+                        />
+                        {columns.map((column, columnIndex) =>
+                          hidden ? (
+                            <HiddenCell key={getColumnKey(column)} />
+                          ) : column.kind == "report" ? (
+                            <ReportCell
+                              key={getColumnKey(column)}
+                              student={student}
+                              column={column}
+                              rowIndex={rowIndex}
+                              columnIndex={columnIndex}
+                              label={`${formatStudentName(student)}, ${column.label}`}
+                              grading={grading}
+                              onTap={() => handleReportTap(student, column)}
+                            />
+                          ) : (
+                            renderLessonCell(
+                              student,
+                              column,
+                              rowIndex,
+                              columnIndex,
+                            )
+                          ),
+                        )}
+                        <td />
+                      </tr>
                     );
                   })}
-                  {/* Room for the tilted date of the last column */}
-                  <th className="sticky top-0 min-w-16 border-b border-line bg-surface" />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((student, rowIndex) => {
-                  const hidden = !!shown && student.id != shown.id;
-                  return (
-                    <tr key={student.id}>
-                      <NameCell
-                        student={student}
-                        rowIndex={rowIndex}
-                        name={nameOf(student)}
-                        photoColumn={showPhotos && hasPhotos}
-                        // Nor does the student shown their own entries see them
-                        traits={showTraits && !shown ? traitsOf(student) : []}
-                        shown={shownStudent == student.id}
-                        hidden={hidden}
-                        onTap={() =>
-                          setShownStudent(
-                            shownStudent == student.id ? null : student.id,
-                          )
-                        }
-                      />
-                      {columns.map((column, columnIndex) =>
-                        hidden ? (
-                          <HiddenCell key={getColumnKey(column)} />
-                        ) : column.kind == "report" ? (
-                          <ReportCell
-                            key={getColumnKey(column)}
-                            student={student}
-                            column={column}
-                            rowIndex={rowIndex}
-                            columnIndex={columnIndex}
-                            label={`${formatStudentName(student)}, ${column.label}`}
-                            grading={grading}
-                            onTap={() => handleReportTap(student, column)}
-                          />
-                        ) : (
-                          renderLessonCell(
-                            student,
-                            column,
-                            rowIndex,
-                            columnIndex,
-                          )
-                        ),
-                      )}
-                      <td />
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </main>
-      </div>
+                </tbody>
+              </table>
+            )}
+          </main>
+        </div>
 
-      <Menu
-        anchorEl={exportMenu}
-        open={!!exportMenu}
-        onClose={() => setExportMenu(null)}
-      >
-        <MenuItem onClick={() => runExport("pdf")}>Als PDF</MenuItem>
-        <MenuItem onClick={() => runExport("csv")}>Als CSV</MenuItem>
-      </Menu>
-
-      <LessonTypeMenu
-        anchor={typeMenu?.anchor ?? null}
-        available={
-          menuDate && !isCancelled(menuDate)
-            ? rules.availableTypes(menuDate)
-            : []
-        }
-        types={menuDate ? typesOf(menuDate) : []}
-        hasReport={(kind) => !!menuDate && hasReport(menuDate, kind)}
-        onType={(type) => {
-          setTypeMenu(null);
-          requestLessonType(
-            menuDate!,
-            typesOf(menuDate!),
-            type,
-            entries.filter((entry) => entry.date == menuDate),
-          );
-        }}
-        onReport={(kind) => toggleReport(menuDate!, kind)}
-        onClose={() => setTypeMenu(null)}
-      />
-
-      {lessonTypeDialog}
-
-      {cancelTarget && (
-        <CancelDialog
-          date={parseISO(cancelTarget)}
-          schoolClass={cls}
-          isCancelled={isLessonCancelled(cancelTarget)}
-          onClose={() => setCancelTarget(null)}
-          onChanged={handleLessonChanged}
-        />
-      )}
-
-      {reportRemoval && (
-        <ConfirmDialog
-          open
-          title={`${REPORT_LABELS[reportRemoval.report.kind]} entfernen?`}
-          confirmLabel="Entfernen"
-          onClose={() => setReportRemoval(null)}
-          onConfirm={async () => {
-            await removeReport(cls.id, reportRemoval.report);
-            setReportRemoval(null);
-            handleLessonChanged();
-          }}
+        <Menu
+          anchorEl={exportMenu}
+          open={!!exportMenu}
+          onClose={() => setExportMenu(null)}
         >
-          {`Die ${reportRemoval.grades} manuell gesetzten Noten werden gelöscht.`}
-        </ConfirmDialog>
-      )}
+          <MenuItem onClick={() => runExport("pdf")}>Als PDF</MenuItem>
+          <MenuItem onClick={() => runExport("csv")}>Als CSV</MenuItem>
+        </Menu>
 
-      {commenting && (
-        <CommentDialog
-          studentName={formatStudentName(commenting.student)}
-          initial={
-            entryOf(commenting.student.id, commenting.date)?.comment ?? ""
+        <LessonTypeMenu
+          anchor={typeMenu?.anchor ?? null}
+          available={
+            menuDate && !isCancelled(menuDate)
+              ? rules.availableTypes(menuDate)
+              : []
           }
-          onClose={() => setCommenting(null)}
-          onSave={async (comment) => {
-            setCommenting(null);
-            await history.change(
-              "Kommentar",
-              commenting.student.id,
-              commenting.date,
-              entryOf(commenting.student.id, commenting.date),
-              { comment: comment.trim() || null },
-              describeCell(commenting.student, commenting.date),
+          types={menuDate ? typesOf(menuDate) : []}
+          hasReport={(kind) => !!menuDate && hasReport(menuDate, kind)}
+          onType={(type) => {
+            setTypeMenu(null);
+            requestLessonType(
+              menuDate!,
+              typesOf(menuDate!),
+              type,
+              entries.filter((entry) => entry.date == menuDate),
             );
           }}
+          onReport={(kind) => toggleReport(menuDate!, kind)}
+          onClose={() => setTypeMenu(null)}
         />
-      )}
 
-      <Snackbar
-        open={!!message}
-        message={message}
-        autoHideDuration={3000}
-        onClose={() => setMessage(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      />
-    </SpeedDialLayout>
+        {lessonTypeDialog}
+
+        {cancelTarget && (
+          <CancelDialog
+            date={parseISO(cancelTarget)}
+            schoolClass={cls}
+            isCancelled={isLessonCancelled(cancelTarget)}
+            onClose={() => setCancelTarget(null)}
+            onChanged={handleLessonChanged}
+          />
+        )}
+
+        {reportRemoval && (
+          <ConfirmDialog
+            open
+            title={`${REPORT_LABELS[reportRemoval.report.kind]} entfernen?`}
+            confirmLabel="Entfernen"
+            onClose={() => setReportRemoval(null)}
+            onConfirm={async () => {
+              await removeReport(cls.id, reportRemoval.report);
+              setReportRemoval(null);
+              handleLessonChanged();
+            }}
+          >
+            {`Die ${reportRemoval.grades} manuell gesetzten Noten werden gelöscht.`}
+          </ConfirmDialog>
+        )}
+
+        {commenting && (
+          <CommentDialog
+            studentName={formatStudentName(commenting.student)}
+            initial={
+              entryOf(commenting.student.id, commenting.date)?.comment ?? ""
+            }
+            onClose={() => setCommenting(null)}
+            onSave={async (comment) => {
+              setCommenting(null);
+              await history.change(
+                "Kommentar",
+                commenting.student.id,
+                commenting.date,
+                entryOf(commenting.student.id, commenting.date),
+                { comment: comment.trim() || null },
+                describeCell(commenting.student, commenting.date),
+              );
+            }}
+          />
+        )}
+
+        <Snackbar
+          open={!!message}
+          message={message}
+          autoHideDuration={3000}
+          onClose={() => setMessage(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        />
+      </SpeedDialLayout>
+    </PointsContext>
   );
 }

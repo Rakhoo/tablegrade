@@ -19,6 +19,9 @@ const SYMBOL_PATHS: Record<DutySymbolKey, ReactNode> = {
   bulb: (
     <path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z" />
   ),
+  tablet: (
+    <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2" />
+  ),
   key: (
     <path d="M11.5 12.5a4 4 0 1 1-5.7 5.7 4 4 0 0 1 5.7-5.7zM11.5 12.5L20 4M17 7l3 3M15 9l2 2" />
   ),

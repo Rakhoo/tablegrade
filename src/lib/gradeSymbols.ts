@@ -3,14 +3,14 @@
  * for good grades and no plus for bad ones. Their drawings are in `GradeIcon`.
  */
 export const GRADE_SYMBOLS = {
-  blank: { label: "Nur Farbe", from: 1, to: 6 },
-  value: { label: "Zahlenwert", from: 1, to: 6 },
-  star: { label: "Stern", from: 1, to: 2 },
-  doubleCheck: { label: "Doppelhaken", from: 1, to: 2.3 },
-  plusPlus: { label: "Plus Plus", from: 1, to: 2.3 },
-  arrowUp: { label: "Pfeil hoch", from: 1, to: 2.7 },
-  check: { label: "Haken", from: 1, to: 3 },
-  plus: { label: "Plus", from: 1, to: 3 },
+  blank: { label: "Nur Farbe", from: 0.7, to: 6 },
+  value: { label: "Zahlenwert", from: 0.7, to: 6 },
+  star: { label: "Stern", from: 0.7, to: 2 },
+  doubleCheck: { label: "Doppelhaken", from: 0.7, to: 2.3 },
+  plusPlus: { label: "Plus Plus", from: 0.7, to: 2.3 },
+  arrowUp: { label: "Pfeil hoch", from: 0.7, to: 2.7 },
+  check: { label: "Haken", from: 0.7, to: 3 },
+  plus: { label: "Plus", from: 0.7, to: 3 },
   circlePlus: { label: "Plus im Kreis", from: 1.7, to: 3 },
   arrowUpRight: { label: "Pfeil schräg hoch", from: 1.7, to: 3.3 },
   ring: { label: "Kreis", from: 2, to: 4.3 },

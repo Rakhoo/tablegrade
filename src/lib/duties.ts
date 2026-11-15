@@ -9,6 +9,7 @@ export const DUTY_SYMBOL_KEYS = [
   "window",
   "plant",
   "bulb",
+  "tablet",
   "key",
   "clock",
   "star",
@@ -16,7 +17,7 @@ export const DUTY_SYMBOL_KEYS = [
 
 export type DutySymbolKey = (typeof DUTY_SYMBOL_KEYS)[number];
 
-/** Longest duty name: one or two words, e.g. "Lüftungs-/Fensterdienst". */
+/** Longest duty name: one or two words, e.g. "Lüftung/Fenster" or "Klassenbuchdienst". */
 export const MAX_DUTY_NAME_LENGTH = 24;
 
 /**
@@ -44,13 +45,14 @@ export const SUGGESTED_DUTIES: {
   symbol: DutySymbolKey;
   color: string;
 }[] = [
-  { name: "Tafeldienst", symbol: "board", color: "#0d9488" },
-  { name: "Ordnungsdienst", symbol: "broom", color: "#4338ca" },
-  { name: "Mülldienst", symbol: "bin", color: "#475569" },
-  { name: "Klassenbuchdienst", symbol: "book", color: "#7c3aed" },
-  { name: "Botendienst", symbol: "envelope", color: "#0284c7" },
-  { name: "Mediendienst", symbol: "monitor", color: "#2563eb" },
-  { name: "Lüftungs-/Fensterdienst", symbol: "window", color: "#0891b2" },
-  { name: "Blumendienst", symbol: "plant", color: "#16a34a" },
-  { name: "Energie-/Lichtdienst", symbol: "bulb", color: "#9333ea" },
+  { name: "Tafel", symbol: "board", color: "#0d9488" },
+  { name: "Ordnung", symbol: "broom", color: "#4338ca" },
+  { name: "Müll", symbol: "bin", color: "#475569" },
+  { name: "Klassenbuch", symbol: "book", color: "#7c3aed" },
+  { name: "Botengänge", symbol: "envelope", color: "#0284c7" },
+  { name: "Medien", symbol: "monitor", color: "#2563eb" },
+  { name: "iPad", symbol: "tablet", color: "#059669" },
+  { name: "Lüftung/Fenster", symbol: "window", color: "#0891b2" },
+  { name: "Blumen", symbol: "plant", color: "#16a34a" },
+  { name: "Energie/Licht", symbol: "bulb", color: "#9333ea" },
 ];

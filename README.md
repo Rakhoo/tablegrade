@@ -65,7 +65,8 @@ The only network request fetches school holidays from
     *Kommentar*, *Anordnung*; struck through for removals) and describes the student and value
     ([src/hooks/useEditHistory.ts](src/hooks/useEditHistory.ts)).
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
-  selected week, one row per lesson.
+  selected week, one row per lesson, with its start and end time below the number once the
+  lesson times are set; optionally only the days and lessons with classes (see Settings).
   - Lessons are colored tiles: the subject sets the hue, the level the shade (5 light, Q2
     dark); double lessons span two rows. Badges show the lesson types, shortened: a project
     (extension) reads "Proj.", a retake "N.Klausur", or only "…" after a project on the same
@@ -327,9 +328,14 @@ also the way to move data to another device.
 ## Domain rules
 
 - **Grades** ([src/lib/grades.ts](src/lib/grades.ts)): oral grades and marks use one scale of
-  16 numbers (1, 1.3, 1.7, … 5.7, 6); a tendency is worth 0.3. "Excused" is an own flag and
+  16 numbers (0.7 for "1+", 1, 1.3, 1.7, … 5.3, 6; there is no "6+"); a tendency is worth 0.3. "Excused" is an own flag and
   does not count. Symbols per grade are set in the settings and limited in
   [src/lib/gradeSymbols.ts](src/lib/gradeSymbols.ts): no minus for good, no plus for bad grades.
+- **Points**: classes of the levels chosen in the settings (by default EF, Q1, Q2) show all
+  grades, marks and report parts as points, 15 ("1+") to 0 ("6"), in the app, the undo
+  history and the exports. Only the display changes:
+  everything is stored and calculated in marks (`toPoints`, `formatGrade`; the class pages
+  provide it through `PointsContext` in [src/hooks/useGradeFormat.ts](src/hooks/useGradeFormat.ts)).
 - **Final grade** ([src/lib/assessment.ts](src/lib/assessment.ts)): oral participation is the
   average of all oral grades, the newest counting 1.5 times as much as the oldest. The final
   grade is 50 % exams and 50 % the rest, which is 60 % oral and 40 % projects; a missing part
@@ -362,11 +368,30 @@ also the way to move data to another device.
 
 ## Settings
 
-`/settings`: federal state and school years, theme and light/dark mode, symbols per
-grade, grading shares, traits, duties (symbol, color and name up to 24 characters; colors
-avoid the yellow and red of the warnings; the usual class duties are offered as suggestions),
-levels, letters and lessons per day, default seating plan,
-backup, restore, backup reminder, "Neu laden" and the export format. They are stored as JSON in the `Settings` table
+`/settings`: one card per topic, in tabs of related topics below the header, so only one
+tab's cards are shown at a time; the tab is kept in the URL (`?tab=`), so a reload or a way
+back stays on it:
+
+- **Schule**: federal state and school years; levels, letters and lessons per day; the
+  lesson times (start of each lesson between 6:00 and 19:55 in steps of 5 minutes, and one
+  length in minutes; by default 8:00, 8:50, 9:55, 10:45, 11:45, 12:35, 13:30 and 14:20 for
+  the first eight lessons and 45 minutes), shown below the lesson
+  numbers of the timetable.
+- **Unterricht**: the mode a lesson opens with and the grade suggestions; the default
+  seating plan.
+- **Benotung**: symbol per oral grade (also "1+", hidden by default), which grades the bar
+  offers and the absent symbol; the levels shown in points (chips of the school's levels);
+  the grading shares.
+- **Schüler**: traits; duties (symbol, color and name up to 24 characters; colors avoid the
+  yellow and red of the warnings; usual duties like "Tafel", "iPad" or "Lüftung/Fenster" are
+  offered as suggestions).
+- **Darstellung**: theme and light/dark mode; "Nur Tage und Stunden mit Unterricht": the
+  timetable leaves out weekdays without classes and the lessons before the first and after
+  the last one of the week (free lessons in between stay; a week without classes stays
+  complete).
+- **Daten und Export**: backup, restore, backup reminder and "Neu laden"; the PDF export format.
+
+They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
 hidden (`PIN_LOCK_ENABLED`) until accounts allow resetting a forgotten PIN.
 

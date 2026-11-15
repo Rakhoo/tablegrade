@@ -186,3 +186,27 @@ export function getOrphanedEntries(
     );
   });
 }
+
+/** A time of day "HH:MM" moved by `minutes`, wrapping around midnight. */
+function addMinutes(time: string, minutes: number) {
+  const [hours, mins] = time.split(":").map(Number);
+  const total = (((hours * 60 + mins + minutes) % 1440) + 1440) % 1440;
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/**
+ * Start and end time of a lesson, e.g. "8:00" and "8:45", from the start times and the length
+ * of a lesson in the settings; `null` without a start time.
+ * @param hour Lesson number, starting at 1.
+ */
+export function getLessonTime(
+  {
+    lessonStarts,
+    lessonMinutes,
+  }: { lessonStarts: string[]; lessonMinutes: number },
+  hour: number,
+) {
+  const start = lessonStarts[hour - 1];
+  if (!start || !/^\d{1,2}:\d{2}$/.test(start)) return null;
+  return { start: addMinutes(start, 0), end: addMinutes(start, lessonMinutes) };
+}

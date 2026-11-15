@@ -23,7 +23,12 @@ export async function getSettings(): Promise<AppSettings> {
   );
   if ((stored.absentSymbol as string) == "letterE")
     stored.absentSymbol = "letterA";
-  return { ...DEFAULT_SETTINGS, ...stored };
+  return {
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    // Grades added later (like "1+") get their default symbol
+    gradeSymbols: { ...DEFAULT_SETTINGS.gradeSymbols, ...stored.gradeSymbols },
+  };
 }
 
 /** Saves the given settings. */

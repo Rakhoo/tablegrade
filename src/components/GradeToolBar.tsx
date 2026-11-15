@@ -1,6 +1,5 @@
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
 import {
-  formatMark,
   getGradeTools,
   isExamDay,
   MARK_KIND,
@@ -8,6 +7,7 @@ import {
   type GradeTool,
   type LessonType,
 } from "../lib/grades";
+import { useGradeFormat } from "../hooks/useGradeFormat";
 import { useSettings } from "../hooks/useSettings";
 import { LESSON_TYPE_LABELS, LESSON_TYPE_ORDER } from "../lib/lessons";
 import { getVisibleGrades } from "../lib/settings";
@@ -75,6 +75,7 @@ export function GradeToolBar({
   hideMarks = false,
 }: GradeToolBarProps) {
   const settings = useSettings();
+  const formatGrade = useGradeFormat();
   const { grades, marks } = getGradeTools(
     getVisibleGrades(settings),
     lessonTypes,
@@ -110,7 +111,7 @@ export function GradeToolBar({
       aria-label={
         option == "suggestion"
           ? EXTRA_LABELS.suggestion
-          : formatMark(getToolValue(option))
+          : formatGrade(getToolValue(option))
       }
       aria-pressed={option == tool}
       className={buttonClass(option)}

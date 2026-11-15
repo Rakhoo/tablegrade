@@ -32,6 +32,7 @@ type GradeSymbolSetting = { symbol: GradeSymbol; visible: boolean };
 
 /** Symbols used by default, the ones with a tendency start hidden. */
 const DEFAULT_SYMBOLS: Record<number, GradeSymbol> = {
+  0.7: "plusPlus",
   1: "plusPlus",
   1.3: "plusPlus",
   1.7: "plus",
@@ -46,7 +47,6 @@ const DEFAULT_SYMBOLS: Record<number, GradeSymbol> = {
   4.7: "minus",
   5: "minus",
   5.3: "minus",
-  5.7: "minusMinus",
   6: "minusMinus",
 };
 
@@ -74,8 +74,25 @@ export const DEFAULT_SETTINGS = {
   /** Fewest assessments needed for a final grade, below that it is "n.b.". */
   minAssessments: 3,
   levels: ["5", "6", "7", "8", "9", "10", "EF", "Q1", "Q2", MIXED],
+  /** Levels whose grades, marks and reports are shown as points (0–15) instead of marks. */
+  pointLevels: ["EF", "Q1", "Q2"],
   letters: ["a", "b", "c", "d", "e", "f", "mix"],
   lessonsPerDay: 9,
+  /** Start time ("08:00") of each lesson, by lesson number − 1; empty if not set. */
+  lessonStarts: [
+    "08:00",
+    "08:50",
+    "09:55",
+    "10:45",
+    "11:45",
+    "12:35",
+    "13:30",
+    "14:20",
+  ] as string[],
+  /** Length of a lesson in minutes, for its end time. */
+  lessonMinutes: 45,
+  /** Timetable shows only the days and the range of lessons with classes that week. */
+  compactTimetable: false,
   suggestions: true,
   startMode: "warn" as ClassroomMode,
   /** Days after which a backup is due; 0 turns the reminder off. */
@@ -107,6 +124,10 @@ export type AppSettings = typeof DEFAULT_SETTINGS;
 /** The grades offered while grading, from best to worst. */
 export const getVisibleGrades = (settings: AppSettings) =>
   GRADE_VALUES.filter((value) => settings.gradeSymbols[value].visible);
+
+/** Whether a class shows its grades as points, see `pointLevels`. */
+export const usesPoints = (settings: AppSettings, cls: { number: string }) =>
+  settings.pointLevels.includes(cls.number);
 
 /** Levels without letters: those not starting with a number, like EF or Q1. */
 export const hasLetters = (level: string) => /^\d/.test(level);

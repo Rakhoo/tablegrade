@@ -1,7 +1,6 @@
 import { MenuItem, TextField } from "@mui/material";
 import type { SchoolClass } from "../../db";
 import { useSettings } from "../../hooks/useSettings";
-import type { ClassroomMode } from "../../lib/settings";
 import { SettingsSection } from "./SettingsSection";
 import { useSaveSettings } from "./useSaveSettings";
 
@@ -13,9 +12,9 @@ const parseList = (text: string) =>
 
 type SchoolSettingsProps = { schoolClasses: SchoolClass[] };
 
-/** Levels, letters and lessons of the school, and how a lesson opens. */
+/** Levels, letters and lessons per day of the school. */
 export function SchoolSettings({ schoolClasses }: SchoolSettingsProps) {
-  const { levels, letters, lessonsPerDay, startMode } = useSettings();
+  const { levels, letters, lessonsPerDay } = useSettings();
   const save = useSaveSettings();
 
   // Values used by classes cannot be removed, these classes would lose them
@@ -31,8 +30,8 @@ export function SchoolSettings({ schoolClasses }: SchoolSettingsProps) {
 
   return (
     <SettingsSection
-      help="Stufen, Klassenbuchstaben, Stunden pro Tag und der Modus, mit dem eine Stunde öffnet."
-      title="Schule"
+      help="Stufen, Klassenbuchstaben und Stunden pro Tag."
+      title="Stufen und Stunden"
       hint="Stufen ohne Zahl am Anfang (z. B. EF) haben keinen Buchstaben. Von Klassen genutzte Werte bleiben erhalten."
     >
       <div className="grid grid-cols-2 gap-3 portrait:grid-cols-1">
@@ -76,20 +75,6 @@ export function SchoolSettings({ schoolClasses }: SchoolSettingsProps) {
               {lastUsedLesson + index}
             </MenuItem>
           ))}
-        </TextField>
-        <TextField
-          select
-          size="small"
-          label="Stunde öffnet mit"
-          value={startMode}
-          onChange={(event) =>
-            save({ startMode: event.target.value as ClassroomMode })
-          }
-        >
-          <MenuItem value="warn">Ermahnen</MenuItem>
-          <MenuItem value="grade">Bewerten</MenuItem>
-          <MenuItem value="comment">Kommentieren</MenuItem>
-          <MenuItem value="arrange">Anordnen</MenuItem>
         </TextField>
       </div>
     </SettingsSection>

@@ -1,9 +1,11 @@
-import { formatMark, getGradeColor } from "../lib/grades";
+import { useGradeFormat } from "../hooks/useGradeFormat";
+import { getGradeColor } from "../lib/grades";
 
 type MarkBadgeProps = { mark: number; className?: string };
 
-/** Small colored badge with a classic mark like "2+". */
+/** Small colored badge with a mark like "2+", or its points in classes using points. */
 export function MarkBadge({ mark, className = "" }: MarkBadgeProps) {
+  const formatGrade = useGradeFormat();
   return (
     <span
       className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold text-white ${className}`}
@@ -12,7 +14,7 @@ export function MarkBadge({ mark, className = "" }: MarkBadgeProps) {
         borderColor: "var(--color-surface)",
       }}
     >
-      {formatMark(mark).replace("-", "−")}
+      {formatGrade(mark).replace("-", "−")}
     </span>
   );
 }

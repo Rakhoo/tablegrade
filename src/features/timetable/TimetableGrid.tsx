@@ -9,7 +9,11 @@ import type { SchoolClass } from "../../db";
 import { toIsoDate } from "../../lib/dates";
 import { formatClassName } from "../../lib/formatters";
 import { MARK_KIND, type LessonType } from "../../lib/grades";
-import { LESSON_TYPE_LABELS, lessonKey } from "../../lib/lessons";
+import {
+  getLessonTime,
+  LESSON_TYPE_LABELS,
+  lessonKey,
+} from "../../lib/lessons";
 import {
   getClassOccurrences,
   getHoliday,
@@ -52,12 +56,14 @@ const newClassLink = ({ day, weekday, date }: Slot, hour: number) => ({
 });
 
 /**
- * Lesson-free block spanning `span` lessons from `hour` ("FREI", "FERIEN" or "FEIERTAG").
- * With a `slot`, dashed lesson cells on top still allow creating classes.
+ * Lesson-free block spanning `span` lessons from `hour` ("FREI", "FERIEN" or "FEIERTAG"),
+ * starting in grid row `row`. With a `slot`, dashed lesson cells on top still allow creating
+ * classes.
  */
 function freeBlock(
   key: string,
   column: number,
+  row: number,
   hour: number,
   span: number,
   label: string,
@@ -67,7 +73,7 @@ function freeBlock(
     <div
       key={key}
       className="free-block flex items-center justify-center"
-      style={{ gridColumn: column, gridRow: `${hour + 1} / span ${span}` }}
+      style={{ gridColumn: column, gridRow: `${row} / span ${span}` }}
     >
       <span className="text-xs font-semibold tracking-[0.35em] text-brand-400">
         {label}
@@ -81,7 +87,7 @@ function freeBlock(
           key={`${key}-${h}`}
           {...newClassLink(slot, h)}
           className="m-1 rounded-xl border border-dashed border-brand-300 transition-colors active:bg-brand-100/70"
-          style={{ gridColumn: column, gridRow: h + 1 }}
+          style={{ gridColumn: column, gridRow: row + h - hour }}
         />,
       );
     }
@@ -231,8 +237,41 @@ export function TimetableGrid({
   onDayLongPress,
   onLessonLongPress,
 }: TimetableGridProps) {
-  const { lessonsPerDay } = useSettings();
+  const settings = useSettings();
+  const { lessonsPerDay, compactTimetable } = settings;
   const cells: ReactNode[] = [<div key="corner" className="bg-surface" />];
+
+  // The classes taking place on each weekday of this week, double lessons as two hours
+  const week = WEEKDAY_NAMES.map((weekday, index) => {
+    const date = addDays(monday, index);
+    const classes = schoolClasses
+      .flatMap(getClassOccurrences)
+      .filter(
+        (cls) =>
+          cls.day == index + 1 && isSchoolClassActive(cls, date, calendar),
+      );
+    return { weekday, day: index + 1, date, classes };
+  });
+  const taughtHours = week.flatMap(({ classes }) =>
+    classes.flatMap((cls) =>
+      cls.double ? [cls.hour, cls.hour + 1] : [cls.hour],
+    ),
+  );
+  // Compact: only days with classes and the lessons from the first to the last one; a week
+  // without any classes stays complete, so new classes can still be placed
+  const compact = compactTimetable && taughtHours.length > 0;
+  const shownDays = compact
+    ? week.filter(({ classes }) => classes.length > 0)
+    : week;
+  const lastHour = compact
+    ? Math.min(Math.max(...taughtHours), lessonsPerDay)
+    : lessonsPerDay;
+  const firstHour = compact ? Math.min(Math.min(...taughtHours), lastHour) : 1;
+  const rowOf = (hour: number) => hour - firstHour + 2;
+  const hasTimes = Array.from(
+    { length: lastHour - firstHour + 1 },
+    (_, index) => getLessonTime(settings, firstHour + index),
+  ).some(Boolean);
   /**
    * Short labels of a lesson's types to fit the cell: a project or extension reads "Proj.", a
    * retake "N.Klausur", or only "…" after a project on the same date.
@@ -256,22 +295,28 @@ export function TimetableGrid({
     }));
   };
 
-  for (let hour = 1; hour <= lessonsPerDay; hour++) {
+  for (let hour = firstHour; hour <= lastHour; hour++) {
+    const time = getLessonTime(settings, hour);
     cells.push(
       <div
         key={`hour-${hour}`}
-        className="flex items-center justify-center bg-surface text-sm font-semibold text-muted"
-        style={{ gridColumn: 1, gridRow: hour + 1 }}
+        className="flex flex-col items-center justify-center bg-surface text-sm font-semibold text-muted"
+        style={{ gridColumn: 1, gridRow: rowOf(hour) }}
       >
         {hour}
+        {time && (
+          <span className="text-[10px] leading-tight font-medium">
+            {time.start}
+            <br />
+            {time.end}
+          </span>
+        )}
       </div>,
     );
   }
 
-  WEEKDAY_NAMES.forEach((weekday, index) => {
-    const day = index + 1;
-    const date = addDays(monday, index);
-    const column = day + 1;
+  shownDays.forEach(({ weekday, day, date, classes: dayClasses }, index) => {
+    const column = index + 2;
     const holiday = getHoliday(date, calendar);
     const isCancelled = cancelledDays.includes(toIsoDate(date));
     cells.push(
@@ -289,33 +334,42 @@ export function TimetableGrid({
     if (holiday) {
       const label = holiday.publicHoliday ? "FEIERTAG" : "FERIEN";
       cells.push(
-        ...freeBlock(`holiday-${day}`, column, 1, lessonsPerDay, label),
+        ...freeBlock(
+          `holiday-${day}`,
+          column,
+          2,
+          firstHour,
+          lastHour - firstHour + 1,
+          label,
+        ),
       );
       return;
     }
     if (isCancelled) {
       cells.push(
-        ...freeBlock(`cancelled-${day}`, column, 1, lessonsPerDay, "AUSFALL"),
+        ...freeBlock(
+          `cancelled-${day}`,
+          column,
+          2,
+          firstHour,
+          lastHour - firstHour + 1,
+          "AUSFALL",
+        ),
       );
       return;
     }
 
     // Lesson blocks by start hour; a double lesson also covers the following hour
-    const dayClasses = schoolClasses
-      .flatMap(getClassOccurrences)
-      .filter(
-        (cls) => cls.day == day && isSchoolClassActive(cls, date, calendar),
-      );
     const blocks = new Map<
       number,
       { span: number; schoolClasses: SchoolClass[] }
     >();
-    for (let hour = 1; hour <= lessonsPerDay; hour++) {
+    for (let hour = firstHour; hour <= lastHour; hour++) {
       const starting = dayClasses.filter((cls) => cls.hour == hour);
       if (starting.length == 0) continue;
       const span = Math.min(
         starting.some((cls) => cls.double) ? 2 : 1,
-        lessonsPerDay - hour + 1,
+        lastHour - hour + 1,
       );
       // Classes colliding with the second hour of a double lesson share its cell
       if (span == 2)
@@ -325,7 +379,7 @@ export function TimetableGrid({
     }
     const slot = { day, weekday, date };
 
-    for (let hour = 1; hour <= lessonsPerDay; hour++) {
+    for (let hour = firstHour; hour <= lastHour; hour++) {
       const block = blocks.get(hour);
       if (block) {
         cells.push(
@@ -334,7 +388,7 @@ export function TimetableGrid({
             className="flex flex-col gap-1 bg-surface p-1"
             style={{
               gridColumn: column,
-              gridRow: `${hour + 1} / span ${block.span}`,
+              gridRow: `${rowOf(hour)} / span ${block.span}`,
             }}
           >
             {block.schoolClasses.map((cls) => {
@@ -358,11 +412,12 @@ export function TimetableGrid({
       }
 
       let end = hour;
-      while (end < lessonsPerDay && !blocks.has(end + 1)) end++;
+      while (end < lastHour && !blocks.has(end + 1)) end++;
       cells.push(
         ...freeBlock(
           `free-${day}-${hour}`,
           column,
+          rowOf(hour),
           hour,
           end - hour + 1,
           "FREI",
@@ -377,8 +432,8 @@ export function TimetableGrid({
     <div
       className="grid h-full gap-px overflow-hidden rounded-2xl border border-line bg-line"
       style={{
-        gridTemplateColumns: "2.75rem repeat(5, minmax(0, 1fr))",
-        gridTemplateRows: `auto repeat(${lessonsPerDay}, minmax(2.5rem, 1fr))`,
+        gridTemplateColumns: `${hasTimes ? "3.25rem" : "2.75rem"} repeat(${shownDays.length}, minmax(0, 1fr))`,
+        gridTemplateRows: `auto repeat(${lastHour - firstHour + 1}, minmax(2.5rem, 1fr))`,
       }}
     >
       {cells}

@@ -1,7 +1,7 @@
 import type { GradeEntry } from "../db";
 import {
   FAIL_GRADE,
-  formatMark,
+  formatGrade,
   isExamDay,
   MARK_KIND,
   getToolValue,
@@ -60,13 +60,17 @@ export function getToolValues(
   return { grade: getToolValue(tool), absent: false };
 }
 
-/** Short text of what a change of an entry sets, for the undo history. */
-export function describeValues(values: Partial<EntryValues>) {
+/**
+ * Short text of what a change of an entry sets, for the undo history.
+ * @param points Whether the class shows its grades as points.
+ */
+export function describeValues(values: Partial<EntryValues>, points: boolean) {
+  const format = (value: number) => formatGrade(value, points);
   if (values.absent) return "abwesend";
-  if (values.grade != null) return formatMark(values.grade);
-  if (values.mark != null) return `Note ${formatMark(values.mark)}`;
+  if (values.grade != null) return format(values.grade);
+  if (values.mark != null) return `Note ${format(values.mark)}`;
   if (values.projectMark != null)
-    return `Projektnote ${formatMark(values.projectMark)}`;
+    return `Projektnote ${format(values.projectMark)}`;
   return "gelöscht";
 }
 

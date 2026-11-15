@@ -34,6 +34,7 @@ import {
 } from "../../components/icons";
 import { clearLesson, type SeatedStudent } from "../../db";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
+import { PointsContext } from "../../hooks/useGradeFormat";
 import { useEditHistory } from "../../hooks/useEditHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import { useSettings } from "../../hooks/useSettings";
@@ -54,7 +55,11 @@ import {
 import { createMarkRules } from "../../lib/lessonChains";
 import { paths } from "../../lib/paths";
 import { getZoomedArea } from "../../lib/seating";
-import { getVisibleGrades, type ClassroomMode } from "../../lib/settings";
+import {
+  getVisibleGrades,
+  usesPoints,
+  type ClassroomMode,
+} from "../../lib/settings";
 import { getClassColor } from "../../lib/subjectColors";
 import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
 import type { ClassroomLoaderData } from "./classroomLoader";
@@ -149,6 +154,7 @@ export function ClassroomPage() {
   } = useLoaderData<ClassroomLoaderData>();
   const { revalidate } = useRevalidator();
   const settings = useSettings();
+  const points = usesPoints(settings, cls);
   const [mode, setMode] = useState<ClassroomMode>(settings.startMode);
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
   const [markTarget, setMarkTarget] = useState<"mark" | "projectMark">("mark");
@@ -280,7 +286,7 @@ export function ClassroomPage() {
       date,
       gradeMap.get(student.id),
       values,
-      `${formatStudentName(student)}: ${describeValues(values)}`,
+      `${formatStudentName(student)}: ${describeValues(values, points)}`,
     );
   };
 
@@ -401,184 +407,188 @@ export function ClassroomPage() {
   }
 
   return (
-    <SpeedDialLayout
-      entries={entries}
-      links={[
-        {
-          key: "overview",
-          label: "Übersicht",
-          icon: <TableIcon />,
-          help: "Übersichtstabelle der Klasse mit allen Stunden und Noten.",
-          to: paths.table(cls.id, date),
-        },
-      ]}
-    >
-      <PageHeader
-        back={<BackButton timetableUrl={paths.timetable(date)} />}
-        previous={previous && paths.seating(previous.id, previous.date)}
-        next={next && paths.seating(next.id, next.date)}
-        help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
-        title={
-          <>
-            <span
-              className="h-3 w-3 rounded-full"
-              style={{ background: getClassColor(cls, settings.levels).accent }}
-            />
-            {formatClassName(cls)} · {cls.subject}
-            {lessonTypes.map((type) => (
-              <LessonTypeBadge
-                key={type}
-                type={type}
-                label={rules.typeLabel(date, type)}
-              />
-            ))}
-            {rules.completion(date).lesson && (
+    <PointsContext value={points}>
+      <SpeedDialLayout
+        entries={entries}
+        links={[
+          {
+            key: "overview",
+            label: "Übersicht",
+            icon: <TableIcon />,
+            help: "Übersichtstabelle der Klasse mit allen Stunden und Noten.",
+            to: paths.table(cls.id, date),
+          },
+        ]}
+      >
+        <PageHeader
+          back={<BackButton timetableUrl={paths.timetable(date)} />}
+          previous={previous && paths.seating(previous.id, previous.date)}
+          next={next && paths.seating(next.id, next.date)}
+          help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
+          title={
+            <>
               <span
-                className="flex h-6 w-6 items-center justify-center rounded-full text-white"
-                style={{ background: "#15803d" }}
-                aria-label="Vollständig bewertet"
-              >
-                <CheckIcon size={15} strokeWidth={3} />
-              </span>
-            )}
-          </>
-        }
-        subtitle={dateLabel}
-      />
+                className="h-3 w-3 rounded-full"
+                style={{
+                  background: getClassColor(cls, settings.levels).accent,
+                }}
+              />
+              {formatClassName(cls)} · {cls.subject}
+              {lessonTypes.map((type) => (
+                <LessonTypeBadge
+                  key={type}
+                  type={type}
+                  label={rules.typeLabel(date, type)}
+                />
+              ))}
+              {rules.completion(date).lesson && (
+                <span
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-white"
+                  style={{ background: "#15803d" }}
+                  aria-label="Vollständig bewertet"
+                >
+                  <CheckIcon size={15} strokeWidth={3} />
+                </span>
+              )}
+            </>
+          }
+          subtitle={dateLabel}
+        />
 
-      <ModeBar
-        current={currentMode.label}
-        modes={
-          <ModeToggle
-            value={mode}
-            onChange={setMode}
-            options={MODES.map(({ mode: value, label, help }) => ({
-              value,
-              label,
-              help,
-            }))}
-          />
-        }
-        history={<HistoryButtons history={history} />}
-        hint={mode == "warn" ? <WarningLevels /> : currentMode.hint}
-      >
-        {mode == "grade" && (
-          <GradeToolBar
-            tool={activeTool}
-            onChange={setTool}
-            lessonTypes={lessonTypes}
-            availableTypes={rules.availableTypes(date)}
-            onToggleType={(type) =>
-              requestLessonType(date, lessonTypes, type, grades)
+        <ModeBar
+          current={currentMode.label}
+          modes={
+            <ModeToggle
+              value={mode}
+              onChange={setMode}
+              options={MODES.map(({ mode: value, label, help }) => ({
+                value,
+                label,
+                help,
+              }))}
+            />
+          }
+          history={<HistoryButtons history={history} />}
+          hint={mode == "warn" ? <WarningLevels /> : currentMode.hint}
+        >
+          {mode == "grade" && (
+            <GradeToolBar
+              tool={activeTool}
+              onChange={setTool}
+              lessonTypes={lessonTypes}
+              availableTypes={rules.availableTypes(date)}
+              onToggleType={(type) =>
+                requestLessonType(date, lessonTypes, type, grades)
+              }
+              markTarget={markTarget}
+              onMarkTargetChange={setMarkTarget}
+            />
+          )}
+        </ModeBar>
+
+        {/* With the legend shown, the plan ends above its button, zoomed or not */}
+        <main
+          className={
+            "card relative min-h-0 flex-1 bg-brand-400 p-2 " +
+            (hasLegend ? "pb-13" : "")
+          }
+          data-help={`Sitzplan: ${currentMode.gridHelp}`}
+        >
+          {students.length == 0 && (
+            <div className="absolute inset-0">
+              <EmptyState title="Noch keine Schüler" tone="light">
+                Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
+              </EmptyState>
+            </div>
+          )}
+          <SeatGrid
+            students={students}
+            traits={showTraits ? traits : []}
+            duties={showDuties ? duties : []}
+            showPhotos={showPhotos}
+            grades={gradeMap}
+            suggestions={suggestions}
+            arranging={mode == "arrange"}
+            showComments={mode == "comment"}
+            zoomed={zoomOption[0]}
+            dimmed={closedStudents}
+            onTap={handleTap}
+            onMove={(student, x, y) =>
+              history.moveSeat(
+                student.id,
+                x,
+                y,
+                roster.map((seated) => ({
+                  studentId: seated.id,
+                  x: seated.x,
+                  y: seated.y,
+                })),
+                formatStudentName(student),
+              )
             }
-            markTarget={markTarget}
-            onMarkTargetChange={setMarkTarget}
           />
-        )}
-      </ModeBar>
+          {hasLegend && (
+            <Button
+              startIcon={<InfoIcon size={18} />}
+              onClick={(event) => setLegendAnchor(event.currentTarget)}
+              className="absolute bottom-2 left-2 z-20 bg-brand-100 opacity-75 shadow-tile"
+              data-help="Symbole der Dienste und Farben der Eigenschaften mit ihrer Anzahl."
+            >
+              Legende
+            </Button>
+          )}
+        </main>
 
-      {/* With the legend shown, the plan ends above its button, zoomed or not */}
-      <main
-        className={
-          "card relative min-h-0 flex-1 bg-brand-400 p-2 " +
-          (hasLegend ? "pb-13" : "")
-        }
-        data-help={`Sitzplan: ${currentMode.gridHelp}`}
-      >
-        {students.length == 0 && (
-          <div className="absolute inset-0">
-            <EmptyState title="Noch keine Schüler" tone="light">
-              Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
-            </EmptyState>
-          </div>
-        )}
-        <SeatGrid
-          students={students}
+        <SeatLegend
+          anchor={legendAnchor}
+          onClose={() => setLegendAnchor(null)}
           traits={showTraits ? traits : []}
           duties={showDuties ? duties : []}
-          showPhotos={showPhotos}
-          grades={gradeMap}
-          suggestions={suggestions}
-          arranging={mode == "arrange"}
-          showComments={mode == "comment"}
-          zoomed={zoomOption[0]}
-          dimmed={closedStudents}
-          onTap={handleTap}
-          onMove={(student, x, y) =>
-            history.moveSeat(
-              student.id,
-              x,
-              y,
-              roster.map((seated) => ({
-                studentId: seated.id,
-                x: seated.x,
-                y: seated.y,
-              })),
-              formatStudentName(student),
-            )
-          }
+          students={students}
         />
-        {hasLegend && (
-          <Button
-            startIcon={<InfoIcon size={18} />}
-            onClick={(event) => setLegendAnchor(event.currentTarget)}
-            className="absolute bottom-2 left-2 z-20 bg-brand-100 opacity-75 shadow-tile"
-            data-help="Symbole der Dienste und Farben der Eigenschaften mit ihrer Anzahl."
-          >
-            Legende
-          </Button>
+
+        {confirmClear && (
+          <ClearLessonDialog
+            entries={grades}
+            dateLabel={dateLabel}
+            onClose={() => setConfirmClear(false)}
+            onConfirm={async (parts) => {
+              await clearLesson(cls.id, date, parts);
+              handleLessonChanged();
+            }}
+          />
         )}
-      </main>
 
-      <SeatLegend
-        anchor={legendAnchor}
-        onClose={() => setLegendAnchor(null)}
-        traits={showTraits ? traits : []}
-        duties={showDuties ? duties : []}
-        students={students}
-      />
+        {lessonTypeDialog}
 
-      {confirmClear && (
-        <ClearLessonDialog
-          entries={grades}
-          dateLabel={dateLabel}
-          onClose={() => setConfirmClear(false)}
-          onConfirm={async (parts) => {
-            await clearLesson(cls.id, date, parts);
-            handleLessonChanged();
-          }}
-        />
-      )}
+        {erasing && (
+          <EraseChoiceDialog
+            studentName={formatStudentName(erasing.student)}
+            parts={erasing.parts}
+            onChoose={(part) => applyTool(erasing.student, "erase", part)}
+            onClose={() => setErasing(null)}
+          />
+        )}
 
-      {lessonTypeDialog}
-
-      {erasing && (
-        <EraseChoiceDialog
-          studentName={formatStudentName(erasing.student)}
-          parts={erasing.parts}
-          onChoose={(part) => applyTool(erasing.student, "erase", part)}
-          onClose={() => setErasing(null)}
-        />
-      )}
-
-      {commenting && (
-        <CommentDialog
-          studentName={formatStudentName(commenting)}
-          initial={gradeMap.get(commenting.id)?.comment ?? ""}
-          onClose={() => setCommenting(null)}
-          onSave={async (comment) => {
-            setCommenting(null);
-            await history.change(
-              "Kommentar",
-              commenting.id,
-              date,
-              gradeMap.get(commenting.id),
-              { comment: comment.trim() || null },
-              formatStudentName(commenting),
-            );
-          }}
-        />
-      )}
-    </SpeedDialLayout>
+        {commenting && (
+          <CommentDialog
+            studentName={formatStudentName(commenting)}
+            initial={gradeMap.get(commenting.id)?.comment ?? ""}
+            onClose={() => setCommenting(null)}
+            onSave={async (comment) => {
+              setCommenting(null);
+              await history.change(
+                "Kommentar",
+                commenting.id,
+                date,
+                gradeMap.get(commenting.id),
+                { comment: comment.trim() || null },
+                formatStudentName(commenting),
+              );
+            }}
+          />
+        )}
+      </SpeedDialLayout>
+    </PointsContext>
   );
 }

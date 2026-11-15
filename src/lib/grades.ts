@@ -27,10 +27,10 @@ export const isExamDay = (types: LessonType[]) => types.includes("exam");
 
 /**
  * All grades as stored and calculated, from best to worst: a tendency is worth 0.3, so "2+"
- * is 1.7 and "2-" is 2.3. There is no "1+".
+ * is 1.7 and "2-" is 2.3; "1+" is 0.7. There is no "6+", so the scale matches the points.
  */
 export const GRADE_VALUES = [
-  1, 1.3, 1.7, 2, 2.3, 2.7, 3, 3.3, 3.7, 4, 4.3, 4.7, 5, 5.3, 5.7, 6,
+  0.7, 1, 1.3, 1.7, 2, 2.3, 2.7, 3, 3.3, 3.7, 4, 4.3, 4.7, 5, 5.3, 6,
 ];
 
 /** The whole grades, which are the ones offered by default. */
@@ -72,6 +72,20 @@ export function formatMark(value: number) {
   return `${whole}${tendency < 0 ? "+" : tendency > 0 ? "-" : ""}`;
 }
 
+/**
+ * A grade as points of the upper school, 15 ("1+") to 0 ("6"): three points per grade, one per
+ * tendency. Old entries of the former "6+" (5.7) count as 0 as well.
+ */
+export const toPoints = (value: number) =>
+  Math.min(15, Math.max(0, Math.round(17 - 3 * value)));
+
+/**
+ * Formats a grade for display: as points ("13") or as a mark ("1-"). Grades are always stored
+ * and calculated as marks, points are only how they are shown.
+ */
+export const formatGrade = (value: number, points: boolean) =>
+  points ? String(toPoints(value)) : formatMark(value);
+
 const GRADE_COLORS = [
   "#15803d",
   "#65a30d",
@@ -83,8 +97,10 @@ const GRADE_COLORS = [
 
 /** Color of a grade on the scale from green (1) to red (6), including the tendencies. */
 export function getGradeColor(value: number) {
-  const lower = Math.min(Math.floor(value), 5);
-  return mixColors(GRADE_COLORS[lower - 1], GRADE_COLORS[lower], value - lower);
+  // "1+" shares the color of the 1
+  const grade = Math.max(value, 1);
+  const lower = Math.min(Math.floor(grade), 5);
+  return mixColors(GRADE_COLORS[lower - 1], GRADE_COLORS[lower], grade - lower);
 }
 
 /** Color of the "excused" symbol. */

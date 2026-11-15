@@ -105,6 +105,8 @@ type GradeBadgeProps = {
   size: number;
   /** Only the black symbol without a badge, for black and white exports. */
   monochrome?: boolean;
+  /** Text of the value symbol, e.g. points; by default the mark ("2+"). */
+  label?: string;
 };
 
 /** Round badge of a grade, independent of the settings. The exports use it as a separate image. */
@@ -114,8 +116,9 @@ export function GradeBadge({
   color,
   size,
   monochrome = false,
+  label: text = formatMark(value),
 }: GradeBadgeProps) {
-  const label = formatMark(value).replace("-", "−");
+  const label = text.replace("-", "−");
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

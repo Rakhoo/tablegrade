@@ -8,14 +8,14 @@ import { formatClassName } from "../lib/formatters";
 import {
   MARK_KIND,
   ABSENT_COLOR,
-  formatMark,
+  formatGrade,
   getGradeColor,
   type LessonType,
 } from "../lib/grades";
 import { LESSON_TYPE_LABELS } from "../lib/lessons";
 import type { LessonColumn, OverviewColumn } from "../lib/overview";
 import { REPORT_LABELS, type ReportColumn } from "../lib/reports";
-import type { AppSettings } from "../lib/settings";
+import { usesPoints, type AppSettings } from "../lib/settings";
 import { downloadFile } from "./backup";
 
 /** What an export contains; rows are in display order. */
@@ -43,10 +43,14 @@ const valueOf = (entry: GradeEntry | undefined, column: LessonColumn) =>
       ? entry?.mark
       : entry?.projectMark;
 
-/** Text of a cell: the grade or mark like "2+", or "A" for absent. */
-function cellText(entry: GradeEntry | undefined, column: LessonColumn) {
+/** Text of a cell: the grade or mark like "2+" (or its points), or "A" for absent. */
+function cellText(
+  entry: GradeEntry | undefined,
+  column: LessonColumn,
+  points: boolean,
+) {
   const value = valueOf(entry, column);
-  if (value != null) return formatMark(value);
+  if (value != null) return formatGrade(value, points);
   return entry?.absent ? "A" : "";
 }
 
@@ -62,9 +66,9 @@ const columnTitle = (column: OverviewColumn, types: LessonType[]) => {
 };
 
 /** Text of a report's cell; a main column has "n.b." without a grade. */
-function reportText(column: ReportColumn, studentId: number) {
+function reportText(column: ReportColumn, studentId: number, points: boolean) {
   const value = column.values.get(studentId);
-  if (value != null) return formatMark(value);
+  if (value != null) return formatGrade(value, points);
   return column.main ? "n.b." : "";
 }
 
@@ -76,6 +80,7 @@ const fileName = ({ schoolClass }: OverviewExport, extension: string) =>
 
 /** Exports the table as CSV in the format of German spreadsheets (semicolons, BOM). */
 export function exportCsv(data: OverviewExport) {
+  const points = usesPoints(data.settings, data.schoolClass);
   const escape = (text: string) =>
     /[;"\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
   const lines = [
@@ -89,8 +94,8 @@ export function exportCsv(data: OverviewExport) {
       student.name,
       ...data.columns.map((column) =>
         column.kind == "report"
-          ? reportText(column, student.id)
-          : cellText(data.entryOf(student.id, column.date), column),
+          ? reportText(column, student.id, points)
+          : cellText(data.entryOf(student.id, column.date), column, points),
       ),
     ]),
   ];
@@ -173,6 +178,7 @@ const hexToRgb = (hex: string): [number, number, number] => [
 export async function exportPdf(data: OverviewExport) {
   const { jsPDF } = await import("jspdf");
   const { settings, columns } = data;
+  const points = usesPoints(settings, data.schoolClass);
   const color = settings.exportColors;
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const students = data.students.map((student) => ({
@@ -231,6 +237,7 @@ export async function exportPdf(data: OverviewExport) {
           : createElement(GradeBadge, {
               symbol: settings.gradeSymbols[value]?.symbol ?? "value",
               value,
+              label: formatGrade(value, points),
               color: getGradeColor(value),
               size: BADGE_PIXELS,
               monochrome: !color,
@@ -320,7 +327,7 @@ export async function exportPdf(data: OverviewExport) {
                 ? hexToRgb(getGradeColor(value))
                 : BLACK),
             );
-            doc.text(reportText(column, student.id), x, baseline, {
+            doc.text(reportText(column, student.id, points), x, baseline, {
               align: "center",
             });
             doc.setFont("helvetica", "normal");
@@ -367,7 +374,7 @@ export async function exportPdf(data: OverviewExport) {
             if (color) doc.setTextColor(red, green, blue);
             else doc.setTextColor(0);
             doc.text(
-              formatMark(value),
+              formatGrade(value, points),
               x + COLUMN_WIDTH / 2,
               y + rowHeight / 2 + 1.2,
               {
