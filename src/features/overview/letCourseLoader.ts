@@ -3,6 +3,7 @@ import {
   getClassStudents,
   getHolidays,
   getLessonTypes,
+  getReportGrades,
   getReports,
   getSchoolYears,
   type SchoolClass,
@@ -16,15 +17,23 @@ import { createCalendar } from "../../lib/schoolYear";
  * students, entries, reports and lesson dates so far, like the overview does.
  */
 export async function loadLetCourse(cls: SchoolClass): Promise<LetCourseData> {
-  const [students, entries, reports, lessonTypes, holidays, schoolYears] =
-    await Promise.all([
-      getClassStudents(cls.id),
-      getClassGrades(cls.id),
-      getReports(cls.id),
-      getLessonTypes(),
-      getHolidays(),
-      getSchoolYears(),
-    ]);
+  const [
+    students,
+    entries,
+    reports,
+    reportGrades,
+    lessonTypes,
+    holidays,
+    schoolYears,
+  ] = await Promise.all([
+    getClassStudents(cls.id),
+    getClassGrades(cls.id),
+    getReports(cls.id),
+    getReportGrades(cls.id),
+    getLessonTypes(),
+    getHolidays(),
+    getSchoolYears(),
+  ]);
   const calendar = createCalendar(holidays, schoolYears);
   const lessonDates = getLessonDates(cls, calendar, { days: [], lessons: [] });
   return {
@@ -32,6 +41,7 @@ export async function loadLetCourse(cls: SchoolClass): Promise<LetCourseData> {
     students: students.filter((student) => !student.hidden),
     entries,
     reports,
+    reportGrades,
     dates: [
       ...new Set([
         ...lessonDates,

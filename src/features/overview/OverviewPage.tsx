@@ -742,7 +742,15 @@ export function OverviewPage() {
 
       {letExport && (
         <LetExportDialog
-          course={{ cls, students, entries, reports, dates, typesOf }}
+          course={{
+            cls,
+            students,
+            entries,
+            reports,
+            reportGrades,
+            dates,
+            typesOf,
+          }}
           otherClasses={sameHalfClasses}
           onClose={() => setLetExport(false)}
           onDone={setMessage}

@@ -4,9 +4,11 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   Menu,
   MenuItem,
+  Switch,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -23,9 +25,11 @@ import { formatClassName, formatSchoolYear } from "../../lib/formatters";
 import {
   buildLetExport,
   getLetMarkColumns,
+  getLetMarkSelection,
   type LetBasis,
   type LetCourseChoice,
   type LetCourseData,
+  type LetMarkSelection,
 } from "../../lib/letHelper";
 import { REPORT_LABELS, sortReports, type Report } from "../../lib/reports";
 import { downloadFile } from "../../services/backup";
@@ -62,6 +66,8 @@ function createForm(data: LetCourseData): CourseForm {
     subject: data.cls.subject,
     examPrefix: "KA",
     projectPrefix: "Projekt",
+    includeExams: true,
+    includeProjects: true,
     basisKind: latestReport ? "report" : "date",
     report: latestReport ? reportKey(latestReport) : "",
     date: getDateOptions(data)[0],
@@ -83,6 +89,53 @@ const cleanInitials = (value: string) =>
     .replace(/[^A-ZÄÖÜ]/g, "")
     .slice(0, 3);
 
+/** What the oral grade column ("solei") of the file holds, see `LetMarkSelection`. */
+const SOLEI_HINTS: Record<LetMarkSelection["solei"], string> = {
+  oral: "Als mündliche Note wird die mündliche Note übernommen.",
+  total:
+    "Als mündliche Note wird die Gesamtnote übernommen, berechnet ohne die ausgelassenen Noten.",
+  report:
+    "Ohne Klausuren und Projekte wird als mündliche Note die Gesamtnote übernommen, bei einer Teilnote die von Hand korrigierte.",
+};
+
+type MarkKindFieldProps = {
+  label: string;
+  included: boolean;
+  prefix: string;
+  onChange: (included: boolean, prefix: string) => void;
+};
+
+/** Switch whether exams or projects are exported, with the prefix of their names. */
+function MarkKindField({
+  label,
+  included,
+  prefix,
+  onChange,
+}: MarkKindFieldProps) {
+  return (
+    <div className="flex items-center gap-2">
+      <FormControlLabel
+        label={label}
+        className="w-44 shrink-0"
+        control={
+          <Switch
+            checked={included}
+            onChange={(event) => onChange(event.target.checked, prefix)}
+          />
+        }
+      />
+      <TextField
+        label="Präfix"
+        size="small"
+        value={prefix}
+        disabled={!included}
+        className="flex-1"
+        onChange={(event) => onChange(included, event.target.value)}
+      />
+    </div>
+  );
+}
+
 type CourseFieldsProps = {
   form: CourseForm;
   onChange: (changes: Partial<CourseForm>) => void;
@@ -94,6 +147,10 @@ type CourseFieldsProps = {
 function CourseFields({ form, onChange, onRemove }: CourseFieldsProps) {
   const { data } = form;
   const columns = getLetMarkColumns(data, getBasis(form));
+  const selection = getLetMarkSelection(
+    { ...form, basis: getBasis(form) },
+    columns,
+  );
   const exams = columns.filter((column) => column.kind == "exam").length;
   const projects = columns.length - exams;
   const reports = sortReports(data.reports).reverse();
@@ -166,27 +223,26 @@ function CourseFields({ form, onChange, onRemove }: CourseFieldsProps) {
         </TextField>
       )}
       {exams > 0 && (
-        <TextField
-          label={`Präfix der Klausuren (${exams})`}
-          size="small"
-          value={form.examPrefix}
-          onChange={(event) => onChange({ examPrefix: event.target.value })}
+        <MarkKindField
+          label={`Klausuren (${exams})`}
+          included={form.includeExams}
+          prefix={form.examPrefix}
+          onChange={(includeExams, examPrefix) =>
+            onChange({ includeExams, examPrefix })
+          }
         />
       )}
       {projects > 0 && (
-        <TextField
-          label={`Präfix der Projekte (${projects})`}
-          size="small"
-          value={form.projectPrefix}
-          onChange={(event) => onChange({ projectPrefix: event.target.value })}
+        <MarkKindField
+          label={`Projekte (${projects})`}
+          included={form.includeProjects}
+          prefix={form.projectPrefix}
+          onChange={(includeProjects, projectPrefix) =>
+            onChange({ includeProjects, projectPrefix })
+          }
         />
       )}
-      {columns.length == 0 && (
-        <p className="text-sm text-muted">
-          Keine Klausuren oder Projekte in diesem Zeitraum, nur die mündlichen
-          Noten.
-        </p>
-      )}
+      <p className="text-sm text-muted">{SOLEI_HINTS[selection.solei]}</p>
     </section>
   );
 }

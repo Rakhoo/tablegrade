@@ -3,7 +3,12 @@ import { getStudentResult, type GradingRules } from "./assessment";
 import { formatClassName } from "./formatters";
 import { formatMark, MARK_FIELD, type MarkKind } from "./grades";
 import { getLessonChains, type TypesOf } from "./lessonChains";
-import { roundGrade, sortReports, type Report } from "./reports";
+import {
+  roundGrade,
+  sortReports,
+  type Report,
+  type ReportOverride,
+} from "./reports";
 import { getDistinguishingInitials } from "./studentRoster";
 
 /** What the grades of a course are taken from: a report or the state on a lesson date. */
@@ -16,6 +21,8 @@ export type LetCourseData = {
   students: { firstName: string; lastName: string; id: number }[];
   entries: GradeEntry[];
   reports: Report[];
+  /** Report grades set by hand, replacing the calculated ones. */
+  reportGrades: ReportOverride[];
   /** Lesson dates of the class so far, plus dates with entries or reports. */
   dates: string[];
   typesOf: TypesOf;
@@ -27,6 +34,10 @@ export type LetCourseChoice = {
   subject: string;
   examPrefix: string;
   projectPrefix: string;
+  /** Whether the exams are exported; without them they are left out of `solei` as well. */
+  includeExams: boolean;
+  /** Whether the projects are exported; without them they are left out of `solei` as well. */
+  includeProjects: boolean;
   basis: LetBasis;
 };
 
@@ -122,6 +133,40 @@ const writeGrade = (value: number | null) =>
 export const getLetSchoolYear = (year: number) =>
   `${String(year % 100).padStart(2, "0")}-${String((year + 1) % 100).padStart(2, "0")}`;
 
+/** Which exams and projects of a course are exported, and what `solei` is then. */
+export type LetMarkSelection = {
+  /** Kinds whose marks are left out, also of the calculation. */
+  ignored: Record<MarkKind, boolean>;
+  /**
+   * What `solei` holds: the oral grade next to all marks; the calculated grade without the
+   * left out kind; the grade set by hand (else calculated) once no marks are exported at all.
+   */
+  solei: "oral" | "total" | "report";
+};
+
+/** The exported kinds of marks of a course and what its `solei` holds. */
+export function getLetMarkSelection(
+  choice: LetCourseChoice,
+  columns: LetMarkColumn[],
+): LetMarkSelection {
+  const exists = (kind: MarkKind) =>
+    columns.some((column) => column.kind == kind);
+  const ignored = {
+    exam: !choice.includeExams,
+    project: !choice.includeProjects,
+  };
+  const exported = (["exam", "project"] as const).some(
+    (kind) => exists(kind) && !ignored[kind],
+  );
+  const skipped = (["exam", "project"] as const).some(
+    (kind) => exists(kind) && ignored[kind],
+  );
+  return {
+    ignored,
+    solei: !exported ? "report" : skipped ? "total" : "oral",
+  };
+}
+
 /** The course of one class in the export file. */
 function buildCourse(
   choice: LetCourseChoice,
@@ -131,12 +176,16 @@ function buildCourse(
 ) {
   const { data, basis } = choice;
   const period = getPeriod(data.reports, basis);
-  const columns = getLetMarkColumns(data, basis).map((column) => ({
-    ...column,
-    id: crypto.randomUUID(),
-    type: column.kind == "exam" ? "KA" : "Test",
-    label: `${column.kind == "exam" ? choice.examPrefix : choice.projectPrefix} ${column.number}`,
-  }));
+  const allColumns = getLetMarkColumns(data, basis);
+  const { ignored, solei } = getLetMarkSelection(choice, allColumns);
+  const columns = allColumns
+    .filter((column) => !ignored[column.kind])
+    .map((column) => ({
+      ...column,
+      id: crypto.randomUUID(),
+      type: column.kind == "exam" ? "KA" : "Test",
+      label: `${column.kind == "exam" ? choice.examPrefix : choice.projectPrefix} ${column.number}`,
+    }));
   const initials = getDistinguishingInitials(data.students);
   return {
     id: crypto.randomUUID(),
@@ -150,9 +199,27 @@ function buildCourse(
     columns: columns.map(({ id, type, label }) => ({ id, type, label })),
     students: data.students
       .map((student, index) => {
-        const entries = data.entries.filter(
-          (entry) => entry.studentId == student.id && entry.date > period.from,
-        );
+        // Left out kinds count as if there had been none
+        const entries = data.entries
+          .filter(
+            (entry) =>
+              entry.studentId == student.id && entry.date > period.from,
+          )
+          .map((entry) => ({
+            ...entry,
+            mark: ignored.exam ? null : entry.mark,
+            projectMark: ignored.project ? null : entry.projectMark,
+          }));
+        const result = getStudentResult(entries, period.to, rules);
+        const override =
+          basis.kind == "report"
+            ? data.reportGrades.find(
+                (grade) =>
+                  grade.studentId == student.id &&
+                  grade.date == basis.report.date &&
+                  grade.kind == basis.report.kind,
+              )?.grade
+            : undefined;
         return {
           id: crypto.randomUUID(),
           vorname: student.firstName.trim(),
@@ -166,7 +233,11 @@ function buildCourse(
             ]),
           ),
           solei: writeGrade(
-            roundGrade(getStudentResult(entries, period.to, rules).oral),
+            solei == "oral"
+              ? roundGrade(result.oral)
+              : solei == "total"
+                ? roundGrade(result.total)
+                : (override ?? roundGrade(result.total)),
           ),
           bem: "",
           scales: {},
@@ -186,7 +257,8 @@ function buildCourse(
 
 /**
  * Builds the file for the "LET-Helfer" of the TMG Ahlen (parent-teacher days): per course its
- * exams and projects of the chosen period and the oral grade, written as marks ("2+").
+ * exams and projects of the chosen period, unless left out, and `solei` (see `LetMarkSelection`),
+ * written as marks ("2+").
  * The school year is the one of the first course.
  * @returns The file name and its JSON content.
  */

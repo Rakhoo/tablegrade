@@ -398,13 +398,16 @@ contain names and grade values. PDFs are built with jsPDF in
 With the plugin *LET-Helfer der TMG Ahlen* turned on, the menu also offers *LET-Helfer*: a
 dialog asks for the teacher's initials (up to three capitals, remembered in the settings), LET 1
 or 2 and per course the subject, a *Teilnote* (or *Halbjahresnote*) or a lesson date
-(*Zeitpunkt*) and the prefixes of exams ("KA") and projects ("Projekt"), shown only if the period
-has some. Any further courses of the same school year half can be added in the dialog. A report covers its
+(*Zeitpunkt*) and, only if the period has some, a switch and a prefix each for exams ("KA")
+and projects ("Projekt"). Any further courses of the same school year half can be added in the dialog. A report covers its
 period as in the overview, a date the time since the previous report. The JSON file
 `<Kürzel>LET<1|2>_<26-27>.json` (schema 2 of the "elternsprechtag-helfer") lists the courses (by class and subject) with
 exams and projects with marks in that period (numbered across the half, retakes and extensions
 included), and the students (alphabetically by first name and initial) with the first name, the distinguishing start of the last name for shared
-first names ("Mü.") and all marks written as "2+"; `solei` is the rounded oral grade. Built in
+first names ("Mü.") and all marks written as "2+". `solei` is the rounded oral grade while
+all exams and projects are exported; with one kind switched off the calculated grade as if
+it did not exist (its columns and marks are left out); with no marks exported at all (none in
+the period, or both switched off) the grade set by hand for the report, else the calculated one. Built in
 [src/lib/letHelper.ts](src/lib/letHelper.ts).
 
 ## Styling
