@@ -1,6 +1,6 @@
-import { useGradeFormat } from "../hooks/useGradeFormat";
+import { useGradeColor, useGradeFormat } from "../hooks/useGradeFormat";
 import { useSettings } from "../hooks/useSettings";
-import { ABSENT_COLOR, getGradeColor } from "../lib/grades";
+import { ABSENT_COLOR } from "../lib/grades";
 import { AbsentBadge, GradeBadge } from "./GradeBadge";
 
 type GradeIconProps = {
@@ -13,6 +13,7 @@ type GradeIconProps = {
 export function GradeIcon({ grade, size = 32 }: GradeIconProps) {
   const { gradeSymbols, absentSymbol } = useSettings();
   const formatGrade = useGradeFormat();
+  const getGradeColor = useGradeColor();
   if (grade == null) {
     return (
       <AbsentBadge symbol={absentSymbol} color={ABSENT_COLOR} size={size} />

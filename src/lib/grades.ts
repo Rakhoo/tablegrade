@@ -86,21 +86,36 @@ export const toPoints = (value: number) =>
 export const formatGrade = (value: number, points: boolean) =>
   points ? String(toPoints(value)) : formatMark(value);
 
-const GRADE_COLORS = [
-  "#15803d",
-  "#65a30d",
-  "#64748b",
-  "#ca8a04",
-  "#ea580c",
-  "#dc2626",
-];
+/** The color scales of the grades: green to red, or blue to orange for color blindness. */
+export type GradePalette = "standard" | "colorblind";
 
-/** Color of a grade on the scale from green (1) to red (6), including the tendencies. */
-export function getGradeColor(value: number) {
+/** Colors of the whole grades 1 to 6 per scale; tendencies lie in between. */
+const GRADE_PALETTES: Record<GradePalette, string[]> = {
+  standard: ["#15803d", "#65a30d", "#64748b", "#ca8a04", "#ea580c", "#dc2626"],
+  // Blue and orange stay apart for red-green color blindness, which is the most common
+  colorblind: [
+    "#1d4ed8",
+    "#0284c7",
+    "#64748b",
+    "#d97706",
+    "#c2410c",
+    "#7c2d12",
+  ],
+};
+
+/**
+ * Color of a grade on the chosen scale from 1 (green or blue) to 6 (red or dark orange),
+ * including the tendencies.
+ */
+export function getGradeColor(
+  value: number,
+  palette: GradePalette = "standard",
+) {
+  const colors = GRADE_PALETTES[palette];
   // "1+" shares the color of the 1
   const grade = Math.max(value, 1);
   const lower = Math.min(Math.floor(grade), 5);
-  return mixColors(GRADE_COLORS[lower - 1], GRADE_COLORS[lower], grade - lower);
+  return mixColors(colors[lower - 1], colors[lower], grade - lower);
 }
 
 /** Color of the "excused" symbol. */

@@ -66,7 +66,7 @@ export function GradeSymbolSettings() {
                       <GradeBadge
                         symbol={option}
                         value={value}
-                        color={getGradeColor(value)}
+                        color={getGradeColor(value, settings.gradePalette)}
                         size={24}
                       />
                       {GRADE_SYMBOLS[option].label}

@@ -1,6 +1,7 @@
 import { GradeIcon } from "../../components/GradeIcon";
 import { CommentIcon } from "../../components/icons";
 import { MarkBadge } from "../../components/MarkBadge";
+import { useGradeColor } from "../../hooks/useGradeFormat";
 import { SuggestedGradeIcon } from "../../components/SuggestedGradeIcon";
 import type { GradeEntry, SeatedStudent, Trait } from "../../db";
 import { getCommentPreview } from "../../lib/formatters";
@@ -12,9 +13,14 @@ import {
   OVERRIDE_COLOR,
 } from "./tableStyles";
 
-const CELL = "h-11 min-w-11 border-r border-b border-line p-0 text-center";
+/**
+ * Sizes come from CSS variables on the table (`--cell`, `--photo`), so the compact
+ * table only changes them in one place.
+ */
+const CELL =
+  "h-(--cell) min-w-(--cell) border-r border-b border-line p-0 text-center";
 const CELL_BUTTON =
-  "flex h-full min-h-11 w-full items-center justify-center gap-0.5 px-0.5 active:bg-brand-100";
+  "flex h-full min-h-(--cell) w-full items-center justify-center gap-0.5 px-0.5 active:bg-brand-100";
 
 type NameCellProps = {
   student: SeatedStudent;
@@ -61,7 +67,7 @@ export function NameCell({
         data-help-place="below"
         onClick={onTap}
         className={
-          "flex w-full items-center gap-2 px-3 py-1 text-left " +
+          "flex min-h-(--cell) w-full items-center gap-2 px-3 py-0.5 text-left " +
           (hidden ? "opacity-40" : "")
         }
       >
@@ -78,10 +84,10 @@ export function NameCell({
               src={student.image}
               alt=""
               draggable={false}
-              className="h-8 w-8 shrink-0 rounded-full object-cover"
+              className="size-(--photo) shrink-0 rounded-full object-cover"
             />
           ) : (
-            <span className="h-8 w-8 shrink-0" />
+            <span className="size-(--photo) shrink-0" />
           ))}
         {/* Never narrower than the longest name, so no name runs over the column; the parts
             are as wide as their text, which the overview measures */}
@@ -133,6 +139,7 @@ export function ReportCell({
   grading,
   onTap,
 }: ReportCellProps) {
+  const getGradeColor = useGradeColor();
   const value = column.values.get(student.id) ?? null;
   const suggestion = column.suggestions.get(student.id) ?? null;
   const changed = column.main && value != null;
@@ -161,7 +168,8 @@ export function ReportCell({
         {changed && suggestion != null && value != suggestion && (
           <span
             className="font-bold"
-            style={{ color: value < suggestion ? "#15803d" : "#dc2626" }}
+            // Colored like the best and worst grade
+            style={{ color: getGradeColor(value < suggestion ? 1 : 6) }}
           >
             {value < suggestion ? "↑" : "↓"}
           </span>
@@ -201,6 +209,8 @@ type LessonCellProps = {
   locked: boolean;
   /** The current lesson's column, framed. */
   current: boolean;
+  /** Size of the grade symbols in pixels, smaller in the compact table. */
+  iconSize: number;
   disabled: boolean;
   label: string;
   help: string;
@@ -221,6 +231,7 @@ export function LessonCell({
   grayed,
   locked,
   current,
+  iconSize,
   disabled,
   label,
   help,
@@ -249,14 +260,14 @@ export function LessonCell({
       >
         {value != null &&
           (kind == "oral" ? (
-            <GradeIcon grade={value} size={26} />
+            <GradeIcon grade={value} size={iconSize} />
           ) : (
             <MarkBadge mark={value} />
           ))}
         {chainMark != null && <MarkBadge mark={chainMark} />}
-        {showAbsent && <GradeIcon size={26} />}
+        {showAbsent && <GradeIcon size={iconSize} />}
         {suggestion != null && (
-          <SuggestedGradeIcon grade={suggestion} size={26} />
+          <SuggestedGradeIcon grade={suggestion} size={iconSize} />
         )}
         {entry?.comment && comment == "preview" && (
           <span className="relative ml-0.5 max-w-28 truncate rounded-lg bg-surface px-1.5 py-0.5 text-left text-[10px] leading-tight font-medium text-ink shadow-tile ring-1 ring-brand-200">

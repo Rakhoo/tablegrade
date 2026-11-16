@@ -268,9 +268,12 @@ export function TimetableGrid({
     : lessonsPerDay;
   const firstHour = compact ? Math.min(Math.min(...taughtHours), lastHour) : 1;
   const rowOf = (hour: number) => hour - firstHour + 2;
+  /** Start and end of a lesson, while the times are switched on in the settings. */
+  const timeOf = (hour: number) =>
+    settings.showLessonTimes ? getLessonTime(settings, hour) : null;
   const hasTimes = Array.from(
     { length: lastHour - firstHour + 1 },
-    (_, index) => getLessonTime(settings, firstHour + index),
+    (_, index) => timeOf(firstHour + index),
   ).some(Boolean);
   /**
    * Short labels of a lesson's types to fit the cell: a project or extension reads "Proj.", a
@@ -296,7 +299,7 @@ export function TimetableGrid({
   };
 
   for (let hour = firstHour; hour <= lastHour; hour++) {
-    const time = getLessonTime(settings, hour);
+    const time = timeOf(hour);
     cells.push(
       <div
         key={`hour-${hour}`}

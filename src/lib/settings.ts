@@ -1,4 +1,4 @@
-import { WHOLE_GRADES, GRADE_VALUES } from "./grades";
+import { WHOLE_GRADES, GRADE_VALUES, type GradePalette } from "./grades";
 import type { AbsentSymbol, GradeSymbol } from "./gradeSymbols";
 import type { ColorMode, ThemeId } from "./themes";
 
@@ -78,6 +78,12 @@ export const DEFAULT_SETTINGS = {
   pointLevels: ["EF", "Q1", "Q2"],
   letters: ["a", "b", "c", "d", "e", "f", "mix"],
   lessonsPerDay: 9,
+  /** Color scale of the grades, also in the PDF export. */
+  gradePalette: "standard" as GradePalette,
+  /** Overview tables with lower rows and narrower columns. */
+  compactTable: false,
+  /** Whether the timetable shows the times of the lessons. */
+  showLessonTimes: true,
   /** Start time ("08:00") of each lesson, by lesson number − 1; empty if not set. */
   lessonStarts: [
     "08:00",

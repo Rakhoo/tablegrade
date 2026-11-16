@@ -1,6 +1,6 @@
 import { Button, Menu, MenuItem, Snackbar } from "@mui/material";
 import { format, parseISO } from "date-fns";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import {
   useLoaderData,
   useLocation,
@@ -119,6 +119,17 @@ const CELL_HELP: Record<OverviewMode, string> = {
   comment:
     "Antippen bearbeitet oder beginnt einen Kommentar; Sprechblasen zeigen seinen Anfang.",
 };
+
+/** Sizes of the table's cells, photos and symbols (see `TableCells`), as CSS variables. */
+const COMFORTABLE_SIZES = {
+  "--cell": "2.75rem",
+  "--photo": "2rem",
+} as CSSProperties;
+/** The compact table: lower rows, narrower columns, smaller photos. */
+const COMPACT_SIZES = {
+  "--cell": "2rem",
+  "--photo": "1.5rem",
+} as CSSProperties;
 
 const entryKey = (studentId: number, date: string) => `${studentId}|${date}`;
 
@@ -468,6 +479,7 @@ export function OverviewPage() {
       !locked;
     return (
       <LessonCell
+        iconSize={settings.compactTable ? 20 : 26}
         key={getColumnKey(column)}
         kind={kind}
         rowIndex={rowIndex}
@@ -656,7 +668,12 @@ export function OverviewPage() {
                 In diesem Halbjahr gab es noch keine Stunde dieser Klasse.
               </EmptyState>
             ) : (
-              <table className="border-separate border-spacing-0">
+              <table
+                className="border-separate border-spacing-0"
+                style={
+                  settings.compactTable ? COMPACT_SIZES : COMFORTABLE_SIZES
+                }
+              >
                 <thead>
                   <tr>
                     {/* Above all date headers, whose layers grow with the columns */}

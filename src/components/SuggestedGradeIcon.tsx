@@ -1,5 +1,4 @@
-import { useGradeFormat } from "../hooks/useGradeFormat";
-import { getGradeColor } from "../lib/grades";
+import { useGradeColor, useGradeFormat } from "../hooks/useGradeFormat";
 import { GradeIcon } from "./GradeIcon";
 
 type SuggestedGradeIconProps = { grade: number; size: number };
@@ -7,6 +6,7 @@ type SuggestedGradeIconProps = { grade: number; size: number };
 /** Faded symbol with a dashed ring: only a suggestion, not an entry. */
 export function SuggestedGradeIcon({ grade, size }: SuggestedGradeIconProps) {
   const formatGrade = useGradeFormat();
+  const getGradeColor = useGradeColor();
   return (
     <span
       title={`Vorschlag: ${formatGrade(grade)}`}

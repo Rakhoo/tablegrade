@@ -1,4 +1,4 @@
-import { TextField } from "@mui/material";
+import { FormControlLabel, Switch, TextField } from "@mui/material";
 import { TimePicker } from "@mui/x-date-pickers";
 import { format, isValid, parse } from "date-fns";
 import { useSettings } from "../../hooks/useSettings";
@@ -21,8 +21,35 @@ function isAllowed(date: Date) {
   return minutes >= EARLIEST && minutes <= LATEST && minutes % STEP == 0;
 }
 
-/** Start time of each lesson and the length of a lesson, shown in the timetable. */
+/** Whether the timetable shows lesson times, and if so their start times and length. */
 export function LessonTimeSettings() {
+  const { showLessonTimes } = useSettings();
+  const save = useSaveSettings();
+
+  return (
+    <SettingsSection
+      help="Beginn jeder Stunde und die Länge einer Stunde, für die Uhrzeiten im Stundenplan."
+      title="Unterrichtszeiten"
+      hint="Erscheinen im Stundenplan neben den Stunden. Stunden ohne Beginn bleiben ohne Uhrzeit."
+    >
+      <FormControlLabel
+        label="Uhrzeiten im Stundenplan anzeigen"
+        control={
+          <Switch
+            checked={showLessonTimes}
+            onChange={(event) =>
+              save({ showLessonTimes: event.target.checked })
+            }
+          />
+        }
+      />
+      {showLessonTimes && <LessonTimeFields />}
+    </SettingsSection>
+  );
+}
+
+/** Length of a lesson and the start of each lesson, shown while the times are switched on. */
+function LessonTimeFields() {
   const settings = useSettings();
   const { lessonsPerDay, lessonStarts, lessonMinutes } = settings;
   const save = useSaveSettings();
@@ -38,11 +65,7 @@ export function LessonTimeSettings() {
   };
 
   return (
-    <SettingsSection
-      help="Beginn jeder Stunde und die Länge einer Stunde, für die Uhrzeiten im Stundenplan."
-      title="Unterrichtszeiten"
-      hint="Erscheinen im Stundenplan neben den Stunden. Stunden ohne Beginn bleiben ohne Uhrzeit."
-    >
+    <>
       <TextField
         type="number"
         size="small"
@@ -89,6 +112,6 @@ export function LessonTimeSettings() {
           );
         })}
       </div>
-    </SettingsSection>
+    </>
   );
 }

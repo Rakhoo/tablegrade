@@ -10,10 +10,12 @@ import { DataSettings } from "./DataSettings";
 import { DevSettings } from "./DevSettings";
 import { DutySettings } from "./DutySettings";
 import { GradeCalculationSettings } from "./GradeCalculationSettings";
+import { GradeColorSettings } from "./GradeColorSettings";
 import { GradeSymbolSettings } from "./GradeSymbolSettings";
 import { LessonSettings } from "./LessonSettings";
 import { LessonTimeSettings } from "./LessonTimeSettings";
 import { LocationSettings } from "./LocationSettings";
+import { OverviewTableSettings } from "./OverviewTableSettings";
 import { PointSettings } from "./PointSettings";
 import { SchoolSettings } from "./SchoolSettings";
 import { SeatLayoutSettings } from "./SeatLayoutSettings";
@@ -37,9 +39,34 @@ type TabKey = (typeof TABS)[number]["key"];
 /** Taps on the active tab "Daten und Export" that unlock the developer options. */
 const DEV_TAPS = 7;
 
+/** Storage key of the tab used last, so the settings open on it again. */
+const TAB_STORAGE_KEY = "settingsTab";
+
+/** The tab with this key, if there is one. */
+const findTab = (key: string | null) => TABS.find((tab) => tab.key == key)?.key;
+
+/** The tab used last on this device, if any. */
+function getStoredTab() {
+  try {
+    return findTab(localStorage.getItem(TAB_STORAGE_KEY));
+  } catch {
+    return undefined;
+  }
+}
+
+/** Remembers the tab used last on this device. */
+function storeTab(tab: TabKey) {
+  try {
+    localStorage.setItem(TAB_STORAGE_KEY, tab);
+  } catch {
+    // The settings then open on the first tab
+  }
+}
+
 /**
  * Settings of the app in tabs of related topics, one card per topic; changes are saved right
- * away. The tab is kept in the URL (`?tab=`), so going back or reloading stays on it.
+ * away. The tab is kept in the URL (`?tab=`), so going back or reloading stays on it, and on
+ * the device, so opening the settings again returns to the tab used last.
  */
 export function SettingsPage() {
   const { schoolClasses, traits, duties } = useLoaderData<SettingsLoaderData>();
@@ -50,7 +77,7 @@ export function SettingsPage() {
   const [devUnlocked, setDevUnlocked] = useState(false);
   const devTaps = useRef(0);
   const tab: TabKey =
-    TABS.find(({ key }) => key == searchParams.get("tab"))?.key ?? "school";
+    findTab(searchParams.get("tab")) ?? getStoredTab() ?? "school";
 
   /** Counts taps on the data tab while it is open; enough of them unlock the dev options. */
   const countDevTap = () => {
@@ -93,7 +120,9 @@ export function SettingsPage() {
     display: (
       <>
         <AppearanceSettings />
+        <GradeColorSettings />
         <TimetableSettings />
+        <OverviewTableSettings />
       </>
     ),
     data: (
@@ -113,9 +142,10 @@ export function SettingsPage() {
       </header>
       <Tabs
         value={tab}
-        onChange={(_, value: TabKey) =>
-          setSearchParams({ tab: value }, { replace: true })
-        }
+        onChange={(_, value: TabKey) => {
+          storeTab(value);
+          setSearchParams({ tab: value }, { replace: true });
+        }}
         variant="scrollable"
         scrollButtons="auto"
         className="card shrink-0 px-2"

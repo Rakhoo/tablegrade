@@ -323,7 +323,7 @@ export async function exportPdf(data: OverviewExport) {
               symbol: settings.gradeSymbols[value]?.symbol ?? "value",
               value,
               label: formatGrade(value, points),
-              color: getGradeColor(value),
+              color: getGradeColor(value, settings.gradePalette),
               size: BADGE_PIXELS,
               monochrome: !color,
             });
@@ -409,7 +409,7 @@ export async function exportPdf(data: OverviewExport) {
             doc.setFont("helvetica", column.main ? "bold" : "normal");
             doc.setTextColor(
               ...(color && value != null
-                ? hexToRgb(getGradeColor(value))
+                ? hexToRgb(getGradeColor(value, settings.gradePalette))
                 : BLACK),
             );
             doc.text(reportText(column, student.id, points), x, baseline, {
@@ -425,7 +425,7 @@ export async function exportPdf(data: OverviewExport) {
               // Helvetica has no arrows, so a small triangle shows the correction
               const better = value < suggestion;
               const arrow = color
-                ? hexToRgb(better ? "#15803d" : "#dc2626")
+                ? hexToRgb(getGradeColor(better ? 1 : 6, settings.gradePalette))
                 : BLACK;
               const tip = baseline - 1.2 + (better ? -1 : 1);
               const foot = baseline - 1.2 + (better ? 1 : -1);
@@ -455,7 +455,9 @@ export async function exportPdf(data: OverviewExport) {
               BADGE_SIZE,
             );
           } else if (value != null) {
-            const [red, green, blue] = hexToRgb(getGradeColor(value));
+            const [red, green, blue] = hexToRgb(
+              getGradeColor(value, settings.gradePalette),
+            );
             if (color) doc.setTextColor(red, green, blue);
             else doc.setTextColor(0);
             doc.text(

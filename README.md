@@ -374,10 +374,12 @@ also the way to move data to another device.
 
 `/settings`: one card per topic, in tabs of related topics below the header, so only one
 tab's cards are shown at a time; the tab is kept in the URL (`?tab=`), so a reload or a way
-back stays on it:
+back stays on it, and on the device (local storage), so opening the settings again returns to
+the tab used last:
 
 - **Schule**: federal state and school years; levels, letters and lessons per day; the
-  lesson times (start of each lesson between 6:00 and 19:55 in steps of 5 minutes, and one
+  lesson times (a switch whether the timetable shows them, on by default; while on, the start of
+  each lesson between 6:00 and 19:55 in steps of 5 minutes, and one
   length in minutes; by default 8:00, 8:50, 9:55, 10:45, 11:45, 12:35, 13:30 and 14:20 for
   the first eight lessons and 45 minutes), shown below the lesson
   numbers of the timetable.
@@ -389,7 +391,11 @@ back stays on it:
 - **Schüler**: traits; duties (symbol, color and name up to 24 characters; colors avoid the
   yellow and red of the warnings; usual duties like "Tafel", "iPad" or "Lüftung/Fenster" are
   offered as suggestions).
-- **Darstellung**: theme and light/dark mode; "Nur Tage und Stunden mit Unterricht": the
+- **Darstellung**: theme and light/dark mode; the grade colors, green to red or blue to
+  orange for red-green color blindness (`gradePalette`, everywhere in the app and in the PDF
+  export, also the correction arrows of reports); a compact overview table (lower rows,
+  narrower columns, smaller photos and symbols through the CSS variables `--cell` and
+  `--photo` on the table); "Nur Tage und Stunden mit Unterricht": the
   timetable leaves out weekdays without classes and the lessons before the first and after
   the last one of the week (free lessons in between stay; a week without classes stays
   complete).

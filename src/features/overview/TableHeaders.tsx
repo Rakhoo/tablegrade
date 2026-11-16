@@ -47,7 +47,7 @@ export function DateHeader({
   const pressHandlers = useLongPress(onLongPress);
   return (
     <th
-      className="sticky top-0 h-24 min-w-11 border-b border-line bg-surface"
+      className="sticky top-0 h-24 min-w-(--cell) border-b border-line bg-surface"
       data-date={date}
       data-help={help}
       data-help-repeat
@@ -115,7 +115,7 @@ export function ReportHeader({
 }: ReportHeaderProps) {
   return (
     <th
-      className="sticky top-0 h-24 min-w-11 border-b border-line bg-surface"
+      className="sticky top-0 h-24 min-w-(--cell) border-b border-line bg-surface"
       style={{ zIndex: 10 + columns - index }}
       onClick={(event) => onTap(event.currentTarget)}
     >

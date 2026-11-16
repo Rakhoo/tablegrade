@@ -7,7 +7,7 @@ import { CommentIcon } from "../../components/icons";
 import type { Duty, GradeEntry, SeatedStudent, Trait } from "../../db";
 import { DutyBadge } from "../../components/dutySymbols";
 import { getCommentPreview, getStudentLabel } from "../../lib/formatters";
-import { getGradeColor } from "../../lib/grades";
+import { useGradeColor } from "../../hooks/useGradeFormat";
 import {
   getZoomedArea,
   GRID_COLUMNS,
@@ -209,6 +209,7 @@ function Seat({
   isDimmed,
   onTap,
 }: SeatProps) {
+  const getGradeColor = useGradeColor();
   const grade = entry?.grade ?? null;
   const hasSymbol = grade != null || !!entry?.absent;
   const warning = WARNING_LEVELS[entry?.warnings ?? 0];
