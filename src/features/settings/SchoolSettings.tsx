@@ -70,9 +70,12 @@ export function SchoolSettings({ schoolClasses }: SchoolSettingsProps) {
             save({ lessonsPerDay: Number(event.target.value) })
           }
         >
-          {Array.from({ length: 13 - lastUsedLesson }, (_, index) => (
-            <MenuItem key={index} value={lastUsedLesson + index}>
-              {lastUsedLesson + index}
+          {Array.from(
+            { length: 13 - lastUsedLesson },
+            (_, index) => lastUsedLesson + index,
+          ).map((count) => (
+            <MenuItem key={count} value={count}>
+              {count}
             </MenuItem>
           ))}
         </TextField>

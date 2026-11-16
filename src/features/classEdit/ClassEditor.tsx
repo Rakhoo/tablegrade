@@ -15,7 +15,6 @@ import { useSettings } from "../../hooks/useSettings";
 import { sortCopyClasses } from "../../lib/classCopy";
 import {
   fillNicknames,
-  getImportNickname,
   mergeStudents,
   parseStudentList,
   toRosterEntry,
@@ -25,6 +24,7 @@ import { MissingYearAlert } from "./MissingYearAlert";
 import { RosterList, type RosterRow } from "./RosterList";
 import { RosterTools } from "./RosterTools";
 import { StudentDialog } from "./StudentDialog";
+import { useRosterPdfImport } from "./useRosterPdfImport";
 import { TrashIcon } from "../../components/icons";
 import { formatClassName, formatStudentName } from "../../lib/formatters";
 import {
@@ -152,11 +152,6 @@ export function ClassEditor({
   const [editingStudent, setEditingStudent] = useState<
     RosterRow | "new" | null
   >(null);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{
-    text: string;
-    error?: boolean;
-  } | null>(null);
 
   // A new class for a school year that is not set up (yet), e.g. the timetable's week, waits for
   // the settings, unless it is created in one of the existing school years instead
@@ -299,55 +294,8 @@ export function ClassEditor({
     );
   };
 
-  /** Reads a WebUntis PDF and matches it with the roster by first and last name. */
-  const importPdf = async (input: HTMLInputElement) => {
-    const file = input.files?.[0];
-    if (!file) return;
-    setImporting(true);
-    setImportResult(null);
-    try {
-      // Read first: iOS may discard the picked file once the input is reset
-      const data = await file.arrayBuffer();
-      // Loaded on demand, as the PDF library is large
-      const { readRosterPdf } = await import("../../services/rosterPdf");
-      const incoming = await readRosterPdf(data);
-      if (!incoming?.length) {
-        setImportResult({
-          error: true,
-          text: "In dieser Datei wurde keine Schülerliste gefunden.",
-        });
-        return;
-      }
-      const result = mergeStudents(
-        roster,
-        incoming.map((student) => ({
-          ...student,
-          nickname: getImportNickname(student.firstName),
-        })),
-        createRow,
-      );
-      setRoster(() => fillNicknames(result.rows));
-      setImportResult({
-        text:
-          `${result.added} neu, ${result.matched} abgeglichen` +
-          (result.missing
-            ? `, ${result.missing} nicht in der Datei (bleiben in der Liste)`
-            : ""),
-      });
-    } catch (error) {
-      console.error(error);
-      // The technical details help with diagnosing, as the iPad has no visible console
-      const { name, message } = error as Error;
-      setImportResult({
-        error: true,
-        text: `Die Datei konnte nicht gelesen werden (${name}: ${message}).`,
-      });
-    } finally {
-      // Allow choosing the same file again
-      input.value = "";
-      setImporting(false);
-    }
-  };
+  const { importing, importResult, setImportResult, importPdf } =
+    useRosterPdfImport(roster, createRow, setRoster);
 
   const removeRow = (row: RosterRow) =>
     setRoster((prev) => prev.filter((r) => r.key != row.key));

@@ -14,7 +14,8 @@
   (`git diff --staged`).
 - Prüfen mit `npx tsc -b --noEmit`, `npm run lint`, `npm run build`. **Keine Browser-Tests**,
   außer ich melde ein konkretes Problem oder eine Änderung erfordert es ausdrücklich. Ehrlich
-  sagen, was geprüft wurde und was nicht.
+  sagen, was geprüft wurde und was nicht. Nach Code-Änderungen vor dem Bericht den
+  Projekt-Skill `clean-check` (`.claude/skills/clean-check/`) anwenden.
 - Entscheidungen mit vernünftigem Standard selbst treffen und im Bericht nennen; nur bei echten
   Weichenstellungen nachfragen.
 - Bei Feature-Änderungen die `README.md` mitpflegen (Prettier nicht auf die README anwenden, es

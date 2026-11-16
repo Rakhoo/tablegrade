@@ -53,8 +53,6 @@ const sortReports = (reports: Report[]) =>
 /**
  * Calculates the columns of all reports. A report covers the entries since the previous one;
  * a half after partials consists of these partials instead, and uses their average.
- * @param studentIds The students to calculate grades for.
- * @param entries The entries of the class.
  */
 export function getReportColumns(
   reports: Report[],

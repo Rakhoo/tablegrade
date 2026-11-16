@@ -26,13 +26,15 @@ export const classPageEntries = (
   },
 ];
 
+/** A display option's value and setter, e.g. from `useDisplayOption`. */
+export type SwitchOption = readonly [boolean, (value: boolean) => void];
+
 /** How a switch reads in one state: what is shown now, and what a tap changes it to. */
 type SwitchState = { label: string; action: string };
 
 /**
  * A switch of the speed dial for a display option. Its label says what is shown now, the line
  * below what a tap does, e.g. "Bilder sichtbar" and "Tippen: ausblenden".
- * @param option The option's value and setter, e.g. from `useDisplayOption`.
  */
 export const displaySwitch = (
   {
@@ -47,7 +49,7 @@ export const displaySwitch = (
     offIcon: ReactNode;
     help: string;
   },
-  [checked, setChecked]: readonly [boolean, (value: boolean) => void],
+  [checked, setChecked]: SwitchOption,
 ): SpeedDialEntry => ({
   ...entry,
   label: (checked ? on : off).label,
@@ -55,3 +57,26 @@ export const displaySwitch = (
   checked,
   onClick: () => setChecked(!checked),
 });
+
+/** A switch showing or hiding something, e.g. "Bilder sichtbar" / "Bilder ausgeblendet". */
+export const visibilitySwitch = (
+  {
+    noun,
+    ...entry
+  }: {
+    key: string;
+    noun: string;
+    icon: ReactNode;
+    offIcon: ReactNode;
+    help: string;
+  },
+  option: SwitchOption,
+): SpeedDialEntry =>
+  displaySwitch(
+    {
+      ...entry,
+      on: { label: `${noun} sichtbar`, action: "ausblenden" },
+      off: { label: `${noun} ausgeblendet`, action: "anzeigen" },
+    },
+    option,
+  );

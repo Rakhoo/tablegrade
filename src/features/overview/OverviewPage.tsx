@@ -1,6 +1,6 @@
-import { Button, Menu, MenuItem, Snackbar } from "@mui/material";
+import { Button, Snackbar } from "@mui/material";
 import { format, parseISO } from "date-fns";
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { useState } from "react";
 import {
   useLoaderData,
   useLocation,
@@ -8,43 +8,18 @@ import {
   useSearchParams,
 } from "react-router";
 import { BackButton } from "../../components/BackButton";
-import { EmptyState } from "../../components/EmptyState";
 import { CancelDialog } from "../../components/CancelDialog";
-import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { EmptyState } from "../../components/EmptyState";
 import { GradeToolBar } from "../../components/GradeToolBar";
 import { HistoryButtons } from "../../components/HistoryButtons";
 import { ModeBar, ModeToggle } from "../../components/ModeBar";
 import { PageHeader } from "../../components/PageHeader";
-import {
-  SpeedDialLayout,
-  type SpeedDialEntry,
-} from "../../components/SpeedDial";
-import {
-  classPageEntries,
-  displaySwitch,
-} from "../../components/speedDialEntries";
-import {
-  BadgeIcon,
-  DownloadIcon,
-  ImageIcon,
-  ImageOffIcon,
-  SeatsIcon,
-  SmileIcon,
-  SortIcon,
-  SortOffIcon,
-  TagIcon,
-  TagOffIcon,
-} from "../../components/icons";
-import {
-  addReport,
-  removeReport,
-  type GradeEntry,
-  type SeatedStudent,
-} from "../../db";
+import { SpeedDialLayout } from "../../components/SpeedDial";
+import { SeatsIcon } from "../../components/icons";
+import type { GradeEntry, SeatedStudent } from "../../db";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
-import { PointsContext } from "../../hooks/useGradeFormat";
 import { useEditHistory } from "../../hooks/useEditHistory";
-import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
+import { PointsContext } from "../../hooks/useGradeFormat";
 import { useSettings } from "../../hooks/useSettings";
 import { suggestGrade } from "../../lib/assessment";
 import {
@@ -59,77 +34,27 @@ import {
   formatGrade,
   getToolValue,
   getValidGradeTool,
-  isExamDay,
-  MARK_FIELD,
-  MARK_KIND,
   type GradeTool,
   type LessonType,
 } from "../../lib/grades";
 import { createMarkRules } from "../../lib/lessonChains";
 import { lessonKey } from "../../lib/lessons";
-import {
-  getColumnKey,
-  getOverviewColumns,
-  type LessonColumn,
-} from "../../lib/overview";
+import { getOverviewColumns, type LessonColumn } from "../../lib/overview";
 import { paths } from "../../lib/paths";
 import {
-  getReportChangeError,
   getReportColumns,
   REPORT_LABELS,
-  type Report,
   type ReportColumn,
-  type ReportKind,
 } from "../../lib/reports";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getVisibleGrades, usesPoints } from "../../lib/settings";
 import { CommentDialog } from "../classroom/CommentDialog";
-import { LessonTypeMenu } from "./LessonTypeMenu";
+import { ExportButton } from "./ExportButton";
+import { overviewDialEntries } from "./overviewDialEntries";
+import { MODES, type OverviewMode } from "./overviewModes";
 import type { OverviewLoaderData } from "./overviewLoader";
-import { HiddenCell, LessonCell, NameCell, ReportCell } from "./TableCells";
-import { DateHeader, ReportHeader } from "./TableHeaders";
-
-/** What a tap on a cell does: nothing (viewing), apply the grading tool or edit the comment. */
-type OverviewMode = "view" | "grade" | "comment";
-
-/** The modes with their names and explanations. */
-const MODES: { value: OverviewMode; label: string; help: string }[] = [
-  {
-    value: "view",
-    label: "Betrachten",
-    help: "Modus Betrachten: die Tabelle nur ansehen, ein Tipp in eine Zelle ändert nichts.",
-  },
-  {
-    value: "grade",
-    label: "Bewerten",
-    help: "Modus Bewerten: Werkzeug wählen und Zellen antippen.",
-  },
-  {
-    value: "comment",
-    label: "Kommentieren",
-    help: "Modus Kommentieren: Kommentare der Stunden lesen und schreiben.",
-  },
-];
-
-/** What a tap on a cell does per mode, explained by the help at the best visible cell. */
-const CELL_HELP: Record<OverviewMode, string> = {
-  view: "Zum Ändern oben „Bewerten“ oder „Kommentieren“ wählen.",
-  grade:
-    "Antippen wendet das gewählte Werkzeug an; Teil- und Halbjahresnoten lassen sich mit Noten korrigieren.",
-  comment:
-    "Antippen bearbeitet oder beginnt einen Kommentar; Sprechblasen zeigen seinen Anfang.",
-};
-
-/** Sizes of the table's cells, photos and symbols (see `TableCells`), as CSS variables. */
-const COMFORTABLE_SIZES = {
-  "--cell": "2.75rem",
-  "--photo": "2rem",
-} as CSSProperties;
-/** The compact table: lower rows, narrower columns, smaller photos. */
-const COMPACT_SIZES = {
-  "--cell": "2rem",
-  "--photo": "1.5rem",
-} as CSSProperties;
+import { OverviewTable } from "./OverviewTable";
+import { useDateMenu } from "./useDateMenu";
 
 const entryKey = (studentId: number, date: string) => `${studentId}|${date}`;
 
@@ -161,8 +86,6 @@ export function OverviewPage() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<OverviewMode>("view");
   const grading = mode == "grade";
-  /** Size of the grade symbols in the cells; marks match it (see `TableCells`). */
-  const iconSize = settings.compactTable ? 20 : 26;
   /** Student whose entries alone stay visible, e.g. to show them to the student. */
   const [shownStudent, setShownStudent] = useState<number | null>(null);
   // The arrows switch the class without leaving the page, the student may not be in the new one
@@ -182,17 +105,8 @@ export function OverviewPage() {
   const [sortByLastName] = lastNameSortOption;
   const [showPhotos] = photosOption;
   const [showTraits] = traitsOption;
-  const [exportMenu, setExportMenu] = useState<HTMLElement | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
-  const [typeMenu, setTypeMenu] = useState<{
-    date: string;
-    anchor: HTMLElement;
-  } | null>(null);
-  const [reportRemoval, setReportRemoval] = useState<{
-    report: Report;
-    grades: number;
-  } | null>(null);
   const [commenting, setCommenting] = useState<{
     student: SeatedStudent;
     date: string;
@@ -210,10 +124,6 @@ export function OverviewPage() {
     history.reset();
     revalidate();
   };
-  const { requestLessonType, lessonTypeDialog } = useLessonTypeChange(
-    cls.id,
-    handleLessonChanged,
-  );
 
   const entryMap = new Map<string, GradeEntry>(
     entries.map((entry) => [entryKey(entry.studentId, entry.date), entry]),
@@ -230,14 +140,17 @@ export function OverviewPage() {
     days.includes(date) || isLessonCancelled(date);
   const studentIds = students.map((student) => student.id);
   const rules = createMarkRules(dates, typesOf, studentIds, entries);
-
-  /** Whether a column is complete: oral grades, an exam's or retake's marks, project marks. */
-  const isComplete = ({ date, kind }: LessonColumn) => {
-    const completion = rules.completion(date);
-    if (kind == "projectMark") return completion.project;
-    if (kind == "mark" && !isExamDay(typesOf(date))) return completion.retake;
-    return completion.lesson;
-  };
+  const { openMenu, menu } = useDateMenu({
+    classId: cls.id,
+    entries,
+    reports,
+    reportGrades,
+    typesOf,
+    isCancelled,
+    rules,
+    onChanged: handleLessonChanged,
+    onMessage: setMessage,
+  });
 
   const hasMarkColumns =
     reports.length > 0 ||
@@ -255,23 +168,6 @@ export function OverviewPage() {
     getReportColumns(reports, reportGrades, studentIds, entries, settings),
   );
 
-  const tableArea = useRef<HTMLElement>(null);
-  // Opening a table shows the lesson's column, or the last one before it, in the middle
-  const scrollTarget = lessonDate
-    ? dates.filter((date) => date <= lessonDate).at(-1)
-    : dates.at(-1);
-  useLayoutEffect(() => {
-    const area = tableArea.current;
-    const header = area?.querySelector<HTMLElement>(
-      `th[data-date="${scrollTarget}"]`,
-    );
-    if (!area || !header) return;
-    area.scrollLeft =
-      header.offsetLeft - area.clientWidth / 2 + header.offsetWidth / 2;
-    // Only when a table or lesson is opened, not on every change of its data
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cls.id, lessonDate]);
-
   const nameOf = useNicknames ? getStudentLabel : formatStudentName;
   // By last name the shown name only decides between equal last names
   const rows = [...students].sort(
@@ -284,28 +180,6 @@ export function OverviewPage() {
   /** Traits come sorted by name, so this is alphabetical as well */
   const traitsOf = (student: SeatedStudent) =>
     traits.filter((trait) => student.traitIds.includes(trait.id));
-  // The name column is as wide as the widest rendered name or traits line, measured in the
-  // table, as only the real fonts give the true width (canvas fonts differ on iPads)
-  const [nameWidth, setNameWidth] = useState(0);
-  const nameColumnKey = rows
-    .map(
-      (student) =>
-        `${nameOf(student)}|${showTraits ? traitsOf(student).map(({ name }) => name) : ""}`,
-    )
-    .join(";");
-  useLayoutEffect(() => {
-    const parts =
-      tableArea.current?.querySelectorAll<HTMLElement>("[data-name-part]") ??
-      [];
-    setNameWidth(
-      Math.ceil(
-        Math.max(
-          0,
-          ...[...parts].map((part) => part.getBoundingClientRect().width),
-        ),
-      ),
-    );
-  }, [nameColumnKey, shownStudent]);
   const suggestionFor = (student: SeatedStudent, date: string) =>
     suggestGrade(
       entries.filter((entry) => entry.studentId == student.id),
@@ -392,196 +266,37 @@ export function OverviewPage() {
     );
   };
 
-  const hasReport = (date: string, kind: ReportKind) =>
-    reports.some((report) => report.date == date && report.kind == kind);
+  /** The table as shown, for the export. */
+  const exportData = () => ({
+    schoolClass: cls,
+    title: `${formatClassName(cls)} ${cls.subject}, ${formatSchoolYear(cls.year)}, ${SCHOOL_YEAR_PART_LABELS[cls.part]}`,
+    students: rows.map((student) => ({
+      id: student.id,
+      name: nameOf(student),
+      nameParts: [student.firstName, student.lastName, student.nickname ?? ""],
+      image: showPhotos ? student.image : null,
+      traits: showTraits ? traitsOf(student) : [],
+    })),
+    columns,
+    entryOf,
+    typesOf,
+    settings,
+  });
 
-  /** Adds or removes a report; removing asks first if that deletes grades set by hand. */
-  const toggleReport = async (date: string, kind: ReportKind) => {
-    setTypeMenu(null);
-    const report = { date, kind };
-    const error = getReportChangeError(reports, report);
-    if (error) return setMessage(error);
-    if (!hasReport(date, kind)) {
-      await addReport(cls.id, report);
-      return handleLessonChanged();
-    }
-    const grades = reportGrades.filter(
-      (grade) => grade.date == date && grade.kind == kind,
-    ).length;
-    if (grades > 0) return setReportRemoval({ report, grades });
-    await removeReport(cls.id, report);
-    handleLessonChanged();
-  };
-
-  /** How the rows are sorted, named for the anonymous export. */
-  const orderLabel = sortByLastName
-    ? "alphabetisch nach Nachname"
-    : useNicknames
-      ? "alphabetisch nach Spitzname, sonst Vorname"
-      : "alphabetisch nach Vorname, dann Nachname";
-
-  const runExport = async (fileType: "csv" | "anonymousCsv" | "pdf") => {
-    setExportMenu(null);
-    const data = {
-      schoolClass: cls,
-      title: `${formatClassName(cls)} ${cls.subject}, ${formatSchoolYear(cls.year)}, ${SCHOOL_YEAR_PART_LABELS[cls.part]}`,
-      students: rows.map((student) => ({
-        id: student.id,
-        name: nameOf(student),
-        nameParts: [
-          student.firstName,
-          student.lastName,
-          student.nickname ?? "",
-        ],
-        image: showPhotos ? student.image : null,
-        traits: showTraits ? traitsOf(student) : [],
-      })),
-      columns,
-      entryOf,
-      typesOf,
-      settings,
-    };
-    try {
-      const { exportAnonymousCsv, exportCsv, exportPdf } =
-        await import("../../services/overviewExport");
-      if (fileType == "csv") exportCsv(data);
-      else if (fileType == "anonymousCsv") exportAnonymousCsv(data, orderLabel);
-      else await exportPdf(data);
-      setMessage("Der Export wurde heruntergeladen.");
-    } catch (error) {
-      console.error(error);
-      const { name, message: reason } = error as Error;
-      setMessage(`Der Export ist fehlgeschlagen (${name}: ${reason}).`);
-    }
-  };
-
-  /** Renders a lesson cell of a student with what belongs into it. */
-  const renderLessonCell = (
-    student: SeatedStudent,
-    column: LessonColumn,
-    rowIndex: number,
-    columnIndex: number,
-  ) => {
-    const { date, kind } = column;
-    const entry = entryOf(student.id, date);
-    const cancelled = isCancelled(date);
-    const isExam = isExamDay(typesOf(date));
-    const retaker = rules.isRetaker(student.id, date);
-    // Graded on another date of the exam or project, shown faintly
-    const locked = rules.isClosed(student.id, date, kind);
-    const markKind = kind == "projectMark" ? "project" : "exam";
-    const value = kind == "oral" ? entry?.grade : entry?.[MARK_FIELD[markKind]];
-    const suggests =
-      kind == "oral" &&
-      value == null &&
-      !entry?.absent &&
-      grading &&
-      settings.suggestions &&
-      !cancelled &&
-      !locked;
-    return (
-      <LessonCell
-        iconSize={iconSize}
-        key={getColumnKey(column)}
-        kind={kind}
-        rowIndex={rowIndex}
-        columnIndex={columnIndex}
-        entry={entry}
-        value={value ?? null}
-        chainMark={
-          locked && kind != "oral"
-            ? rules.chainMark(markKind, student.id, date)
-            : null
-        }
-        // "Absent" belongs to the exam or retake for those writing it
-        showAbsent={
-          !!entry?.absent &&
-          (kind == "mark" ? isExam || retaker : kind == "oral" && !retaker)
-        }
-        suggestion={suggests ? suggestionFor(student, date) : undefined}
-        comment={
-          kind == "oral" || (isExam && kind == "mark")
-            ? mode == "comment"
-              ? "preview"
-              : "symbol"
-            : null
-        }
-        grayed={cancelled || locked}
-        locked={locked}
-        current={date == lessonDate}
-        disabled={mode == "view"}
-        label={`${formatStudentName(student)}, ${date}`}
-        help={CELL_HELP[mode]}
-        onTap={() => handleTap(student, column)}
-      />
-    );
-  };
-
-  const dialEntries: SpeedDialEntry[] = classPageEntries(
-    cls.id,
+  const dialEntries = overviewDialEntries({
+    classId: cls.id,
     lessonDate,
     hasPhotos,
-  );
-  if (hasPhotos) {
-    dialEntries.push(
-      displaySwitch(
-        {
-          key: "photos",
-          on: { label: "Bilder sichtbar", action: "ausblenden" },
-          off: { label: "Bilder ausgeblendet", action: "anzeigen" },
-          icon: <ImageIcon />,
-          offIcon: <ImageOffIcon />,
-          help: "Zeigt die Fotos vor den Namen.",
-        },
-        photosOption,
-      ),
-    );
-  }
-  if (hasTraits) {
-    dialEntries.push(
-      displaySwitch(
-        {
-          key: "traits",
-          on: { label: "Eigenschaften sichtbar", action: "ausblenden" },
-          off: { label: "Eigenschaften ausgeblendet", action: "anzeigen" },
-          icon: <TagIcon />,
-          offIcon: <TagOffIcon />,
-          help: "Zeigt die Eigenschaften ausgeschrieben unter den Namen.",
-        },
-        traitsOption,
-      ),
-    );
-  }
-  dialEntries.push(
-    displaySwitch(
-      {
-        key: "nicknames",
-        on: { label: "Spitznamen", action: "volle Namen" },
-        off: { label: "Volle Namen", action: "Spitznamen" },
-        icon: <SmileIcon />,
-        offIcon: <BadgeIcon />,
-        help: "Zeigt Spitznamen statt der vollen Namen; solange nicht nach Nachname sortiert wird, folgt die Reihenfolge den angezeigten Namen.",
-      },
-      nicknamesOption,
-    ),
-  );
-  // Sorting comes after the display options, so they stay together
-  dialEntries.push(
-    displaySwitch(
-      {
-        key: "lastNameSort",
-        on: { label: "Nach Nachname sortiert", action: "nach Anzeigename" },
-        off: { label: "Nach Anzeigename sortiert", action: "nach Nachname" },
-        icon: <SortIcon />,
-        offIcon: <SortOffIcon />,
-        help: "Sortiert die Schüler nach Nachnamen, auch wenn sie nicht angezeigt werden; sonst nach den angezeigten Namen.",
-      },
-      lastNameSortOption,
-    ),
-  );
+    hasTraits,
+    options: {
+      photos: photosOption,
+      traits: traitsOption,
+      nicknames: nicknamesOption,
+      lastNameSort: lastNameSortOption,
+    },
+  });
 
-  const currentMode = MODES.find((option) => option.value == mode)!;
-  const menuDate = typeMenu?.date;
+  const currentMode = MODES.find((option) => option.value == mode);
 
   return (
     <PointsContext value={points}>
@@ -613,7 +328,7 @@ export function OverviewPage() {
         />
 
         <ModeBar
-          current={currentMode.label}
+          current={currentMode?.label ?? ""}
           modes={
             <ModeToggle
               value={mode}
@@ -655,188 +370,62 @@ export function OverviewPage() {
         </ModeBar>
 
         <div className="relative min-h-0 flex-1">
-          <main
-            ref={tableArea}
-            className="card h-full overflow-auto"
-            data-help-group
-            data-help="Tabelle mit allen Stunden und Noten der Klasse."
-          >
-            {students.length == 0 ? (
-              <EmptyState title="Noch keine Schüler" tone="muted">
-                Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
-              </EmptyState>
-            ) : dates.length == 0 ? (
-              <EmptyState title="Noch kein Unterricht" tone="muted">
-                In diesem Halbjahr gab es noch keine Stunde dieser Klasse.
-              </EmptyState>
-            ) : (
-              <table
-                className="border-separate border-spacing-0"
-                style={
-                  settings.compactTable ? COMPACT_SIZES : COMFORTABLE_SIZES
+          <OverviewTable
+            classId={cls.id}
+            columns={columns}
+            rows={rows}
+            empty={
+              students.length == 0 ? (
+                <EmptyState title="Noch keine Schüler" tone="muted">
+                  Über „Bearbeiten“ lässt sich die Schülerliste anlegen.
+                </EmptyState>
+              ) : dates.length == 0 ? (
+                <EmptyState title="Noch kein Unterricht" tone="muted">
+                  In diesem Halbjahr gab es noch keine Stunde dieser Klasse.
+                </EmptyState>
+              ) : null
+            }
+            corner={
+              <ExportButton
+                getData={exportData}
+                order={
+                  sortByLastName
+                    ? "alphabetisch nach Nachname"
+                    : useNicknames
+                      ? "alphabetisch nach Spitzname, sonst Vorname"
+                      : "alphabetisch nach Vorname, dann Nachname"
                 }
-              >
-                <thead>
-                  <tr>
-                    {/* Above all date headers, whose layers grow with the columns */}
-                    <th
-                      className="sticky top-0 left-0 bg-surface p-2 text-left align-top"
-                      style={{ zIndex: 20 + columns.length }}
-                    >
-                      <Button
-                        size="small"
-                        data-help="Exportiert die Tabelle als PDF oder CSV, auch anonymisiert mit Kommentaren."
-                        data-help-place="above"
-                        startIcon={<DownloadIcon size={16} />}
-                        onClick={(event) => setExportMenu(event.currentTarget)}
-                      >
-                        Export
-                      </Button>
-                    </th>
-                    {columns.map((column, index) => {
-                      if (column.kind == "report") {
-                        return (
-                          <ReportHeader
-                            key={getColumnKey(column)}
-                            column={column}
-                            index={index}
-                            columns={columns.length}
-                            onTap={(anchor) =>
-                              setTypeMenu({ date: column.date, anchor })
-                            }
-                          />
-                        );
-                      }
-                      const { date, kind } = column;
-                      // A mark column carries the type it belongs to, the oral one none
-                      const columnType =
-                        kind == "oral"
-                          ? null
-                          : (typesOf(date).find(
-                              (type) =>
-                                MARK_KIND[type] ==
-                                (kind == "projectMark" ? "project" : "exam"),
-                            ) ?? null);
-                      return (
-                        <DateHeader
-                          key={getColumnKey(column)}
-                          date={date}
-                          index={index}
-                          columns={columns.length}
-                          isComplete={isComplete(column)}
-                          isCancelled={isCancelled(date)}
-                          isCurrent={date == lessonDate}
-                          lessonType={columnType}
-                          typeLabel={
-                            columnType ? rules.typeLabel(date, columnType) : ""
-                          }
-                          onTap={
-                            isCancelled(date)
-                              ? undefined
-                              : (anchor) => setTypeMenu({ date, anchor })
-                          }
-                          // Whole cancelled days are managed in the timetable
-                          onLongPress={() =>
-                            !days.includes(date) && setCancelTarget(date)
-                          }
-                          help="Datum antippen: Typ der Stunde wählen oder eine Teil- oder Halbjahresnote anfügen; lange drücken: Ausfall."
-                        />
-                      );
-                    })}
-                    {/* Room for the tilted date of the last column */}
-                    <th className="sticky top-0 min-w-16 border-b border-line bg-surface" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((student, rowIndex) => {
-                    const hidden = !!shown && student.id != shown.id;
-                    return (
-                      <tr key={student.id}>
-                        <NameCell
-                          student={student}
-                          rowIndex={rowIndex}
-                          name={nameOf(student)}
-                          photoColumn={showPhotos && hasPhotos}
-                          // Nor does the student shown their own entries see them
-                          traits={showTraits && !shown ? traitsOf(student) : []}
-                          nameWidth={nameWidth}
-                          shown={shownStudent == student.id}
-                          hidden={hidden}
-                          onTap={() =>
-                            setShownStudent(
-                              shownStudent == student.id ? null : student.id,
-                            )
-                          }
-                        />
-                        {columns.map((column, columnIndex) =>
-                          hidden ? (
-                            <HiddenCell key={getColumnKey(column)} />
-                          ) : column.kind == "report" ? (
-                            <ReportCell
-                              key={getColumnKey(column)}
-                              student={student}
-                              column={column}
-                              rowIndex={rowIndex}
-                              columnIndex={columnIndex}
-                              label={`${formatStudentName(student)}, ${column.label}`}
-                              grading={grading}
-                              iconSize={iconSize}
-                              onTap={() => handleReportTap(student, column)}
-                            />
-                          ) : (
-                            renderLessonCell(
-                              student,
-                              column,
-                              rowIndex,
-                              columnIndex,
-                            )
-                          ),
-                        )}
-                        <td />
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </main>
+                onMessage={setMessage}
+              />
+            }
+            lessonDate={lessonDate}
+            // Opening a table shows the lesson's column, or the last one before it, in the middle
+            scrollTarget={
+              lessonDate
+                ? dates.filter((date) => date <= lessonDate).at(-1)
+                : dates.at(-1)
+            }
+            days={days}
+            mode={mode}
+            nameOf={nameOf}
+            traitsOf={traitsOf}
+            showPhotos={showPhotos && hasPhotos}
+            showTraits={showTraits}
+            shown={shown}
+            onShow={setShownStudent}
+            entryOf={entryOf}
+            typesOf={typesOf}
+            isCancelled={isCancelled}
+            rules={rules}
+            suggestionFor={suggestionFor}
+            onTap={handleTap}
+            onReportTap={handleReportTap}
+            onMenu={openMenu}
+            onCancel={setCancelTarget}
+          />
         </div>
 
-        <Menu
-          anchorEl={exportMenu}
-          open={!!exportMenu}
-          onClose={() => setExportMenu(null)}
-        >
-          <MenuItem onClick={() => runExport("pdf")}>Als PDF</MenuItem>
-          <MenuItem onClick={() => runExport("csv")}>Als CSV</MenuItem>
-          <MenuItem onClick={() => runExport("anonymousCsv")}>
-            Als CSV, anonymisiert
-          </MenuItem>
-        </Menu>
-
-        <LessonTypeMenu
-          anchor={typeMenu?.anchor ?? null}
-          available={
-            menuDate && !isCancelled(menuDate)
-              ? rules.availableTypes(menuDate)
-              : []
-          }
-          types={menuDate ? typesOf(menuDate) : []}
-          hasReport={(kind) => !!menuDate && hasReport(menuDate, kind)}
-          onType={(type) => {
-            setTypeMenu(null);
-            requestLessonType(
-              menuDate!,
-              typesOf(menuDate!),
-              type,
-              entries.filter((entry) => entry.date == menuDate),
-            );
-          }}
-          onReport={(kind) => toggleReport(menuDate!, kind)}
-          onClose={() => setTypeMenu(null)}
-        />
-
-        {lessonTypeDialog}
+        {menu}
 
         {cancelTarget && (
           <CancelDialog
@@ -846,22 +435,6 @@ export function OverviewPage() {
             onClose={() => setCancelTarget(null)}
             onChanged={handleLessonChanged}
           />
-        )}
-
-        {reportRemoval && (
-          <ConfirmDialog
-            open
-            title={`${REPORT_LABELS[reportRemoval.report.kind]} entfernen?`}
-            confirmLabel="Entfernen"
-            onClose={() => setReportRemoval(null)}
-            onConfirm={async () => {
-              await removeReport(cls.id, reportRemoval.report);
-              setReportRemoval(null);
-              handleLessonChanged();
-            }}
-          >
-            {`Die ${reportRemoval.grades} manuell gesetzten Noten werden gelöscht.`}
-          </ConfirmDialog>
         )}
 
         {commenting && (

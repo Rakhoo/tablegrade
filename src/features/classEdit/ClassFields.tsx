@@ -67,11 +67,13 @@ function LessonFields({
           });
         }}
       >
-        {Array.from({ length: lessonsPerDay }, (_, index) => (
-          <MenuItem key={index} value={index + 1}>
-            {index + 1}. Stunde
-          </MenuItem>
-        ))}
+        {Array.from({ length: lessonsPerDay }, (_, index) => index + 1).map(
+          (lesson) => (
+            <MenuItem key={lesson} value={lesson}>
+              {lesson}. Stunde
+            </MenuItem>
+          ),
+        )}
       </TextField>
       <FormControlLabel
         label="Doppelstunde"

@@ -198,7 +198,7 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
   /** Pages with a real way back name the page they were opened from */
   const rememberFrom = (to: string) =>
     rememberReturnPage(to, pathname + search);
-  const [open, setOpen] = useState(false);
+  const [openState, setOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   // The help explains the entries while open, and the page with the permanent buttons otherwise
   const [dial, setDial] = useState<HTMLElement | null>(null);
@@ -213,11 +213,15 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
       disabled: pathname == paths.settings(),
     },
   ];
+  // Without a usable entry the dial stays closed and empty, its button visibly disabled
+  const usable = all.some((entry) => !entry.disabled);
+  const open = openState && usable;
+  const shown = usable ? all : [];
 
   // Folding back takes as long as the last entry's delay plus its transition
   const closeMs = 200 + all.length * STAGGER_MS;
-  const roundButton =
-    "flex h-11 w-11 items-center justify-center rounded-full shadow-card transition-transform active:scale-95";
+  const circle = "flex h-11 w-11 items-center justify-center rounded-full";
+  const roundButton = `${circle} shadow-card transition-transform active:scale-95`;
   return (
     <>
       <div
@@ -258,8 +262,17 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
             type="button"
             aria-label={open ? "Menü schließen" : "Menü öffnen"}
             aria-expanded={open}
-            className={`${roundButton} bg-brand-600 text-white`}
-            data-help="Öffnet das Menü mit allen weiteren Funktionen."
+            disabled={!usable}
+            className={
+              usable
+                ? `${roundButton} bg-brand-600 text-white`
+                : `${circle} bg-line text-muted`
+            }
+            data-help={
+              usable
+                ? "Öffnet das Menü mit allen weiteren Funktionen."
+                : "Hier gibt es gerade keine weiteren Funktionen."
+            }
             onClick={() => setOpen(!open)}
           >
             {/* Points left while closed and down while open */}
@@ -284,7 +297,7 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
             transition: `visibility 0s linear ${open ? 0 : closeMs}ms`,
           }}
         >
-          {all.map((entry, index) => (
+          {shown.map((entry, index) => (
             <div
               key={entry.key}
               className={
@@ -295,7 +308,7 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
               }
               // Unfolds from the top, folds back from the bottom
               style={{
-                transitionDelay: `${(open ? index : all.length - 1 - index) * STAGGER_MS}ms`,
+                transitionDelay: `${(open ? index : shown.length - 1 - index) * STAGGER_MS}ms`,
               }}
             >
               <SpeedDialItem

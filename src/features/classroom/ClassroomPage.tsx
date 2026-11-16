@@ -10,28 +10,8 @@ import { HistoryButtons } from "../../components/HistoryButtons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
 import { ModeBar, ModeToggle } from "../../components/ModeBar";
 import { PageHeader } from "../../components/PageHeader";
-import {
-  SpeedDialLayout,
-  type SpeedDialEntry,
-} from "../../components/SpeedDial";
-import {
-  classPageEntries,
-  displaySwitch,
-} from "../../components/speedDialEntries";
-import {
-  CheckIcon,
-  ImageIcon,
-  ImageOffIcon,
-  InfoIcon,
-  TableIcon,
-  TagIcon,
-  TagOffIcon,
-  DutyIcon,
-  DutyOffIcon,
-  TrashIcon,
-  ZoomInIcon,
-  ZoomOutIcon,
-} from "../../components/icons";
+import { SpeedDialLayout } from "../../components/SpeedDial";
+import { CheckIcon, InfoIcon, TableIcon } from "../../components/icons";
 import { clearLesson, type SeatedStudent } from "../../db";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
 import { PointsContext } from "../../hooks/useGradeFormat";
@@ -62,6 +42,9 @@ import {
 } from "../../lib/settings";
 import { getClassColor } from "../../lib/subjectColors";
 import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
+import { classroomDialEntries } from "./classroomDialEntries";
+import { MODES } from "./classroomModes";
+import { WarningLevels } from "./WarningLevels";
 import type { ClassroomLoaderData } from "./classroomLoader";
 import { ClearLessonDialog } from "./ClearLessonDialog";
 import { CommentDialog } from "./CommentDialog";
@@ -69,69 +52,6 @@ import { EraseChoiceDialog } from "./EraseChoiceDialog";
 import { SeatGrid } from "./SeatGrid";
 import { SeatLegend } from "./SeatLegend";
 import "./ClassroomPage.css";
-
-/** The modes of the seating plan with their explanations. */
-const MODES: {
-  mode: ClassroomMode;
-  label: string;
-  help: string;
-  /** What a tap on the seating plan does in this mode. */
-  gridHelp: string;
-  /** Hint below the mode choice; grading shows its tools and warning its levels instead. */
-  hint?: string;
-}[] = [
-  {
-    mode: "warn",
-    label: "Ermahnen",
-    help: "Modus Ermahnen: Antippen eines Schülers ermahnt ihn.",
-    gridHelp:
-      "Antippen ermahnt, ein zweites Mal verhängt eine Maßnahme, ein drittes nimmt beides zurück.",
-  },
-  {
-    mode: "grade",
-    label: "Bewerten",
-    help: "Modus Bewerten: Symbole oder Noten für diese Stunde vergeben.",
-    gridHelp:
-      "Antippen vergibt das gewählte Werkzeug; gestrichelte Symbole sind Vorschläge.",
-  },
-  {
-    mode: "comment",
-    label: "Kommentieren",
-    help: "Modus Kommentieren: Kommentare zu dieser Stunde lesen und schreiben.",
-    gridHelp:
-      "Antippen bearbeitet oder beginnt einen Kommentar; Sprechblasen zeigen seinen Anfang.",
-    hint: "Schüler antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben",
-  },
-  {
-    mode: "arrange",
-    label: "Anordnen",
-    help: "Modus Anordnen: die Sitzordnung ändern.",
-    gridHelp:
-      "Schüler auf einen Platz ziehen; auf einem anderen Schüler tauschen beide.",
-    hint: "Schüler zum Verschieben auf einen Platz ziehen",
-  },
-];
-
-/** Hint of the warning mode: the levels a tap cycles through. */
-function WarningLevels() {
-  return (
-    <div className="flex items-center gap-2">
-      Antippen:
-      {WARNING_LEVELS.map((level) => (
-        <span
-          key={level?.label ?? "none"}
-          className="rounded-full px-2.5 py-1 font-semibold"
-          style={{
-            background: level?.background ?? "var(--color-surface)",
-            color: level ? "var(--color-ink)" : "var(--color-muted)",
-          }}
-        >
-          {level?.label ?? "Normal"}
-        </span>
-      ))}
-    </div>
-  );
-}
 
 /**
  * Classroom page: seating plan of one lesson for warning, grading, commenting and arranging
@@ -337,83 +257,26 @@ export function ClassroomPage() {
       ),
     ) != null;
 
-  const entries: SpeedDialEntry[] = [
-    ...classPageEntries(cls.id, date, hasPhotos),
-    {
-      key: "clear",
-      label: "Stunde zurücksetzen",
-      icon: <TrashIcon />,
-      danger: true,
-      help: "Löscht ausgewählte Einträge dieser Stunde: Ermahnungen, Bewertungen oder Kommentare.",
-      disabled: grades.length == 0,
-      onClick: () => setConfirmClear(true),
+  const dialEntries = classroomDialEntries({
+    classId: cls.id,
+    date,
+    hasPhotos,
+    hasDuties,
+    hasTraits,
+    canZoom,
+    canClear: grades.length > 0,
+    onClear: () => setConfirmClear(true),
+    options: {
+      zoom: zoomOption,
+      photos: photosOption,
+      duties: dutiesOption,
+      traits: traitsOption,
     },
-  ];
-  if (canZoom) {
-    entries.push(
-      displaySwitch(
-        {
-          key: "zoom",
-          on: { label: "Zoom auf die Plätze", action: "ganzer Raum" },
-          off: { label: "Ganzer Raum", action: "Zoom" },
-          icon: <ZoomInIcon />,
-          offIcon: <ZoomOutIcon />,
-          help: "Zeigt nur den Teil des Raums, in dem Schüler sitzen, so groß wie möglich.",
-        },
-        zoomOption,
-      ),
-    );
-  }
-  if (hasPhotos) {
-    entries.push(
-      displaySwitch(
-        {
-          key: "photos",
-          on: { label: "Bilder sichtbar", action: "ausblenden" },
-          off: { label: "Bilder ausgeblendet", action: "anzeigen" },
-          icon: <ImageIcon />,
-          offIcon: <ImageOffIcon />,
-          help: "Zeigt die Fotos der Schüler im Sitzplan.",
-        },
-        photosOption,
-      ),
-    );
-  }
-  if (hasDuties) {
-    entries.push(
-      displaySwitch(
-        {
-          key: "duties",
-          on: { label: "Dienste sichtbar", action: "ausblenden" },
-          off: { label: "Dienste ausgeblendet", action: "anzeigen" },
-          icon: <DutyIcon />,
-          offIcon: <DutyOffIcon />,
-          help: "Zeigt die Dienste als farbige Symbole oben links an den Plätzen.",
-        },
-        dutiesOption,
-      ),
-    );
-  }
-  if (hasTraits) {
-    entries.push(
-      displaySwitch(
-        {
-          key: "traits",
-          on: { label: "Eigenschaften sichtbar", action: "ausblenden" },
-          off: { label: "Eigenschaften ausgeblendet", action: "anzeigen" },
-          icon: <TagIcon />,
-          offIcon: <TagOffIcon />,
-          help: "Zeigt die Eigenschaften als farbige Punkte um die Fotos.",
-        },
-        traitsOption,
-      ),
-    );
-  }
-
+  });
   return (
     <PointsContext value={points}>
       <SpeedDialLayout
-        entries={entries}
+        entries={dialEntries}
         links={[
           {
             key: "overview",

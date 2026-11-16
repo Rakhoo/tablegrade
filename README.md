@@ -27,7 +27,8 @@ The only network request fetches school holidays from
   collapsed it only shows *Hilfe*, the caret opening it and, on the pages of a class, buttons
   to its other pages (seating plan or overview table, labelled in landscape), which never
   cover the page (only the calendar card a bit); open it lists all further features of the page with their
-  labels on the left, above everything else. Display options are real switches showing the
+  labels on the left, above everything else. Without any usable entry (e.g. in the settings)
+  the caret is grayed out, disabled and opens nothing. Display options are real switches showing the
   icons of both states; their label says what is shown now ("Bilder sichtbar", "Volle Namen",
   "Nach Nachname sortiert", …) and a second line what a tap does ("Tippen: ausblenden")
   (`displaySwitch` in [src/components/speedDialEntries.tsx](src/components/speedDialEntries.tsx)), and all icon buttons of the open dial share their width, as do the
