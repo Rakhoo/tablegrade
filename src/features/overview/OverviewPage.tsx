@@ -88,7 +88,6 @@ import { LessonTypeMenu } from "./LessonTypeMenu";
 import type { OverviewLoaderData } from "./overviewLoader";
 import { HiddenCell, LessonCell, NameCell, ReportCell } from "./TableCells";
 import { DateHeader, ReportHeader } from "./TableHeaders";
-import { measureText } from "./textWidth";
 
 /** What a tap on a cell does: nothing (viewing), apply the grading tool or edit the comment. */
 type OverviewMode = "view" | "grade" | "comment";
@@ -272,21 +271,28 @@ export function OverviewPage() {
   /** Traits come sorted by name, so this is alphabetical as well */
   const traitsOf = (student: SeatedStudent) =>
     traits.filter((trait) => student.traitIds.includes(trait.id));
-  // Pixels of the longest name (semibold, 16px) or written out traits line (semibold, 12px,
-  // 8px apart), which the name column fits
-  const nameWidth = Math.ceil(
-    Math.max(
-      0,
-      ...rows.map((student) => {
-        const shownTraits = showTraits ? traitsOf(student) : [];
-        return Math.max(
-          measureText(nameOf(student), 600, 16),
-          measureText(shownTraits.map(({ name }) => name).join(""), 600, 12) +
-            8 * Math.max(0, shownTraits.length - 1),
-        );
-      }),
-    ),
-  );
+  // The name column is as wide as the widest rendered name or traits line, measured in the
+  // table, as only the real fonts give the true width (canvas fonts differ on iPads)
+  const [nameWidth, setNameWidth] = useState(0);
+  const nameColumnKey = rows
+    .map(
+      (student) =>
+        `${nameOf(student)}|${showTraits ? traitsOf(student).map(({ name }) => name) : ""}`,
+    )
+    .join(";");
+  useLayoutEffect(() => {
+    const parts =
+      tableArea.current?.querySelectorAll<HTMLElement>("[data-name-part]") ??
+      [];
+    setNameWidth(
+      Math.ceil(
+        Math.max(
+          0,
+          ...[...parts].map((part) => part.getBoundingClientRect().width),
+        ),
+      ),
+    );
+  }, [nameColumnKey, shownStudent]);
   const suggestionFor = (student: SeatedStudent, date: string) =>
     suggestGrade(
       entries.filter((entry) => entry.studentId == student.id),

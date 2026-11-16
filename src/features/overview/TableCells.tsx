@@ -24,7 +24,7 @@ type NameCellProps = {
   photoColumn: boolean;
   /** Traits written out below the name. */
   traits: Trait[];
-  /** Width of the longest name or traits line of the table in pixels, for all rows. */
+  /** Width of the widest name or traits line of the table in pixels, for all rows. */
   nameWidth: number;
   /** Whether only this student's entries are shown. */
   shown: boolean;
@@ -83,11 +83,17 @@ export function NameCell({
           ) : (
             <span className="h-8 w-8 shrink-0" />
           ))}
-        {/* Never narrower than the longest name, so no name runs over the column */}
+        {/* Never narrower than the longest name, so no name runs over the column; the parts
+            are as wide as their text, which the overview measures */}
         <div className="shrink-0" style={{ minWidth: nameWidth }}>
-          {name}
+          <span data-name-part className="block w-max">
+            {name}
+          </span>
           {traits.length > 0 && (
-            <div className="flex gap-2 text-xs font-semibold">
+            <div
+              data-name-part
+              className="flex w-max gap-2 text-xs font-semibold"
+            >
               {traits.map((trait) => (
                 <span key={trait.id} style={{ color: trait.color }}>
                   {trait.name}
