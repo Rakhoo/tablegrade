@@ -57,7 +57,12 @@ export function NameCell({
   return (
     <th
       className="sticky left-0 z-10 border-r border-b border-line p-0 text-left font-semibold whitespace-nowrap"
-      style={{ background: CELL_TINTS[rowIndex % 2][1] }}
+      style={{
+        background: CELL_TINTS[rowIndex % 2][1],
+        // Safari leaves the full width button out of the column width, so the cell itself
+        // gets it: padding (2 × 0.75rem), number (1.5rem), gaps (0.5rem each), photo and name
+        minWidth: `calc(${nameWidth}px + 3.5rem${photoColumn ? " + var(--photo) + 0.5rem" : ""})`,
+      }}
     >
       <button
         type="button"
