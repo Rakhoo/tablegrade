@@ -11,7 +11,8 @@
   Funktionen/Komponenten, nicht überladen. Alle UI-Texte **Deutsch**.
 - **Ich committe selbst.** Nicht committen. Commit-Messages **nur auf Nachfrage** liefern, nicht
   ungefragt im Bericht – dann einzeilig, englisch, auf Basis der gestagten Änderungen
-  (`git diff --staged`).
+  (`git diff --staged`). Ist nichts oder nicht alles gestagt, vorher fragen, ob gestagt werden
+  soll – als Auswahl mit Buttons (AskUserQuestion), nicht als Text-Frage.
 - Prüfen mit `npx tsc -b --noEmit`, `npm run lint`, `npm run build`. **Keine Browser-Tests**,
   außer ich melde ein konkretes Problem oder eine Änderung erfordert es ausdrücklich. Ehrlich
   sagen, was geprüft wurde und was nicht. Nach Code-Änderungen vor dem Bericht den
