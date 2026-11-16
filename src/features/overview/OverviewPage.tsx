@@ -161,6 +161,8 @@ export function OverviewPage() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<OverviewMode>("view");
   const grading = mode == "grade";
+  /** Size of the grade symbols in the cells; marks match it (see `TableCells`). */
+  const iconSize = settings.compactTable ? 20 : 26;
   /** Student whose entries alone stay visible, e.g. to show them to the student. */
   const [shownStudent, setShownStudent] = useState<number | null>(null);
   // The arrows switch the class without leaving the page, the student may not be in the new one
@@ -479,7 +481,7 @@ export function OverviewPage() {
       !locked;
     return (
       <LessonCell
-        iconSize={settings.compactTable ? 20 : 26}
+        iconSize={iconSize}
         key={getColumnKey(column)}
         kind={kind}
         rowIndex={rowIndex}
@@ -778,6 +780,7 @@ export function OverviewPage() {
                               columnIndex={columnIndex}
                               label={`${formatStudentName(student)}, ${column.label}`}
                               grading={grading}
+                              iconSize={iconSize}
                               onTap={() => handleReportTap(student, column)}
                             />
                           ) : (

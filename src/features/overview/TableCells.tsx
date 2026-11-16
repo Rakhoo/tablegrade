@@ -128,8 +128,16 @@ type ReportCellProps = {
   columnIndex: number;
   label: string;
   grading: boolean;
+  /** Size of the grade symbols in pixels, smaller in the compact table. */
+  iconSize: number;
   onTap: () => void;
 };
+
+/**
+ * Size of a mark badge next to grade symbols of `iconSize`: the symbols' circle leaves a small
+ * margin, so the badge is a bit smaller to look as large.
+ */
+const markSizeOf = (iconSize: number) => iconSize - 2;
 
 /**
  * A report grade: calculated or set by hand, then with an arrow showing whether it is better
@@ -142,6 +150,7 @@ export function ReportCell({
   columnIndex,
   label,
   grading,
+  iconSize,
   onTap,
 }: ReportCellProps) {
   const getGradeColor = useGradeColor();
@@ -166,7 +175,7 @@ export function ReportCell({
         onClick={onTap}
       >
         {value != null ? (
-          <MarkBadge mark={value} />
+          <MarkBadge mark={value} size={markSizeOf(iconSize)} />
         ) : (
           column.main && <span className="text-xs text-muted">n.b.</span>
         )}
@@ -267,9 +276,11 @@ export function LessonCell({
           (kind == "oral" ? (
             <GradeIcon grade={value} size={iconSize} />
           ) : (
-            <MarkBadge mark={value} />
+            <MarkBadge mark={value} size={markSizeOf(iconSize)} />
           ))}
-        {chainMark != null && <MarkBadge mark={chainMark} />}
+        {chainMark != null && (
+          <MarkBadge mark={chainMark} size={markSizeOf(iconSize)} />
+        )}
         {showAbsent && <GradeIcon size={iconSize} />}
         {suggestion != null && (
           <SuggestedGradeIcon grade={suggestion} size={iconSize} />

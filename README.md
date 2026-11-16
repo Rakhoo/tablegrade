@@ -394,7 +394,8 @@ the tab used last:
 - **Darstellung**: theme and light/dark mode; the grade colors, green to red or blue to
   orange for red-green color blindness (`gradePalette`, everywhere in the app and in the PDF
   export, also the correction arrows of reports); a compact overview table (lower rows,
-  narrower columns, smaller photos and symbols through the CSS variables `--cell` and
+  narrower columns, smaller photos, symbols and marks of exams, projects and reports, through
+  the CSS variables `--cell` and
   `--photo` on the table); "Nur Tage und Stunden mit Unterricht": the
   timetable leaves out weekdays without classes and the lessons before the first and after
   the last one of the week (free lessons in between stay; a week without classes stays
