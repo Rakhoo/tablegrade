@@ -26,14 +26,23 @@ export const classPageEntries = (
   },
 ];
 
+/** How a switch reads in one state: what is shown now, and what a tap changes it to. */
+type SwitchState = { label: string; action: string };
+
 /**
- * A switch of the speed dial for a display option.
+ * A switch of the speed dial for a display option. Its label says what is shown now, the line
+ * below what a tap does, e.g. "Bilder sichtbar" and "Tippen: ausblenden".
  * @param option The option's value and setter, e.g. from `useDisplayOption`.
  */
 export const displaySwitch = (
-  entry: {
+  {
+    on,
+    off,
+    ...entry
+  }: {
     key: string;
-    label: string;
+    on: SwitchState;
+    off: SwitchState;
     icon: ReactNode;
     offIcon: ReactNode;
     help: string;
@@ -41,6 +50,8 @@ export const displaySwitch = (
   [checked, setChecked]: readonly [boolean, (value: boolean) => void],
 ): SpeedDialEntry => ({
   ...entry,
+  label: (checked ? on : off).label,
+  detail: `Tippen: ${(checked ? on : off).action}`,
   checked,
   onClick: () => setChecked(!checked),
 });

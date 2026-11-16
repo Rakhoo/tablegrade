@@ -72,7 +72,6 @@ export const hasProvisionalSummers = (holidays: Holiday[]) =>
 export const SCHOOL_YEAR_PART_LABELS: Record<SchoolYearPart, string> = {
   "1": "1. Halbjahr",
   "2": "2. Halbjahr",
-  full: "Ganzes Jahr",
 };
 
 /** Whether `date` lies inside any holiday period. */
@@ -128,10 +127,9 @@ export function getSchoolYearRange(
   calendar: SchoolCalendar,
 ) {
   const half = getSecondHalfStart(year, calendar);
-  return {
-    start: part == "2" ? half : getSchoolYearStart(year, calendar),
-    end: part == "1" ? half : getSchoolYearStart(year + 1, calendar),
-  };
+  return part == "1"
+    ? { start: getSchoolYearStart(year, calendar), end: half }
+    : { start: half, end: getSchoolYearStart(year + 1, calendar) };
 }
 
 /** Start year of the school year that contains `date`. */

@@ -28,8 +28,8 @@ export const schoolClasses = sqliteTable("Classes", {
   letter: text("letter"),
   /** TimetablePage year in which the school year starts (2026 = "2026/27"). */
   year: int("year").notNull(),
-  /** "1" = first half, "2" = second half, "full" = whole school year. */
-  part: text("part").$type<"1" | "2" | "full">().notNull(),
+  /** "1" = first half, "2" = second half of the school year. */
+  part: text("part").$type<"1" | "2">().notNull(),
   /** Weekday, 1 = Monday … 5 = Friday. */
   day: int("day").notNull(),
   /** Lesson number of the day, starting at 1. */

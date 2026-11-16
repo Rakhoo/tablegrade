@@ -88,6 +88,7 @@ import { LessonTypeMenu } from "./LessonTypeMenu";
 import type { OverviewLoaderData } from "./overviewLoader";
 import { HiddenCell, LessonCell, NameCell, ReportCell } from "./TableCells";
 import { DateHeader, ReportHeader } from "./TableHeaders";
+import { measureText } from "./textWidth";
 
 /** What a tap on a cell does: nothing (viewing), apply the grading tool or edit the comment. */
 type OverviewMode = "view" | "grade" | "comment";
@@ -271,6 +272,21 @@ export function OverviewPage() {
   /** Traits come sorted by name, so this is alphabetical as well */
   const traitsOf = (student: SeatedStudent) =>
     traits.filter((trait) => student.traitIds.includes(trait.id));
+  // Pixels of the longest name (semibold, 16px) or written out traits line (semibold, 12px,
+  // 8px apart), which the name column fits
+  const nameWidth = Math.ceil(
+    Math.max(
+      0,
+      ...rows.map((student) => {
+        const shownTraits = showTraits ? traitsOf(student) : [];
+        return Math.max(
+          measureText(nameOf(student), 600, 16),
+          measureText(shownTraits.map(({ name }) => name).join(""), 600, 12) +
+            8 * Math.max(0, shownTraits.length - 1),
+        );
+      }),
+    ),
+  );
   const suggestionFor = (student: SeatedStudent, date: string) =>
     suggestGrade(
       entries.filter((entry) => entry.studentId == student.id),
@@ -378,7 +394,14 @@ export function OverviewPage() {
     handleLessonChanged();
   };
 
-  const runExport = async (fileType: "csv" | "pdf") => {
+  /** How the rows are sorted, named for the anonymous export. */
+  const orderLabel = sortByLastName
+    ? "alphabetisch nach Nachname"
+    : useNicknames
+      ? "alphabetisch nach Spitzname, sonst Vorname"
+      : "alphabetisch nach Vorname, dann Nachname";
+
+  const runExport = async (fileType: "csv" | "anonymousCsv" | "pdf") => {
     setExportMenu(null);
     const data = {
       schoolClass: cls,
@@ -386,6 +409,11 @@ export function OverviewPage() {
       students: rows.map((student) => ({
         id: student.id,
         name: nameOf(student),
+        nameParts: [
+          student.firstName,
+          student.lastName,
+          student.nickname ?? "",
+        ],
         image: showPhotos ? student.image : null,
         traits: showTraits ? traitsOf(student) : [],
       })),
@@ -395,9 +423,11 @@ export function OverviewPage() {
       settings,
     };
     try {
-      const { exportCsv, exportPdf } =
+      const { exportAnonymousCsv, exportCsv, exportPdf } =
         await import("../../services/overviewExport");
-      await (fileType == "csv" ? exportCsv(data) : exportPdf(data));
+      if (fileType == "csv") exportCsv(data);
+      else if (fileType == "anonymousCsv") exportAnonymousCsv(data, orderLabel);
+      else await exportPdf(data);
       setMessage("Der Export wurde heruntergeladen.");
     } catch (error) {
       console.error(error);
@@ -477,7 +507,8 @@ export function OverviewPage() {
       displaySwitch(
         {
           key: "photos",
-          label: "Bilder",
+          on: { label: "Bilder sichtbar", action: "ausblenden" },
+          off: { label: "Bilder ausgeblendet", action: "anzeigen" },
           icon: <ImageIcon />,
           offIcon: <ImageOffIcon />,
           help: "Zeigt die Fotos vor den Namen.",
@@ -486,34 +517,13 @@ export function OverviewPage() {
       ),
     );
   }
-  dialEntries.push(
-    displaySwitch(
-      {
-        key: "nicknames",
-        label: "Spitznamen",
-        icon: <SmileIcon />,
-        offIcon: <BadgeIcon />,
-        help: "Zeigt Spitznamen statt der vollen Namen; ohne „Nach Nachname“ folgt die Reihenfolge den angezeigten Namen.",
-      },
-      nicknamesOption,
-    ),
-    displaySwitch(
-      {
-        key: "lastNameSort",
-        label: "Nach Nachname",
-        icon: <SortIcon />,
-        offIcon: <SortOffIcon />,
-        help: "Sortiert die Schüler nach Nachnamen, auch wenn sie nicht angezeigt werden; sonst nach den angezeigten Namen.",
-      },
-      lastNameSortOption,
-    ),
-  );
   if (hasTraits) {
     dialEntries.push(
       displaySwitch(
         {
           key: "traits",
-          label: "Eigenschaften",
+          on: { label: "Eigenschaften sichtbar", action: "ausblenden" },
+          off: { label: "Eigenschaften ausgeblendet", action: "anzeigen" },
           icon: <TagIcon />,
           offIcon: <TagOffIcon />,
           help: "Zeigt die Eigenschaften ausgeschrieben unter den Namen.",
@@ -522,6 +532,33 @@ export function OverviewPage() {
       ),
     );
   }
+  dialEntries.push(
+    displaySwitch(
+      {
+        key: "nicknames",
+        on: { label: "Spitznamen", action: "volle Namen" },
+        off: { label: "Volle Namen", action: "Spitznamen" },
+        icon: <SmileIcon />,
+        offIcon: <BadgeIcon />,
+        help: "Zeigt Spitznamen statt der vollen Namen; solange nicht nach Nachname sortiert wird, folgt die Reihenfolge den angezeigten Namen.",
+      },
+      nicknamesOption,
+    ),
+  );
+  // Sorting comes after the display options, so they stay together
+  dialEntries.push(
+    displaySwitch(
+      {
+        key: "lastNameSort",
+        on: { label: "Nach Nachname sortiert", action: "nach Anzeigename" },
+        off: { label: "Nach Anzeigename sortiert", action: "nach Nachname" },
+        icon: <SortIcon />,
+        offIcon: <SortOffIcon />,
+        help: "Sortiert die Schüler nach Nachnamen, auch wenn sie nicht angezeigt werden; sonst nach den angezeigten Namen.",
+      },
+      lastNameSortOption,
+    ),
+  );
 
   const currentMode = MODES.find((option) => option.value == mode)!;
   const menuDate = typeMenu?.date;
@@ -623,7 +660,7 @@ export function OverviewPage() {
                     >
                       <Button
                         size="small"
-                        data-help="Exportiert die Tabelle als PDF oder CSV."
+                        data-help="Exportiert die Tabelle als PDF oder CSV, auch anonymisiert mit Kommentaren."
                         data-help-place="above"
                         startIcon={<DownloadIcon size={16} />}
                         onClick={(event) => setExportMenu(event.currentTarget)}
@@ -697,6 +734,7 @@ export function OverviewPage() {
                           photoColumn={showPhotos && hasPhotos}
                           // Nor does the student shown their own entries see them
                           traits={showTraits && !shown ? traitsOf(student) : []}
+                          nameWidth={nameWidth}
                           shown={shownStudent == student.id}
                           hidden={hidden}
                           onTap={() =>
@@ -745,6 +783,9 @@ export function OverviewPage() {
         >
           <MenuItem onClick={() => runExport("pdf")}>Als PDF</MenuItem>
           <MenuItem onClick={() => runExport("csv")}>Als CSV</MenuItem>
+          <MenuItem onClick={() => runExport("anonymousCsv")}>
+            Als CSV, anonymisiert
+          </MenuItem>
         </Menu>
 
         <LessonTypeMenu

@@ -106,9 +106,6 @@ export function ClassFields({
   subjects,
 }: ClassFieldsProps) {
   const settings = useSettings();
-  // "Ganzes Jahr" only stays visible for classes that were created with it
-  const parts: SchoolYearPart[] =
-    form.part == "full" ? ["1", "2", "full"] : ["1", "2"];
   const hasNoLetter = !hasLetters(form.number);
   return (
     <>
@@ -137,7 +134,7 @@ export function ClassFields({
           }
           className="landscape:col-span-2"
         >
-          {parts.map((part) => (
+          {(["1", "2"] as const).map((part) => (
             <ToggleButton key={part} value={part} className="flex-1">
               {SCHOOL_YEAR_PART_LABELS[part]}
             </ToggleButton>

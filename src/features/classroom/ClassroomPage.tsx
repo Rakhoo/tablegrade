@@ -354,7 +354,8 @@ export function ClassroomPage() {
       displaySwitch(
         {
           key: "zoom",
-          label: "Zoom",
+          on: { label: "Zoom auf die Plätze", action: "ganzer Raum" },
+          off: { label: "Ganzer Raum", action: "Zoom" },
           icon: <ZoomInIcon />,
           offIcon: <ZoomOutIcon />,
           help: "Zeigt nur den Teil des Raums, in dem Schüler sitzen, so groß wie möglich.",
@@ -368,7 +369,8 @@ export function ClassroomPage() {
       displaySwitch(
         {
           key: "photos",
-          label: "Bilder",
+          on: { label: "Bilder sichtbar", action: "ausblenden" },
+          off: { label: "Bilder ausgeblendet", action: "anzeigen" },
           icon: <ImageIcon />,
           offIcon: <ImageOffIcon />,
           help: "Zeigt die Fotos der Schüler im Sitzplan.",
@@ -382,7 +384,8 @@ export function ClassroomPage() {
       displaySwitch(
         {
           key: "duties",
-          label: "Dienste",
+          on: { label: "Dienste sichtbar", action: "ausblenden" },
+          off: { label: "Dienste ausgeblendet", action: "anzeigen" },
           icon: <DutyIcon />,
           offIcon: <DutyOffIcon />,
           help: "Zeigt die Dienste als farbige Symbole oben links an den Plätzen.",
@@ -396,7 +399,8 @@ export function ClassroomPage() {
       displaySwitch(
         {
           key: "traits",
-          label: "Eigenschaften",
+          on: { label: "Eigenschaften sichtbar", action: "ausblenden" },
+          off: { label: "Eigenschaften ausgeblendet", action: "anzeigen" },
           icon: <TagIcon />,
           offIcon: <TagOffIcon />,
           help: "Zeigt die Eigenschaften als farbige Punkte um die Fotos.",

@@ -28,7 +28,9 @@ The only network request fetches school holidays from
   to its other pages (seating plan or overview table, labelled in landscape), which never
   cover the page (only the calendar card a bit); open it lists all further features of the page with their
   labels on the left, above everything else. Display options are real switches showing the
-  icons of both states, and all icon buttons of the open dial share their width, as do the
+  icons of both states; their label says what is shown now ("Bilder sichtbar", "Volle Namen",
+  "Nach Nachname sortiert", …) and a second line what a tap does ("Tippen: ausblenden")
+  (`displaySwitch` in [src/components/speedDialEntries.tsx](src/components/speedDialEntries.tsx)), and all icon buttons of the open dial share their width, as do the
   labels (centered); label and icon button form one pill. *Einstellungen* is always the last entry. Modes are no part of it: classroom and overview
   table choose them with small text toggle buttons in the top left corner of the bar below the
   header, with undo/redo in its top right corner and the mode's hint or grading tools below.
@@ -158,7 +160,9 @@ The only network request fetches school holidays from
   checks for updates hourly and whenever it comes back to the foreground.
 
 - **Overview** (`/classes` for the selection, `/classes/:id/table`): one table per class and school year
-  half with students in rows, lesson dates in columns and the symbols at the intersections.
+  half with students in rows (numbered 1 to n from the top, like "Schüler 1", … in the anonymous
+  export; the name column is at least as wide as the longest name or traits line), lesson
+  dates in columns and the symbols at the intersections.
   The selection groups the classes by school year half, each group ending with a "Neue
   Klasse" tile that presets that half.
   Reachable from the overview selection and from a lesson. Arrows next to the title switch to
@@ -167,10 +171,10 @@ The only network request fetches school holidays from
   highlighted and scrolled to the middle when a table or lesson is opened. Its modes are
   *Betrachten* (default, cells do not react), *Bewerten* and *Kommentieren*. The seating plan
   button opens the lesson the table was opened from, else today's or the next one; the speed
-  dial holds *Bearbeiten*, *Namen lernen* and switches for photos, nicknames, *Nach Nachname*
-  (rows sorted by last name, shown or not, else by the shown names; exports follow it) and the
-  traits, which are either written out below the names or hidden (photos and traits share their
-  switches with the seating plan). Rows and columns are tinted,
+  dial holds *Bearbeiten*, *Namen lernen*, the display switches for photos, the traits, which
+  are either written out below the names or hidden (photos and traits share their switches
+  with the seating plan), and nicknames, and after them the sorting switch (rows sorted by last name,
+  shown or not, else by the shown names; exports follow it). Rows and columns are tinted,
   comments are marked with a small symbol, and a long press on a date cancels that lesson. A
   tap on a name covers the entries of all other students and hides all traits, to show a
   student their own.
@@ -390,6 +394,16 @@ back stays on it:
   the last one of the week (free lessons in between stay; a week without classes stays
   complete).
 - **Daten und Export**: backup, restore, backup reminder and "Neu laden"; the PDF export format.
+  Tapping the open tab "Daten und Export" seven times unlocks a hidden card *Entwickler* (while
+  the settings page stays open): *Mit Beispieldaten füllen* deletes all classes, students, entries, reports,
+  cancellations, traits and duties (settings, holidays and school years stay) after a warning,
+  an offer to make a backup first, a checkbox and typing "LÖSCHEN", and fills in mock data of
+  the current school year half: two subjects (Mathematik, Biologie) in 13 classes filling most of
+  the week, made up multicultural names (shared first names get nicknames like "Lea O.", as on
+  importing a list), avatars (head and shoulders in varied skin, hair and
+  shirt colors), oral grades, absences, warnings, comments, exams with retakes, a project and
+  a partial grade, traits and duties. Always the same data
+  ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
@@ -418,7 +432,13 @@ The corner of the overview table exports it as CSV or PDF. Projects get two colu
 oral grades and one for marks, here and in the app, and reports their columns. Theme colors are never exported; grade and
 trait colors and symbols or numbers are settings. PDFs contain photos and written out traits as
 the overview shows them (never the trait dots), unless the settings exclude them; CSV files only
-contain names and grade values. PDFs are built with jsPDF in
+contain names and grade values. *Als CSV, anonymisiert* numbers the students ("Schüler 1", …)
+in the order of the table and puts the lesson's comment after the grade ("2-, Kommentar",
+in the lesson's first column); names of the class's students in comments (first, last and
+nicknames, whole words, any case) become their numbers. Notes above the table state the
+order (by last name, nickname or first name, as sorted), asking anyone evaluating the file,
+an AI included, to mention it in every answer. Class and subject are left out of the file and its name
+(`Uebersicht-anonym-<date>.csv`). PDFs are built with jsPDF in
 [src/services/overviewExport.ts](src/services/overviewExport.ts).
 
 ## Styling

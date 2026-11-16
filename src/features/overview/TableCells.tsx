@@ -24,6 +24,8 @@ type NameCellProps = {
   photoColumn: boolean;
   /** Traits written out below the name. */
   traits: Trait[];
+  /** Width of the longest name or traits line of the table in pixels, for all rows. */
+  nameWidth: number;
   /** Whether only this student's entries are shown. */
   shown: boolean;
   /** Whether another student's entries are shown alone. */
@@ -31,13 +33,17 @@ type NameCellProps = {
   onTap: () => void;
 };
 
-/** First cell of a row: photo, name and traits; a tap shows only this student's entries. */
+/**
+ * First cell of a row: number (1 to n from the top, matching the anonymous export), photo, name
+ * and traits; a tap shows only this student's entries.
+ */
 export function NameCell({
   student,
   rowIndex,
   name,
   photoColumn,
   traits,
+  nameWidth,
   shown,
   hidden,
   onTap,
@@ -59,6 +65,13 @@ export function NameCell({
           (hidden ? "opacity-40" : "")
         }
       >
+        <span
+          className="w-6 shrink-0 text-right text-xs font-medium text-muted tabular-nums"
+          data-help="Laufende Nummer, wie „Schüler 1“, „Schüler 2“ … im anonymisierten Export."
+          data-help-repeat
+        >
+          {rowIndex + 1}
+        </span>
         {photoColumn &&
           (student.image ? (
             <img
@@ -70,7 +83,8 @@ export function NameCell({
           ) : (
             <span className="h-8 w-8 shrink-0" />
           ))}
-        <div>
+        {/* Never narrower than the longest name, so no name runs over the column */}
+        <div className="shrink-0" style={{ minWidth: nameWidth }}>
           {name}
           {traits.length > 0 && (
             <div className="flex gap-2 text-xs font-semibold">

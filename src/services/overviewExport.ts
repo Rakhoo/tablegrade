@@ -10,6 +10,7 @@ import {
   ABSENT_COLOR,
   formatGrade,
   getGradeColor,
+  isExamDay,
   type LessonType,
 } from "../lib/grades";
 import { LESSON_TYPE_LABELS } from "../lib/lessons";
@@ -26,6 +27,8 @@ export type OverviewExport = {
   students: {
     id: number;
     name: string;
+    /** First name, last name and nickname, hidden in comments of the anonymous CSV. */
+    nameParts: string[];
     image: string | null;
     traits: Trait[];
   }[];
@@ -78,11 +81,19 @@ const fileName = ({ schoolClass }: OverviewExport, extension: string) =>
     "_",
   );
 
+/** A CSV field, quoted if needed. */
+const escapeCsv = (text: string) =>
+  /[;"\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+
+/** Downloads CSV lines in the format of German spreadsheets (semicolons, BOM). */
+function downloadCsv(lines: string[][], name: string) {
+  const csv = lines.map((line) => line.map(escapeCsv).join(";")).join("\r\n");
+  downloadFile(new File([`\ufeff${csv}`], name, { type: "text/csv" }));
+}
+
 /** Exports the table as CSV in the format of German spreadsheets (semicolons, BOM). */
 export function exportCsv(data: OverviewExport) {
   const points = usesPoints(data.settings, data.schoolClass);
-  const escape = (text: string) =>
-    /[;"\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
   const lines = [
     [
       "Schüler",
@@ -99,10 +110,84 @@ export function exportCsv(data: OverviewExport) {
       ),
     ]),
   ];
-  const csv = lines.map((line) => line.map(escape).join(";")).join("\r\n");
-  downloadFile(
-    new File([`\ufeff${csv}`], fileName(data, "csv"), { type: "text/csv" }),
+  downloadCsv(lines, fileName(data, "csv"));
+}
+
+/** Escapes a text for use inside a regular expression. */
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Replaces the names of the class's students in a text by their numbers ("Schüler 3"), whole
+ * words only and longest names first, so "Anna-Lena" is not cut to "Anna".
+ */
+function hideNames(text: string, names: [string, string][]) {
+  return names.reduce(
+    (result, [name, label]) =>
+      result.replace(
+        new RegExp(`(?<!\\p{L})${escapeRegExp(name)}(?!\\p{L})`, "giu"),
+        label,
+      ),
+    text,
   );
+}
+
+/**
+ * Exports the table as CSV without names: students are numbered ("Schüler 1", …) in the order
+ * of the table, cells hold the grade and the comment of that lesson ("2-, Text"), and names
+ * in comments are replaced by the numbers. A note above the table states the order, worded so
+ * that an AI reading the file mentions it in its answers.
+ * @param order How the table was sorted, e.g. "alphabetisch nach Nachname".
+ */
+export function exportAnonymousCsv(data: OverviewExport, order: string) {
+  const points = usesPoints(data.settings, data.schoolClass);
+  const labels = new Map(
+    data.students.map((student, index) => [student.id, `Schüler ${index + 1}`]),
+  );
+  const names = data.students
+    .flatMap((student) =>
+      student.nameParts
+        .flatMap((part) => part.split(/\s+/))
+        .filter((part) => part.length > 1)
+        .map((part): [string, string] => [part, labels.get(student.id)!]),
+    )
+    .sort(([a], [b]) => b.length - a.length);
+  /** Whether a lesson column carries the lesson's comment: its first column. */
+  const holdsComment = (column: LessonColumn) =>
+    column.kind == "oral" ||
+    (column.kind == "mark" && isExamDay(data.typesOf(column.date)));
+
+  const note = [
+    `Hinweis zur Anonymisierung: Die Schüler sind als „Schüler 1“ bis „Schüler ${data.students.length}“ durchnummeriert, in der Reihenfolge der Übersichtstabelle beim Export (${order}). Namen in Kommentaren sind durch diese Nummern ersetzt.`,
+    `Hinweis für die Auswertung, auch durch eine KI: Bitte in jeder Antwort ausdrücklich darauf hinweisen, dass die Nummern der Reihenfolge der Übersichtstabelle (${order}) entsprechen, damit sie den echten Schülern zugeordnet werden können.`,
+    `Zellen: Note${points ? " in Punkten (15 bis 0)" : ""}, danach durch Komma getrennt der Kommentar dieser Stunde; A = abwesend; n.b. = nicht bewertbar.`,
+    `Exportiert am ${format(new Date(), "dd.MM.yyyy")}.`,
+  ];
+  const lines = [
+    ...note.map((text) => [text]),
+    [],
+    [
+      "Schüler",
+      ...data.columns.map((column) =>
+        columnTitle(column, data.typesOf(column.date)),
+      ),
+    ],
+    ...data.students.map((student) => [
+      labels.get(student.id)!,
+      ...data.columns.map((column) => {
+        if (column.kind == "report")
+          return reportText(column, student.id, points);
+        const entry = data.entryOf(student.id, column.date);
+        const text = cellText(entry, column, points);
+        const comment = holdsComment(column) && entry?.comment?.trim();
+        if (!comment) return text;
+        const hidden = hideNames(comment, names);
+        return text ? `${text}, ${hidden}` : hidden;
+      }),
+    ]),
+  ];
+  // Without class or subject, which would help to identify the students
+  downloadCsv(lines, `Uebersicht-anonym-${toIsoDate(new Date())}.csv`);
 }
 
 /** Renders an SVG element to a PNG data URL, as jsPDF cannot embed SVGs. */

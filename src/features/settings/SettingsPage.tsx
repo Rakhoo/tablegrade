@@ -1,5 +1,5 @@
 import { Tab, Tabs } from "@mui/material";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLoaderData, useSearchParams } from "react-router";
 import { SpeedDialLayout } from "../../components/SpeedDial";
 import { ReturnButton } from "../../components/ReturnButton";
@@ -7,6 +7,7 @@ import { resetEditHistory } from "../../hooks/useEditHistory";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BackupSettings } from "./BackupSettings";
 import { DataSettings } from "./DataSettings";
+import { DevSettings } from "./DevSettings";
 import { DutySettings } from "./DutySettings";
 import { GradeCalculationSettings } from "./GradeCalculationSettings";
 import { GradeSymbolSettings } from "./GradeSymbolSettings";
@@ -33,6 +34,9 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+/** Taps on the active tab "Daten und Export" that unlock the developer options. */
+const DEV_TAPS = 7;
+
 /**
  * Settings of the app in tabs of related topics, one card per topic; changes are saved right
  * away. The tab is kept in the URL (`?tab=`), so going back or reloading stays on it.
@@ -42,8 +46,22 @@ export function SettingsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   // Settings can delete entries, which the undo history might restore
   useEffect(resetEditHistory, []);
+  // Unlocked only while the settings page is open
+  const [devUnlocked, setDevUnlocked] = useState(false);
+  const devTaps = useRef(0);
   const tab: TabKey =
     TABS.find(({ key }) => key == searchParams.get("tab"))?.key ?? "school";
+
+  /** Counts taps on the data tab while it is open; enough of them unlock the dev options. */
+  const countDevTap = () => {
+    if (tab != "data") {
+      devTaps.current = 0;
+      return;
+    }
+    devTaps.current++;
+    if (devTaps.current < DEV_TAPS) return;
+    setDevUnlocked(true);
+  };
 
   const cards: Record<TabKey, ReactNode> = {
     school: (
@@ -82,6 +100,7 @@ export function SettingsPage() {
       <>
         <BackupSettings />
         <DataSettings />
+        {devUnlocked && <DevSettings />}
       </>
     ),
   };
@@ -103,7 +122,13 @@ export function SettingsPage() {
         data-help="Themen der Einstellungen; ein Tab zeigt seine Karten."
       >
         {TABS.map(({ key, label }) => (
-          <Tab key={key} value={key} label={label} />
+          <Tab
+            key={key}
+            value={key}
+            label={label}
+            // Hidden: tapping the active data tab often enough shows the developer options
+            onClick={key == "data" ? countDevTap : undefined}
+          />
         ))}
       </Tabs>
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4">
