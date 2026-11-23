@@ -13,6 +13,36 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 19:25 UTC · Stream D · sync/final – Übergabe an Mario
+
+**Fertig**
+- Server (Go, `server/`): alle Endpunkte aus protocol.md, Passkey, Microsoft/Google (OIDC),
+  WebSocket, Fotos, Kopplung, Konto löschen, tägliche Snapshots, Docker Compose, rclone-Backup,
+  Update-Timer statt Watchtower, Image-Build nach GHCR.
+- Client: Krypto (`src/crypto/`), Sync-Engine und Fassade (`src/sync/`), Outbox-Trigger,
+  UI „Konto & Synchronisierung“ in den Einstellungen. Ohne `VITE_SYNC_URL` kein Sync.
+- `deploy.yml` gibt die Repository-Variable `VITE_SYNC_URL` an den Build weiter.
+- Doku: CLAUDE.md, README, manual-steps.md aktualisiert.
+
+**Getestet (automatisch, in CI)**
+- Go: `go vet`, `go test` (alle Pakete). Vitest: 117 Unit-Tests.
+- Gesamttest `npm run test:e2e`: echter Go-Server, drei Geräte (`node:sqlite`), echtes HTTP und
+  WebSocket. Fälle: Erst-Upload, Wiederherstellungsschlüssel, Kopplung, Last Write Wins,
+  Löschung mit Kaskade, Foto, Offline-Phase, Server aus Sicherung (`410`), Gerät sperren,
+  Konto löschen.
+
+**Nur auf echten Geräten testbar** (manual-steps.md Abschnitt 9)
+- Passkey anlegen/anmelden und PRF (iCloud-Schlüsselbund, Windows/Bitwarden).
+- Microsoft-/Google-Login in der installierten PWA auf dem iPad (Rückkehr in die PWA).
+- IndexedDB, OPFS-Trigger und WebSocket im echten Browser; Tailscale Funnel; Backup auf dem Pi.
+
+**Offen**
+- blockers.md: Löschungen nach einer zurückgespielten Server-Sicherung kommen wieder (Stream D).
+- Vor dem ersten Test: Pi einrichten, OAuth-Apps registrieren, `VITE_SYNC_URL` setzen
+  (manual-steps.md 6–8). Danach `sync/integration` prüfen und selbst nach `main` mergen.
+
+**Stream D fertig**
+
 ## 2026-11-23, 19:05 UTC · Stream D · sync/final
 - Erledigt: D1 – `sync/final` von `sync/integration`, alle Prüfungen grün. Fassade ohne Stubs
   (Demo nur mit `VITE_SYNC_DEMO=true`, im normalen Build nicht enthalten). Toten Fehlertext

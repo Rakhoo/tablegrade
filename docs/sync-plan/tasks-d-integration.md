@@ -30,6 +30,6 @@ Branch: `sync/final`. Start erst, wenn A, B und C in progress.md als fertig steh
 
 ## D4 Übergabe
 
-- [ ] **Merge-Punkt:** `sync/final` → `sync/integration`.
-- [ ] progress.md: Zusammenfassung für Mario: was fertig ist, was getestet ist, was nur auf
+- [x] **Merge-Punkt:** `sync/final` → `sync/integration`.
+- [x] progress.md: Zusammenfassung für Mario: was fertig ist, was getestet ist, was nur auf
       echten Geräten testbar ist, offene Blocker. Kein PR nach `main`, das macht Mario.
