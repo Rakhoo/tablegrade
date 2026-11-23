@@ -277,6 +277,13 @@ Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Ei
 
 Nur Geräte desselben Kontos dürfen eine Kopplung abschließen.
 
+- Alle `/link`-Endpunkte brauchen eine Sitzung. Unbekannte, abgelaufene und fremde Kopplungen
+  geben gleich `not_found`. Der Server normalisiert den eingegebenen `code` (siehe 1).
+- `publicKey` muss ein gültiger P-256-Punkt sein, `wrapped` genau 60 Bytes, sonst
+  `bad_request`. `complete` antwortet `204`, ein zweites `complete`: `conflict`.
+- Die WebSocket-Nachricht `link` geht an alle Geräte des Kontos; das neue Gerät erkennt seine
+  `linkId`.
+
 ## 7. WebSocket
 
 `GET /ws?token=…`. Nachrichten vom Server, JSON mit Feld `type` und den Feldern daneben,
@@ -310,6 +317,7 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Kopplung: Sitzung nötig, einheitlich `not_found`, Prüfung von Schlüssel und Wrap, `204`/`conflict` bei `complete`, `link` an alle Geräte des Kontos. |
 | 2026-11-23 | A | WebSocket: Fehler vor dem Upgrade, `changed` auch an das pushende Gerät, Close-Codes. |
 | 2026-11-23 | A | Fotos: `201`/`200` bei `PUT`, Prüfregeln, Cache-Header bei `GET`, Verwaist-Zeit ab Upload. |
 | 2026-11-23 | A | Einträge: Prüfregeln für Push und Pull, Push-Limit 60 pro Minute und Konto, `limit` über 1000 wird gekürzt. |

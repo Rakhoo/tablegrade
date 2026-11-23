@@ -113,6 +113,11 @@ func (s *Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /api/v1/ws", s.handleWS)
 
+	mux.Handle("POST /api/v1/link", s.withSession(s.handleCreateLink))
+	mux.Handle("GET /api/v1/link/by-code/{code}", s.withAuthLimit(s.withSession(s.handleLinkByCode).ServeHTTP))
+	mux.Handle("POST /api/v1/link/{linkId}/complete", s.withSession(s.handleCompleteLink))
+	mux.Handle("GET /api/v1/link/{linkId}", s.withSession(s.handleGetLink))
+
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
 	mux.Handle("PATCH /api/v1/devices/{id}", s.withSession(s.handleRenameDevice))

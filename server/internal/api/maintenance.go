@@ -34,6 +34,9 @@ func (s *Server) Maintain(ctx context.Context) {
 	if err := s.purgeOrphanedBlobs(ctx); err != nil {
 		slog.Error("deleting orphaned blobs failed", "err", err)
 	}
+	if _, err := s.store.DeleteExpiredLinks(ctx); err != nil {
+		slog.Error("deleting expired links failed", "err", err)
+	}
 }
 
 // purgeTombstones removes deletions older than the tombstone lifetime.

@@ -69,9 +69,9 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A9 Gerät koppeln
 
-- [ ] `POST /link`, `GET /link/{code}`, `POST /link/{linkId}/complete`, `GET /link/{linkId}`,
+- [x] `POST /link`, `GET /link/{code}`, `POST /link/{linkId}/complete`, `GET /link/{linkId}`,
       Ablauf nach 10 Minuten, nur innerhalb desselben Kontos, WebSocket-Nachricht `link`.
-- [ ] **Merge-Punkt.**
+- [x] **Merge-Punkt.**
 
 ## A10 Konto und Betrieb
 

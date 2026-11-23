@@ -13,6 +13,18 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:50 UTC · Stream A · sync/server
+- Erledigt: A9 Gerät koppeln (`internal/api/links.go`): `POST /link`, `GET /link/by-code/{code}`,
+  `POST /link/{linkId}/complete`, `GET /link/{linkId}`, 10 Minuten gültig, nur im selben Konto,
+  5 Fehlversuche, WebSocket-Nachricht `link`, Aufräumen abgelaufener Kopplungen in
+  `Server.Maintain`. Merge-Punkt A9 erreicht, `sync/server` in `sync/integration` gemergt.
+- Entschieden: `link` geht an alle Geräte des Kontos. Grund: Der Server speichert nicht,
+  welches Gerät die Kopplung begonnen hat; die `linkId` reicht dem neuen Gerät.
+- Entschieden: `GET /link/by-code` zählt zum IP-Rate-Limit der `auth`-Endpunkte (jede
+  Anfrage, nicht nur Fehlversuche). Grund: einfach und streng genug.
+- Protokoll ergänzt (Kopplung, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A10 Konto und Betrieb.
+
 ## 2026-11-23, 17:40 UTC · Stream A · sync/server
 - Erledigt: A8 WebSocket. `hub.Hub` (Interface) mit `hub.Memory`, `GET /ws?token=`
   (`internal/api/ws.go`, `coder/websocket` v1.8.15), `hello`, `changed` nach jedem Push,
