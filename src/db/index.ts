@@ -15,3 +15,4 @@ export * from "./queries/reports";
 export * from "./queries/schoolClasses";
 export * from "./queries/settings";
 export * from "./queries/students";
+export * from "./queries/syncDb";

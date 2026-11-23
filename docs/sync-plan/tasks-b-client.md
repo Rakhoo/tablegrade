@@ -24,9 +24,9 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 
 ## B2 Lokale Speicherung
 
-- [ ] IndexedDB-Speicher für DEK, Sitzungs-Token, `userId`, `deviceId`, letzte `seq`
+- [x] IndexedDB-Speicher für DEK, Sitzungs-Token, `userId`, `deviceId`, letzte `seq`
       (oder `_sync_state`, Entscheidung begründen). Gerätespezifisch, nie im Backup-Export.
-- [ ] Prüfen: Die bestehende Sicherung exportiert die SQLite-Datei. `_sync_state` darf dabei
+- [x] Prüfen: Die bestehende Sicherung exportiert die SQLite-Datei. `_sync_state` darf dabei
       keine Geheimnisse enthalten. Beim Import auf ein Gerät mit aktivem Sync: Sync
       ausschalten und Hinweis (Logik hier, Text in Stream C).
 

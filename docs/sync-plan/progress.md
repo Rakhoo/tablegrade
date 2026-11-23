@@ -13,6 +13,24 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 16:40 UTC · Stream B · sync/client
+- Erledigt: B2. `src/sync/deviceStore.ts` (IndexedDB `notenfeder-sync`, Speicher im Speicher für
+  Tests), `syncState.ts` (`_sync_state`), `importGuard.ts` mit Tests, `SyncDb`-Interface
+  (`src/sync/syncDb.ts`) mit Adapter `src/db/queries/syncDb.ts` (SQLocal) und
+  `src/test/syncTestDb.ts` (`node:sqlite`).
+- Entschieden: DEK, Sitzung (`token`, `userId`, `deviceId`) und `syncId` in IndexedDB;
+  `lastSeq` in `_sync_state`. Grund: `lastSeq` muss in derselben Transaktion wie die gezogenen
+  Zeilen committen; es ist kein Geheimnis. `_sync_state` hat nur die Schlüssel `enabled`,
+  `applying`, `lastSeq`, `syncId` (Typ `SyncStateKey`).
+- Entschieden: Import-Erkennung über `syncId` (Zufalls-ID pro Einschalten, in DB und
+  IndexedDB). Weichen sie ab: Sync aus, `lastSeq`/`syncId` weg, `_outbox` leeren, Sitzung lokal
+  entfernen, DEK bleibt. War Sync hier aktiv: `importNotice` im Gerätespeicher für den Hinweis.
+- Für B5: Einschalten muss `syncId` in beiden Speichern setzen; Engine-Start ruft
+  `checkImportedDatabase` auf.
+- Für Stream C (Vorschlag, Fassaden-Erweiterung): `takeImportNotice(): Promise<boolean>`
+  liefert einmalig `true` nach einem Import über aktiven Sync. Kommt mit B5/B6.
+- Nächster Schritt: B3 API-Client.
+
 ## 2026-11-23, 15:20 UTC · Stream B · sync/client
 - Erledigt: B1 Krypto in `src/crypto/` (`encoding`, `primitives`, `keys`, `recoveryKey`,
   `records`, `link`), alle Testvektoren bestehen (`src/crypto/crypto.test.ts`).
