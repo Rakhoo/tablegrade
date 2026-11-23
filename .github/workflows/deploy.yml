@@ -76,6 +76,9 @@ jobs:
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Vite
+        # Address of the sync server (repository variable); empty builds the app without sync
+        env:
+          VITE_SYNC_URL: ${{ vars.VITE_SYNC_URL }}
         run: ${{ steps.detect-package-manager.outputs.runner }} tsc -b && ${{ steps.detect-package-manager.outputs.runner }} vite build
       - name: Publish to Cloudflare Pages
         uses: cloudflare/wrangler-action@v4

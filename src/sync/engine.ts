@@ -62,13 +62,15 @@ async function resync(ctx: SyncContext, onProgress?: ProgressHandler) {
 
 /**
  * Recovery after `410 server_restored`: the device wins. It uploads all its synced rows again,
- * like on activation, and then fetches everything (protocol.md 4).
+ * like on activation, and then fetches everything (protocol.md 4). The fetch applies own
+ * records too: rows from the backup that this device deleted later come back, as on every
+ * other device, so all devices end with the same data.
  */
 async function reupload(ctx: SyncContext, onProgress?: ProgressHandler) {
   await enqueueAllRows(ctx.db);
   await pushChanges(ctx);
   await writeSyncState(ctx.db, { lastSeq: "0" });
-  return pullChanges(ctx, onProgress);
+  return pullChanges(ctx, onProgress, true);
 }
 
 /** One sync run: waiting records, push, pull. Throws `ApiError` on server problems. */
