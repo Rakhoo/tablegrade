@@ -13,6 +13,18 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:20 UTC · Stream B · sync/client
+- Erledigt: B7 (Signaturen und Demo). `SyncPhase` mit `upgradeRequired`,
+  `AccountInfo.hasDataKey`/`hasPrfPasskey`, `SyncStatus.progress`, Fassade mit `addPasskey`,
+  `linkOidcIdentity`, `renameDevice`, `hasLocalData`, `replaceLocalData`; alle in `demo.ts`.
+  `checkSession` holt zusätzlich `GET /keys` und setzt daraus `hasDataKey` und
+  `hasPrfPasskey` (`accountInfo` in `session.ts`); HTTP 426 → `upgradeRequired`.
+- Entschieden: `hasPrfPasskey` = es gibt einen `passkey`-Wrap. Grund: Wraps entstehen nur für
+  Passkeys mit PRF; `GET /auth/session` liefert keine Passkey-Liste.
+- Entschieden: Ohne Demo-Modus werfen die neuen Fassaden-Funktionen wie die alten noch
+  „not implemented“. Die echte Verdrahtung kommt gesammelt in B6 („Stubs entfernt“).
+- Nächster Schritt: B5 Sync-Engine (braucht Migration 24 für `_sync_pending`).
+
 ## 2026-11-23, 17:45 UTC · Stream B · sync/client
 - Erledigt: B4 (Logik). `webauthn.ts` (JSON-Optionen von Hand umgewandelt, PRF-Erweiterung,
   deutsche Fehlermeldungen), `passkeyFlow.ts` (Registrierung, Login, weiterer Passkey,
@@ -59,6 +71,7 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Für Stream C (Vorschlag, Fassaden-Erweiterung): `takeImportNotice(): Promise<boolean>`
   liefert einmalig `true` nach einem Import über aktiven Sync. Kommt mit B5/B6.
 - Nächster Schritt: B3 API-Client.
+
 ## 2026-11-23, 16:20 UTC · Stream A · sync/server
 - Erledigt: A3 Passkeys (`internal/api/passkey.go`): Registrierung (neues Konto oder weiterer
   Passkey mit Sitzung), Login mit discoverable credentials, PRF-Salt in den Optionen,

@@ -2,19 +2,21 @@
  * Session check (plan B3): at start, every 15 minutes, when the device comes online and when
  * the app becomes visible. A revoked session only stops sync; local work goes on.
  */
-import { ApiError, type Api, type SessionInfo } from "./api";
-import type { SyncStatus } from "./types";
+import { ApiError, type Api, type KeyWrap, type SessionInfo } from "./api";
+import type { AccountInfo, SyncStatus } from "./types";
 
 /** Interval of the periodic check. */
 export const SESSION_CHECK_INTERVAL = 15 * 60_000;
 
 /** Outcome of one session check. */
 export type SessionCheck =
-  | { state: "valid"; info: SessionInfo }
+  | { state: "valid"; info: SessionInfo; keys: KeyWrap[] }
   /** The device was revoked; sync stops until a new sign-in. */
   | { state: "revoked"; message: string }
   /** The session expired or is unknown. */
   | { state: "signedOut"; message: string }
+  /** The server needs a newer app version. */
+  | { state: "upgradeRequired"; message: string }
   /** The server is not reachable; keep the last known state. */
   | { state: "offline" }
   | { state: "error"; message: string };
@@ -22,7 +24,8 @@ export type SessionCheck =
 /** Asks the server whether the session is still valid. */
 export async function checkSession(api: Api): Promise<SessionCheck> {
   try {
-    return { state: "valid", info: await api.session() };
+    const [info, keys] = await Promise.all([api.session(), api.listKeys()]);
+    return { state: "valid", info, keys };
   } catch (error) {
     if (!(error instanceof ApiError)) throw error;
     switch (error.code) {
@@ -30,6 +33,8 @@ export async function checkSession(api: Api): Promise<SessionCheck> {
         return { state: "revoked", message: error.message };
       case "unauthorized":
         return { state: "signedOut", message: error.message };
+      case "upgrade_required":
+        return { state: "upgradeRequired", message: error.message };
       case "offline":
         return { state: "offline" };
       default:
@@ -39,23 +44,32 @@ export async function checkSession(api: Api): Promise<SessionCheck> {
 }
 
 /**
+ * Account as the UI sees it. A passkey wrap exists only for passkeys with PRF, so it tells
+ * whether the device can unlock with a passkey.
+ */
+export function accountInfo(info: SessionInfo, keys: KeyWrap[]): AccountInfo {
+  return {
+    userId: info.userId,
+    deviceId: info.deviceId,
+    identities: info.identities,
+    hasDataKey: keys.length > 0,
+    hasPrfPasskey: keys.some((wrap) => wrap.kind == "passkey"),
+  };
+}
+
+/**
  * Status change for a check result. A revoked or expired session becomes `signedOut` with the
  * reason in `error`, so the UI can show the hint while the app keeps working locally.
  */
 export function sessionStatus(check: SessionCheck): Partial<SyncStatus> {
   switch (check.state) {
     case "valid":
-      return {
-        account: {
-          userId: check.info.userId,
-          deviceId: check.info.deviceId,
-          identities: check.info.identities,
-        },
-        error: null,
-      };
+      return { account: accountInfo(check.info, check.keys), error: null };
     case "revoked":
     case "signedOut":
       return { phase: "signedOut", account: null, error: check.message };
+    case "upgradeRequired":
+      return { phase: "upgradeRequired", error: check.message };
     case "offline":
       return { phase: "offline" };
     case "error":

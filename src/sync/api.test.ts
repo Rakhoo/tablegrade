@@ -8,11 +8,11 @@ import {
 } from "./session";
 
 /** Fake `fetch` that records calls and answers with `response`. */
-function fakeFetch(response: () => Response | Promise<Response>) {
+function fakeFetch(response: (url: string) => Response | Promise<Response>) {
   const calls: { url: string; init: RequestInit }[] = [];
   const doFetch = (async (url: string, init: RequestInit) => {
     calls.push({ url, init });
-    return response();
+    return response(url);
   }) as typeof fetch;
   return { calls, doFetch };
 }
@@ -129,19 +129,39 @@ describe("api", () => {
 
 describe("session check", () => {
   /** API client that answers every call with `response`. */
-  const apiAnswering = (response: () => Response | Promise<Response>) =>
+  const apiAnswering = (
+    response: (url: string) => Response | Promise<Response>,
+  ) =>
     createApi({
       baseUrl: "",
       getToken: () => "t",
       fetch: fakeFetch(response).doFetch,
     });
 
-  it("maps a valid session to the account", async () => {
-    const check = await checkSession(apiAnswering(() => json(SESSION)));
+  it("maps a valid session and its key wraps to the account", async () => {
+    const keys = [
+      { id: "k", kind: "passkey", alg: "A256GCM", wrapped: "", createdAt: 1 },
+    ];
+    const check = await checkSession(
+      apiAnswering((url) => json(url.endsWith("/keys") ? { keys } : SESSION)),
+    );
     expect(sessionStatus(check)).toEqual({
-      account: { userId: "u", deviceId: "d", identities: SESSION.identities },
+      account: {
+        userId: "u",
+        deviceId: "d",
+        identities: SESSION.identities,
+        hasDataKey: true,
+        hasPrfPasskey: true,
+      },
       error: null,
     });
+  });
+
+  it("maps HTTP 426 to upgradeRequired", async () => {
+    const check = await checkSession(
+      apiAnswering(() => json({ error: "upgrade_required" }, 426)),
+    );
+    expect(sessionStatus(check)).toMatchObject({ phase: "upgradeRequired" });
   });
 
   it("maps a revoked session to signedOut with a hint", async () => {

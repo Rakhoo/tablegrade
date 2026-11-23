@@ -76,20 +76,20 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 Signaturen sind mit Mario abgestimmt. Jede Ergänzung auch in `src/sync/demo.ts`, damit
 Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream C wartet darauf.
 
-- [ ] `SyncPhase` um `"upgradeRequired"` ergänzen. Setzen bei HTTP 426 und bei
+- [x] `SyncPhase` um `"upgradeRequired"` ergänzen. Setzen bei HTTP 426 und bei
       zurückgestellten Einträgen mit neuerer `schema` (B5 Pull).
-- [ ] `AccountInfo.hasDataKey: boolean` (Server hat schon einen Wrap). Auch nach der
+- [x] `AccountInfo.hasDataKey: boolean` (Server hat schon einen Wrap). Auch nach der
       OIDC-Rückkehr gesetzt, damit die UI ein neues Konto von einem neuen Gerät unterscheidet.
-- [ ] `AccountInfo.hasPrfPasskey: boolean` und `addPasskey(): Promise<void>` (neuer Passkey
+- [x] `AccountInfo.hasPrfPasskey: boolean` und `addPasskey(): Promise<void>` (neuer Passkey
       mit Wrap, B4-Logik).
-- [ ] `SyncStatus.progress: { done: number; total: number } | null`, gesetzt während
+- [x] `SyncStatus.progress: { done: number; total: number } | null`, gesetzt während
       Erst-Upload und Erst-Download, sonst `null`.
-- [ ] `hasLocalData(): Promise<boolean>` und `replaceLocalData(): Promise<void>`; der
+- [x] `hasLocalData(): Promise<boolean>` und `replaceLocalData(): Promise<void>`; der
       Erst-Download auf einem neuen Gerät startet erst danach.
-- [ ] `renameDevice(id: string, name: string): Promise<void>` (`PATCH /devices/{id}`).
-- [ ] `linkOidcIdentity(provider: OidcProvider): Promise<void>`: Redirect wie
+- [x] `renameDevice(id: string, name: string): Promise<void>` (`PATCH /devices/{id}`).
+- [x] `linkOidcIdentity(provider: OidcProvider): Promise<void>`: Redirect wie
       `startOidcLogin`; die Rückkehr verknüpft die Identität mit dem angemeldeten Konto.
-- [ ] **Merge-Punkt.**
+- [x] **Merge-Punkt.**
 
 ## B6 Kopplung und Konto (Logik)
 

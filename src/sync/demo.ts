@@ -1,5 +1,6 @@
 import { OFF_STATUS, readStatus, updateStatus } from "./status";
 import type {
+  AccountInfo,
   Device,
   DeviceLinkApproval,
   OidcProvider,
@@ -51,9 +52,26 @@ async function signIn(
       userId: "a0000000-0000-4000-8000-000000000001",
       deviceId: devices[0].id,
       identities: [{ provider: "passkey", createdAt: now - 30 * 86_400_000 }],
+      hasDataKey: !isNewUser,
+      hasPrfPasskey: !isNewUser,
     },
   });
   return { isNewUser, needsUnlock: !isNewUser };
+}
+
+/** Changes the signed-in account, if any. */
+function updateAccount(change: Partial<AccountInfo>) {
+  const { account } = readStatus();
+  if (account) updateStatus({ account: { ...account, ...change } });
+}
+
+/** Counts `progress` up to `total` in steps, like a first upload or download. */
+async function runProgress(total: number) {
+  for (let done = 0; done < total; done += 25) {
+    updateStatus({ phase: "syncing", progress: { done, total } });
+    await wait();
+  }
+  updateStatus({ phase: "idle", progress: null, lastSyncAt: Date.now() });
 }
 
 /** Marks the device as unlocked and synced. */
@@ -89,10 +107,27 @@ export const demo = {
   },
   createRecoveryKey: async () => {
     await wait();
-    if (readStatus().phase == "locked")
-      updateStatus({ phase: "idle", lastSyncAt: Date.now() });
+    updateAccount({ hasDataKey: true });
+    if (readStatus().phase == "locked") void runProgress(100);
     return RECOVERY_KEY;
   },
+  addPasskey: async () => {
+    await wait();
+    updateAccount({ hasPrfPasskey: true });
+  },
+  linkOidcIdentity: async (provider: OidcProvider) => {
+    await wait();
+    const { account } = readStatus();
+    if (!account) throw new Error("Nicht angemeldet");
+    updateAccount({
+      identities: [...account.identities, { provider, createdAt: Date.now() }],
+    });
+  },
+  hasLocalData: async () => {
+    await wait();
+    return true;
+  },
+  replaceLocalData: () => runProgress(100),
   startDeviceLink: async (): Promise<PendingDeviceLink> => {
     await wait();
     return {
@@ -110,6 +145,10 @@ export const demo = {
   listDevices: async () => {
     await wait();
     return devices;
+  },
+  renameDevice: async (id: string, name: string) => {
+    await wait();
+    devices = devices.map((d) => (d.id == id ? { ...d, name } : d));
   },
   revokeDevice: async (id: string) => {
     await wait();
