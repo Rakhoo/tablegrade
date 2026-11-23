@@ -126,3 +126,22 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Offen: Nach `startPasskeySignup` mit `isNewUser` zeigt die Karte noch „Schlüssel fehlt“
   (Fassade setzt `locked`). Der Ablauf Wiederherstellungsschlüssel (C2) muss das abfangen.
 - Nächster Schritt: C2 Wiederherstellungsschlüssel anzeigen.
+
+## 2026-11-23, 16:20 UTC · Stream C · sync/ui
+- Erledigt: `sync/integration` (B1 Krypto) gemergt. C2 Wiederherstellungsschlüssel:
+  `SyncRecoveryKey` (Knopf „Schlüssel erstellen“, Anzeige im Formular mit Benutzername
+  „Notenfeder-Wiederherstellung“ und `autocomplete="new-password"`, Kopieren, Drucken, Als
+  Datei speichern, Warnhinweis) und `SyncRecoveryKeyCheck` (zwei zufällige Gruppen,
+  `lib/recoveryKeyCheck.ts` mit Vitest-Test). Datei und Druck in
+  `services/recoveryKeyExport.ts`; `saveFile` aus `backup.ts` dafür exportiert.
+- Entschieden: Nach `startPasskeySignup` mit `isNewUser` zeigt die Karte den Schlüssel-Ablauf
+  statt „Schlüssel fehlt“ (lokaler Zustand in `SyncSettings`). Der Schlüssel entsteht erst
+  per Knopf, damit Fehler sichtbar bleiben und ein neuer Versuch möglich ist. Die Komponente
+  hat einen `intro`-Text, damit C4 („Neuen Schlüssel erstellen“) sie wiederverwenden kann.
+- Entschieden: Drucken über einen versteckten iframe, damit nur der Schlüssel gedruckt wird.
+- Offen: Neues Konto über Microsoft/Google (Rückkehr per Redirect) erkennt die UI nicht
+  (blockers.md). Verlässt die Nutzerin die Seite vor der Kontrolle, ist der Ablauf weg.
+- Nicht geprüft: Ob Safari/Chrome das Speichern im Passwortmanager anbieten (Feld ist
+  `type="text"`, damit der Schlüssel lesbar bleibt) und ob Drucken in der iPad-PWA geht.
+  Test auf dem iPad nötig. Keine Browser-Tests.
+- Nächster Schritt: C2 „Passkey zum Entsperren hinzufügen“.

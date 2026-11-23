@@ -20,13 +20,13 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 ## C2 Einrichtung (neues Konto)
 
 - [x] Anmeldeweg wählen: Passkey, Microsoft, Google.
-- [ ] Wiederherstellungsschlüssel anzeigen:
+- [x] Wiederherstellungsschlüssel anzeigen:
       - Formular mit Benutzername „Notenfeder-Wiederherstellung“ und Feld
         `autocomplete="new-password"`, damit der Browser das Speichern anbietet.
       - Knöpfe „Kopieren“, „Drucken“, „Als Datei speichern“.
       - Deutlicher Hinweis: Ohne diesen Schlüssel sind die Daten bei Verlust aller Geräte weg.
         Niemand kann ihn zurücksetzen.
-- [ ] Bestätigung: zwei zufällige Vierergruppen eingeben.
+- [x] Bestätigung: zwei zufällige Vierergruppen eingeben.
 - [ ] Angebot „Passkey zum Entsperren hinzufügen“ (wenn noch keiner mit PRF vorhanden).
 - [ ] Erst-Upload mit Fortschritt, danach Zustand „aktiv“.
 

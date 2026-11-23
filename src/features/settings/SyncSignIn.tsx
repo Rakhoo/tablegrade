@@ -5,6 +5,7 @@ import {
   startOidcLogin,
   startPasskeySignup,
   type OidcProvider,
+  type SignInResult,
 } from "../../sync";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { useSyncAction } from "./useSyncAction";
@@ -12,6 +13,8 @@ import { useSyncAction } from "./useSyncAction";
 type SyncSignInProps = {
   /** Offers creating a new account; off when an existing sign-in expired. */
   allowSignup: boolean;
+  /** Called after a passkey sign-in or sign-up, e.g. to start the key setup of a new account. */
+  onSignedIn: (result: SignInResult) => void;
 };
 
 /** Sign-in methods besides the passkey, with their button labels. */
@@ -34,11 +37,19 @@ function guessDeviceName() {
  * Choice of the sign-in method: a new account with a passkey, or signing in with a passkey,
  * Microsoft or Google. The device name tells the devices of the account apart.
  */
-export function SyncSignIn({ allowSignup }: SyncSignInProps) {
+export function SyncSignIn({ allowSignup, onSignedIn }: SyncSignInProps) {
   const [deviceName, setDeviceName] = useState(guessDeviceName);
   const { busy, error, run } = useSyncAction();
   const name = deviceName.trim();
   const disabled = busy || !name;
+
+  /** Runs a passkey step and reports its result. */
+  const signIn = async (
+    step: (deviceName: string) => Promise<SignInResult>,
+  ) => {
+    const result = await run(() => step(name));
+    if (result) onSignedIn(result);
+  };
   return (
     <>
       <TextField
@@ -59,7 +70,7 @@ export function SyncSignIn({ allowSignup }: SyncSignInProps) {
           <Button
             variant="contained"
             disabled={disabled}
-            onClick={() => run(() => startPasskeySignup(name))}
+            onClick={() => signIn(startPasskeySignup)}
           >
             Neues Konto mit Passkey
           </Button>
@@ -67,7 +78,7 @@ export function SyncSignIn({ allowSignup }: SyncSignInProps) {
         <Button
           variant={allowSignup ? "outlined" : "contained"}
           disabled={disabled}
-          onClick={() => run(() => loginWithPasskey(name))}
+          onClick={() => signIn(loginWithPasskey)}
         >
           Mit Passkey anmelden
         </Button>

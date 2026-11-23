@@ -435,7 +435,10 @@ the tab used last:
   whose content follows the sync status (`lib/syncView.ts`): off (explanation and
   "Einrichten"), setup (device name, new account with a passkey, sign-in with a passkey,
   Microsoft or Google), missing key on a new device, active (state, last sync, "Jetzt
-  synchronisieren") and an expired sign-in (the app keeps working locally).
+  synchronisieren") and an expired sign-in (the app keeps working locally). After a new
+  account the card shows the recovery key once (form that password managers offer to save,
+  "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
+  two random groups of it (`lib/recoveryKeyCheck.ts`) before going on.
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

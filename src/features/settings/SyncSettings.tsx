@@ -1,13 +1,19 @@
 import { Alert, Button } from "@mui/material";
 import { format } from "date-fns";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { RefreshIcon } from "../../components/icons";
 import { useSyncStatus } from "../../hooks/useSyncStatus";
-import { disableSync, syncNow, type SyncStatus } from "../../sync";
+import {
+  disableSync,
+  syncNow,
+  type SignInResult,
+  type SyncStatus,
+} from "../../sync";
 import { getSyncView, type SyncView } from "../../lib/syncView";
 import { SettingsSection } from "./SettingsSection";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIntro } from "./SyncIntro";
+import { SyncRecoveryKey } from "./SyncRecoveryKey";
 import { SyncSignIn } from "./SyncSignIn";
 import { useSyncAction } from "./useSyncAction";
 
@@ -22,6 +28,9 @@ const HINTS: Record<SyncView, string> = {
   expired: "Anmeldung abgelaufen.",
 };
 
+/** Hint while a new account gets its recovery key. */
+const NEW_ACCOUNT_HINT = "Neues Konto: Wiederherstellungsschlüssel sichern.";
+
 /**
  * Account and sync settings. Shows the step that fits the sync status: the explanation while
  * it is off, the setup, unlocking a new device, the active sync and an expired sign-in.
@@ -29,11 +38,18 @@ const HINTS: Record<SyncView, string> = {
 export function SyncSettings() {
   const status = useSyncStatus();
   const view = getSyncView(status);
+  // A new account has no data key yet; the key setup replaces the view until it is done
+  const [newAccount, setNewAccount] = useState(false);
+
+  /** Starts the key setup after a sign-up created a new account. */
+  const handleSignedIn = ({ isNewUser }: SignInResult) =>
+    setNewAccount(isNewUser);
+
   const content: Record<SyncView, ReactNode> = {
     off: <SyncIntro />,
     setup: (
       <>
-        <SyncSignIn allowSignup />
+        <SyncSignIn allowSignup onSignedIn={handleSignedIn} />
         <CancelSetup />
       </>
     ),
@@ -45,17 +61,24 @@ export function SyncSettings() {
           Die App arbeitet auf diesem Gerät normal weiter. Neu anmelden, um
           wieder zu synchronisieren.
         </Alert>
-        <SyncSignIn allowSignup={false} />
+        <SyncSignIn allowSignup={false} onSignedIn={handleSignedIn} />
       </>
     ),
   };
   return (
     <SettingsSection
       title="Konto & Synchronisierung"
-      hint={HINTS[view]}
+      hint={newAccount ? NEW_ACCOUNT_HINT : HINTS[view]}
       help="Konto für den verschlüsselten Abgleich der Daten zwischen eigenen Geräten: einrichten, Gerät hinzufügen, Status."
     >
-      {content[view]}
+      {newAccount ? (
+        <SyncRecoveryKey
+          intro="Das Konto ist angelegt. Jetzt den Wiederherstellungsschlüssel erstellen und sicher aufbewahren."
+          onDone={() => setNewAccount(false)}
+        />
+      ) : (
+        content[view]
+      )}
     </SettingsSection>
   );
 }

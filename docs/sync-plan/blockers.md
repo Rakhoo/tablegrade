@@ -23,3 +23,12 @@ Vorschlag der Session: Stream B ergänzt `SyncPhase` um `"upgradeRequired"`, ges
 Stream C zeigt dann in `lib/syncView.ts` eine eigene Ansicht mit Hinweis und „Neu laden“.
 Bis dahin zeigt die UI den Fall als „aktiv“ mit Fehlermeldung (`phase: "error"`).
 Antwort Mario: …
+
+## 2026-11-23 · Stream C · offen
+Frage: Nach einer Anmeldung mit Microsoft/Google kommt die App per Redirect zurück. Die UI
+erfährt dann nicht, ob ein neues Konto entstand (`SignInResult.isNewUser` fehlt). Ein neues
+Konto ohne Datenschlüssel sieht aus wie „Schlüssel fehlt“ auf einem neuen Gerät.
+Vorschlag der Session: Stream B ergänzt `AccountInfo` um `hasDataKey: boolean` (Server weiß,
+ob schon ein Wrap existiert). Stream C zeigt bei `locked` und `hasDataKey == false` den
+Ablauf „Schlüssel erstellen“ statt der Entsperr-Wege.
+Antwort Mario: …
