@@ -118,6 +118,7 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/link/{linkId}/complete", s.withSession(s.handleCompleteLink))
 	mux.Handle("GET /api/v1/link/{linkId}", s.withSession(s.handleGetLink))
 
+	mux.Handle("DELETE /api/v1/account", s.withSession(s.handleDeleteAccount))
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
 	mux.Handle("PATCH /api/v1/devices/{id}", s.withSession(s.handleRenameDevice))
@@ -125,7 +126,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, errNotFound)
 	})
-	return withProtocol(withCORS(s.cfg.AppOrigins, mux))
+	return withAccessLog(withProtocol(withCORS(s.cfg.AppOrigins, mux)))
 }
 
 func handleHealth(w http.ResponseWriter, _ *http.Request) {

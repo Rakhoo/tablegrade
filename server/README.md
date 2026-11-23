@@ -58,3 +58,18 @@ node server/testdata/gen-vectors.mjs
 
 Secrets gehören nicht ins Repo. Auf dem Pi stehen sie in der `.env` neben der
 Compose-Datei (siehe [../docs/sync-plan/manual-steps.md](../docs/sync-plan/manual-steps.md)).
+
+## Betrieb
+
+Beim Start und danach alle 24 Stunden läuft `Server.Maintain`:
+
+- Löschungen (Tombstones) älter als 180 Tage entfernen.
+- Fotos löschen, auf die 30 Tage lang kein Eintrag verweist.
+- Abgelaufene Kopplungen löschen.
+- Datenbank-Sicherung per `VACUUM INTO` nach `DATA_DIR/backup/notenfeder-<JJJJ-MM-TT>.sqlite3`.
+  Pro Tag eine Datei, die letzten 7 bleiben. Fotos liegen als Dateien in `DATA_DIR/blobs/`.
+
+Logs: JSON-Zeilen auf stderr. Pro Anfrage eine Zeile mit Route-Muster, Status und Dauer. Die
+Logs enthalten keine Tokens, keinen Chiffretext, keine Query und keine Client-IP. Nur
+Go-interne Verbindungsfehler können eine IP nennen; die Docker-Log-Rotation begrenzt, wie lange
+sie liegen.

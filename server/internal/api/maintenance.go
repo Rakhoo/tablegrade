@@ -12,7 +12,7 @@ const tombstoneLifetime = 180 * 24 * time.Hour
 // maintenanceInterval is the pause between two cleanup runs.
 const maintenanceInterval = 24 * time.Hour
 
-// RunMaintenance cleans up once at start and then daily until ctx ends.
+// RunMaintenance cleans up and backs up once at start and then daily until ctx ends.
 func (s *Server) RunMaintenance(ctx context.Context) {
 	ticker := time.NewTicker(maintenanceInterval)
 	defer ticker.Stop()
@@ -36,6 +36,9 @@ func (s *Server) Maintain(ctx context.Context) {
 	}
 	if _, err := s.store.DeleteExpiredLinks(ctx); err != nil {
 		slog.Error("deleting expired links failed", "err", err)
+	}
+	if err := s.backupDatabase(ctx); err != nil {
+		slog.Error("database backup failed", "err", err)
 	}
 }
 

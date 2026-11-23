@@ -13,6 +13,20 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:35 UTC · Stream A · sync/server
+- Erledigt: A10 Konto und Betrieb. `DELETE /account` (`internal/api/account.go`, löscht DB-Daten
+  und Blob-Ordner, `revoked` an alle Geräte), tägliche Sicherung (`internal/api/backup.go`,
+  `VACUUM INTO`, 7 Dateien), JSON-Logs und Access-Log ohne Query, IP und IDs
+  (`internal/api/accesslog.go`). Merge-Punkt A10 erreicht, `sync/server` in `sync/integration`
+  gemergt.
+- Entschieden: Access-Log nutzt das Route-Muster (`GET /api/v1/blobs/{id}`) statt des Pfads.
+  Grund: Der WebSocket-Token steht in der Query, IDs stehen im Pfad.
+- Entschieden: Sicherung läuft in `Server.Maintain` (Start und alle 24 h); ein Neustart am
+  selben Tag schreibt keine zweite Datei.
+- Entschieden: Schlägt das Löschen der Blob-Dateien nach `DELETE /account` fehl, wird das nur
+  geloggt. Grund: Das Konto ist schon weg, ein erneuter Versuch des Clients ginge nicht.
+- Nächster Schritt: A11 Docker und Pi.
+
 ## 2026-11-23, 17:27 UTC · Stream A · sync/server
 - Erledigt: A9 Gerät koppeln (`internal/api/links.go`): `POST /link`, `GET /link/by-code/{code}`,
   `POST /link/{linkId}/complete`, `GET /link/{linkId}`, 10 Minuten gültig, nur im selben Konto,
