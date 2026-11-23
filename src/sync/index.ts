@@ -69,6 +69,16 @@ export async function addPasskey(): Promise<void> {
   return DEMO ? demo.addPasskey() : notImplemented();
 }
 
+/** Whether this device has school data that the first download would replace. */
+export async function hasLocalData(): Promise<boolean> {
+  return DEMO ? demo.hasLocalData() : notImplemented();
+}
+
+/** Deletes the local school data, so the first download can fill the device. */
+export async function replaceLocalData(): Promise<void> {
+  return DEMO ? demo.replaceLocalData() : notImplemented();
+}
+
 /** Unlocks the data key with a passkey that supports PRF. */
 export async function unlockWithPasskey(): Promise<void> {
   return DEMO ? demo.unlockWithPasskey() : notImplemented();

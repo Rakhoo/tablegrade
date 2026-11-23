@@ -440,8 +440,11 @@ the tab used last:
   locked account without a data key on the server is new (`account.hasDataKey`), also after
   a Microsoft or Google sign-up; then the card shows the recovery key once (form that password managers offer to save,
   "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
-  two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. A signed-in device
-  without the key offers up to three ways to unlock: passkey (only if the account has one that
+  two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. The first upload or
+  download shows a progress bar in the active view. A signed-in device
+  without the key first asks before school data already on it is replaced by the account's
+  data ("Daten ersetzen" or "Abbrechen"; merging is not possible), then offers up to three
+  ways to unlock: passkey (only if the account has one that
   can unlock, `account.hasPrfPasskey`), linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).
   Without such a passkey the active view offers "Passkey hinzufügen".

@@ -243,5 +243,11 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
   „Microsoft/Google verknüpfen“ nur für noch nicht verknüpfte). `renameDevice` und
   `linkOidcIdentity` ebenfalls in Fassade und Demo vorgebaut.
 - Nicht geprüft: Ansichten im Browser (keine Browser-Tests).
-- Nächster Schritt: C7 Fortschritt und `hasLocalData`/`replaceLocalData`, dann Vermerke
-  aufräumen, danach C6.
+- Erledigt: C7 Fortschritt (Balken „Erster Abgleich: x von y Einträgen“ in der aktiven
+  Ansicht aus `SyncStatus.progress`) und Frage vor dem Erst-Download (`SyncReplaceCheck`:
+  „Daten ersetzen“ mit `ConfirmDialog` oder „Abbrechen“ = Sync aus). C7 damit fertig,
+  Stream-C-Einträge in blockers.md auf „erledigt“.
+- Entschieden: Ist `hasLocalData()` fehlgeschlagen, fragt die UI trotzdem (sicherer).
+- Offen: C5 Hinweis beim Sicherungs-Import wartet auf B2.
+- Nächster Schritt: C6 (README, Merge-Punkt), sobald B7 in `sync/integration` ist und die
+  vorgebauten Signaturen damit abgeglichen sind.

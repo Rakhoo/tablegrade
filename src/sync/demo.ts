@@ -65,11 +65,32 @@ function updateAccount(change: Partial<AccountInfo>) {
   if (account) updateStatus({ account: { ...account, ...change } });
 }
 
-/** Marks the device as unlocked and synced. */
+/** Sample size of the first upload or download. */
+const TOTAL_RECORDS = 400;
+
+/** Runs a first upload or download in steps, so the progress shows up. */
+async function transferAll() {
+  updateStatus({ phase: "syncing" });
+  for (let done = 0; done < TOTAL_RECORDS; done += 100) {
+    updateStatus({ progress: { done, total: TOTAL_RECORDS } });
+    await wait();
+  }
+  updateStatus({
+    phase: "idle",
+    lastSyncAt: Date.now(),
+    error: null,
+    progress: null,
+  });
+}
+
+/** Marks the device as unlocked and downloads all data. */
 async function unlock() {
   await wait();
-  updateStatus({ phase: "idle", lastSyncAt: Date.now(), error: null });
+  void transferAll();
 }
+
+/** Whether the sample device still has school data of its own. */
+let localData = true;
 
 /**
  * Fake implementation of the facade with fixed sample values, so the UI can be built before
@@ -90,6 +111,14 @@ export const demo = {
     console.info(`Demo: OIDC login with ${provider}`);
     await signIn(false, deviceName);
   },
+  hasLocalData: async () => {
+    await wait();
+    return localData;
+  },
+  replaceLocalData: async () => {
+    await wait();
+    localData = false;
+  },
   unlockWithPasskey: unlock,
   unlockWithRecoveryKey: async (text: string) => {
     if (text.replace(/[\s-]/g, "").length != 36)
@@ -98,9 +127,8 @@ export const demo = {
   },
   createRecoveryKey: async () => {
     await wait();
-    if (readStatus().phase == "locked")
-      updateStatus({ phase: "idle", lastSyncAt: Date.now() });
     updateAccount({ hasDataKey: true });
+    if (readStatus().phase == "locked") void transferAll();
     return RECOVERY_KEY;
   },
   addPasskey: async () => {

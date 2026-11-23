@@ -59,6 +59,8 @@ export type SyncStatus = {
   pending: number;
   /** German message for the UI when `phase` is `error`. */
   error: string | null;
+  /** Records done of the first upload or download; `null` otherwise. */
+  progress: { done: number; total: number } | null;
 };
 
 /** A device of the account. */

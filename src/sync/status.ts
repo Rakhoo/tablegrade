@@ -7,6 +7,7 @@ export const OFF_STATUS: SyncStatus = {
   lastSyncAt: null,
   pending: 0,
   error: null,
+  progress: null,
 };
 
 /** Latest snapshot; replaced, never mutated. */

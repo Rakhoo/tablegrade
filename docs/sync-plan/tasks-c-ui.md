@@ -13,7 +13,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 ## C1 Einstellungs-Bereich
 
 - [x] Neuer Tab „Konto & Sync“ in den Einstellungen. Zustände: aus, Einrichtung, Schlüssel
-      fehlt, aktiv, gesperrt, Update nötig. (Update nötig: siehe blockers.md)
+      fehlt, aktiv, gesperrt, Update nötig.
 - [x] Im Zustand „aus“: kurze Erklärung (Daten verschlüsselt, niemand außer ihr kann sie
       lesen, Schlüssel gut aufbewahren) und Knopf „Einrichten“.
 
@@ -28,24 +28,23 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
         Niemand kann ihn zurücksetzen.
 - [x] Bestätigung: zwei zufällige Vierergruppen eingeben.
 - [x] Angebot „Passkey zum Entsperren hinzufügen“ (wenn noch keiner mit PRF vorhanden).
-- [ ] Erst-Upload mit Fortschritt, danach Zustand „aktiv“.
+- [x] Erst-Upload mit Fortschritt, danach Zustand „aktiv“.
 
 ## C3 Neues Gerät
 
 - [x] Anmelden (Passkey, Microsoft, Google).
-- [x] Zustand „Schlüssel fehlt“: drei Wege (Passkey-Knopf vorerst immer, siehe blockers.md)
+- [x] Zustand „Schlüssel fehlt“: drei Wege (Passkey-Weg nur mit Entsperr-Passkey)
       - „Mit Passkey entsperren“ (nur wenn ein PRF-Passkey vorhanden ist),
       - „Mit anderem Gerät koppeln“: Code anzeigen, danach Prüfcode vergleichen,
       - „Wiederherstellungsschlüssel eingeben“ (Einfügen aus dem Passwortmanager erlaubt).
-- [ ] Danach Download aller Daten mit Fortschritt. Hat das Gerät schon lokale Daten: vorher
+- [x] Danach Download aller Daten mit Fortschritt. Hat das Gerät schon lokale Daten: vorher
       fragen (ersetzen oder abbrechen; zusammenführen gibt es nicht).
 - [x] Auf dem alten Gerät: „Gerät koppeln“ mit Code-Eingabe und Prüfcode-Bestätigung.
 
 ## C4 Konto verwalten
 
-- [ ] Anmeldewege: Liste, „Passkey hinzufügen“, „Microsoft verknüpfen“, „Google verknüpfen“.
-      (Liste erledigt; Hinzufügen/Verknüpfen blockiert, siehe blockers.md)
-- [x] Geräte: Liste mit letzter Aktivität, umbenennen, sperren (`ConfirmDialog`). (Umbenennen fehlt, siehe blockers.md)
+- [x] Anmeldewege: Liste, „Passkey hinzufügen“, „Microsoft verknüpfen“, „Google verknüpfen“.
+- [x] Geräte: Liste mit letzter Aktivität, umbenennen, sperren (`ConfirmDialog`).
 - [x] „Neuen Wiederherstellungsschlüssel erstellen“ (gleicher Ablauf wie C2, alter wird ungültig).
 - [x] „Sync ausschalten“, „Abmelden“, „Konto löschen“ (Bestätigung durch Eintippen eines
       Worts; Wahl, ob die Daten auf diesem Gerät bleiben).
@@ -71,13 +70,13 @@ Braucht die Fassaden-Ergänzungen aus B7. Fehlen sie noch in `sync/integration`:
       Anmeldung mit Microsoft oder Google.
 - [x] „Mit Passkey entsperren“ (C3) nur bei `account.hasPrfPasskey`. Angebot „Passkey zum
       Entsperren hinzufügen“ (C2) nur ohne; es ruft `addPasskey()`.
-- [ ] Fortschritt von Erst-Upload (C2) und Erst-Download (C3) aus `SyncStatus.progress`.
-- [ ] Vor dem Erst-Download `hasLocalData()`; wenn ja, fragen (ersetzen oder abbrechen), bei
+- [x] Fortschritt von Erst-Upload (C2) und Erst-Download (C3) aus `SyncStatus.progress`.
+- [x] Vor dem Erst-Download `hasLocalData()`; wenn ja, fragen (ersetzen oder abbrechen), bei
       „ersetzen“ `replaceLocalData()`.
 - [x] Geräte umbenennen: Stift-Knopf in `SyncDevices`, ruft `renameDevice(id, name)`.
 - [x] Anmeldewege: „Passkey hinzufügen“ (`addPasskey()`), „Microsoft verknüpfen“ und „Google
       verknüpfen“ (`linkOidcIdentity(provider)`).
-- [ ] Danach die Vermerke „siehe blockers.md“ in C1 bis C5 entfernen, die offenen Punkte dort
+- [x] Danach die Vermerke „siehe blockers.md“ in C1 bis C5 entfernen, die offenen Punkte dort
       abhaken und die Einträge in blockers.md auf „erledigt“ setzen.
 
 ## C6 Abschluss
