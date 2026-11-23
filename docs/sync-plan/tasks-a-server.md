@@ -62,10 +62,10 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A8 WebSocket
 
-- [ ] `coder/websocket`, Hub pro Konto, Nachrichten laut protocol.md 7, Ping-Zeitlimit.
-- [ ] `changed` nach jedem Push, `revoked` beim Sperren eines Geräts (Verbindung danach
+- [x] `coder/websocket`, Hub pro Konto, Nachrichten laut protocol.md 7, Ping-Zeitlimit.
+- [x] `changed` nach jedem Push, `revoked` beim Sperren eines Geräts (Verbindung danach
       schließen).
-- [ ] Hub hinter einem Interface (später mehrere Server-Instanzen möglich).
+- [x] Hub hinter einem Interface (später mehrere Server-Instanzen möglich).
 
 ## A9 Gerät koppeln
 

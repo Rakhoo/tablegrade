@@ -13,6 +13,18 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:40 UTC · Stream A · sync/server
+- Erledigt: A8 WebSocket. `hub.Hub` (Interface) mit `hub.Memory`, `GET /ws?token=`
+  (`internal/api/ws.go`, `coder/websocket` v1.8.15), `hello`, `changed` nach jedem Push,
+  `revoked` beim Sperren mit Schließen danach, Ping-Zeitlimit 90 s. Tests mit echtem
+  Testserver, auch mit `-race`.
+- Entschieden: Liegt eine Verbindung mehr als 16 Nachrichten zurück, schließt der Server sie
+  (`1013`). Grund: `Publish` blockiert nie; der Client holt per `hello` und `pull` auf.
+- Entschieden: Erst abonnieren, dann `latestSeq` lesen. Grund: Kein Push geht zwischen
+  `hello` und Abo verloren.
+- Protokoll ergänzt (WebSocket, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A9 Gerät koppeln.
+
 ## 2026-11-23, 17:30 UTC · Stream A · sync/server
 - Erledigt: A7 Fotos. `blob.Store` mit Umsetzung `blob.FS` (`DATA_DIR/blobs/<user>/<id>`,
   Schreiben über Temp-Datei und Umbenennen), `PUT/GET /blobs/{id}` (`internal/api/blobs.go`),

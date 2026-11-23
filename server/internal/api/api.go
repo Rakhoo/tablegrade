@@ -18,6 +18,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/auth"
 	"github.com/Rakhoo/tablegrade/server/internal/blob"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
+	"github.com/Rakhoo/tablegrade/server/internal/hub"
 	"github.com/Rakhoo/tablegrade/server/internal/oidc"
 	"github.com/Rakhoo/tablegrade/server/internal/ratelimit"
 	"github.com/Rakhoo/tablegrade/server/internal/store"
@@ -45,6 +46,9 @@ type Server struct {
 	webauthn   *webauthn.WebAuthn
 	challenges *auth.Challenges[passkeyCeremony]
 	blobs      blob.Store
+	hub        hub.Hub
+	// pingTimeout closes silent WebSockets; tests shorten it.
+	pingTimeout time.Duration
 	// oidc holds the enabled identity providers by name (store.ProviderMicrosoft, …).
 	oidc map[string]*oidc.Provider
 }
@@ -60,7 +64,8 @@ func WithClock(now func() time.Time) Option {
 // New returns the server with all routes. It fails if the WebAuthn settings are invalid.
 func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
 	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg),
-		blobs: blob.NewFS(filepath.Join(cfg.DataDir, "blobs"))}
+		blobs: blob.NewFS(filepath.Join(cfg.DataDir, "blobs")), hub: hub.NewMemory(),
+		pingTimeout: defaultPingTimeout}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -105,6 +110,8 @@ func (s *Server) Handler() http.Handler {
 
 	mux.Handle("PUT /api/v1/blobs/{id}", s.withSession(s.handlePutBlob))
 	mux.Handle("GET /api/v1/blobs/{id}", s.withSession(s.handleGetBlob))
+
+	mux.HandleFunc("GET /api/v1/ws", s.handleWS)
 
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
