@@ -17,7 +17,7 @@ Der Plan ist für autonome Claude-Sessions geschrieben. Lies zuerst diese Datei 
 | Server-Datenbank | SQLite über `modernc.org/sqlite` (reines Go, kein CGO). Zugriff nur über ein Store-Interface, damit Postgres später möglich ist. |
 | Betrieb | Raspberry Pi (arm64) bei Mario zu Hause, Docker Compose. |
 | Erreichbarkeit | Tailscale Funnel (feste HTTPS-Adresse `*.ts.net`). Läuft auf dem Pi-Host, nicht im Container. |
-| Server-Update | GitHub Actions baut bei Push auf `main` ein arm64-Image nach GHCR (Repo privat). Watchtower auf dem Pi zieht es automatisch. |
+| Server-Update | GitHub Actions baut bei Push auf `main` ein arm64-Image nach GHCR (Repo privat). Ein systemd-Timer auf dem Pi zieht es automatisch (Watchtower ist archiviert, siehe progress.md). |
 | Server-Backup | Täglicher SQLite-Snapshot plus Fotos per rclone in einen kostenlosen Cloud-Speicher. Ziel per Konfiguration. |
 | Login (Identität) | Passkey (WebAuthn) als Hauptweg, dazu privates **Microsoft**-Konto und **Google**-Konto (OIDC). Mehrere Identitäten pro Konto. |
 | Schlüssel auf neues Gerät | Passkey mit PRF, Gerät koppeln (Kopplungscode), Wiederherstellungsschlüssel. Alle drei. |

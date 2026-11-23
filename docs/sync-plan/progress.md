@@ -13,6 +13,24 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: A11 Docker und Pi. `server/Dockerfile` (Cross-Compile, distroless static,
+  UID 65532, Healthcheck über `notenfeder-server healthcheck`), `server/deploy/compose.yaml`
+  (`server` nur auf 127.0.0.1, `backup` mit `rclone/rclone:1.75`), `.env.example`,
+  systemd-Timer `notenfeder-update.*`, Workflow `.github/workflows/server-image.yml`,
+  Pi-Anleitung in `server/README.md` (Einrichten, Update, Sicherung zurückspielen).
+- Entschieden: Kein Watchtower. `containrrr/watchtower` ist seit 17.12.2025 archiviert und
+  passt nicht zu Docker 29. Statt eines Forks ein systemd-Timer mit
+  `docker compose pull && up -d` alle 30 Minuten. Grund: kein fremdes Image mit Zugriff auf
+  den Docker-Socket, keine neue Abhängigkeit. manual-steps.md und Plan-Tabelle angepasst.
+- Entschieden: Daten als Bind-Mount `./data` statt Named Volume. Grund: Sicherung zurückspielen
+  und rclone-Zugriff sind so einfacher.
+- Entschieden: `GET /records/pull` gibt `410 gone` auch bei `after` > `latestSeq` (nach
+  Zurückspielen einer Sicherung). Folgefrage in blockers.md (betrifft Stream B).
+- Ungetestet: Image-Build und Compose (kein Docker-Daemon in der Cloud), Workflow (läuft erst
+  auf `main`). Healthcheck lokal mit dem Binary geprüft.
+- Nächster Schritt: A12 Abschluss.
+
 ## 2026-11-23, 17:35 UTC · Stream A · sync/server
 - Erledigt: A10 Konto und Betrieb. `DELETE /account` (`internal/api/account.go`, löscht DB-Daten
   und Blob-Ordner, `revoked` an alle Geräte), tägliche Sicherung (`internal/api/backup.go`,

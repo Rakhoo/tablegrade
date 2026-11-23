@@ -1,0 +1,46 @@
+# Notenfeder server on the Raspberry Pi. Setup: ../README.md, section "Raspberry Pi".
+# Tailscale Funnel runs on the host and forwards HTTPS to 127.0.0.1:8080.
+# Updates come from the systemd timer notenfeder-update.timer (no Watchtower, see README).
+
+services:
+  server:
+    image: ghcr.io/rakhoo/notenfeder-server:${SERVER_TAG:-latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      LISTEN_ADDR: ":8080"
+      # Behind Tailscale Funnel every request comes from the local proxy.
+      TRUST_FORWARDED_FOR: "1"
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./data:/data
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Copies the daily database snapshots and the encrypted photos to the rclone remote.
+  backup:
+    image: rclone/rclone:1.75
+    restart: unless-stopped
+    env_file: .env
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          rclone sync /data/backup "$${RCLONE_REMOTE}/backup" &&
+            rclone sync /data/blobs "$${RCLONE_REMOTE}/blobs" &&
+            echo "backup synced $$(date -u +%FT%TZ)"
+          sleep 86400
+        done
+    volumes:
+      - ./data:/data:ro
+      - ./rclone:/config/rclone
+    logging:
+      driver: local
+      options:
+        max-size: "1m"
+        max-file: "3"
