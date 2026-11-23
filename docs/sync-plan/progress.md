@@ -157,3 +157,5 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - C2 „Passkey hinzufügen“ und „Erst-Upload mit Fortschritt“ sowie C3 „Download mit
   Fortschritt“ sind blockiert (Fassade fehlt, blockers.md).
 - Nächster Schritt: C3 „Gerät koppeln“ auf dem alten Gerät (`confirmDeviceLink`), dann C4.
+- Erledigt: C3 „Gerät koppeln“ auf dem alten Gerät (`SyncApproveLink` in der Ansicht „aktiv“:
+  Code eingeben, Prüfcode vergleichen, „Stimmt überein“ sendet den Schlüssel).

@@ -441,6 +441,7 @@ the tab used last:
   two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. A signed-in device
   without the key offers three ways to unlock: passkey, linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).
+  The active view has "Gerät koppeln" to enter that code on a device that already syncs.
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

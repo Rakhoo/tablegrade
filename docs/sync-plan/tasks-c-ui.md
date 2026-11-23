@@ -39,7 +39,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
       - „Wiederherstellungsschlüssel eingeben“ (Einfügen aus dem Passwortmanager erlaubt).
 - [ ] Danach Download aller Daten mit Fortschritt. Hat das Gerät schon lokale Daten: vorher
       fragen (ersetzen oder abbrechen; zusammenführen gibt es nicht).
-- [ ] Auf dem alten Gerät: „Gerät koppeln“ mit Code-Eingabe und Prüfcode-Bestätigung.
+- [x] Auf dem alten Gerät: „Gerät koppeln“ mit Code-Eingabe und Prüfcode-Bestätigung.
 
 ## C4 Konto verwalten
 
