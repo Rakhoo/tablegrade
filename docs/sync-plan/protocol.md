@@ -186,6 +186,8 @@ records  userId, id, seq, updatedAt, deleted, schema, ciphertext, deviceId
   60 Pushes pro Minute und Konto (`rate_limited`).
 - Pull: `after` und `limit` sind ganze Zahlen ≥ 0 bzw. ≥ 1, sonst `bad_request`. Ein `limit`
   über 1000 zählt als 1000. `after=0` bekommt nie `gone`.
+- `gone` auch, wenn `after` größer als `latestSeq` ist. Das passiert nach dem Zurückspielen einer
+  Server-Sicherung; sonst würde das Gerät neue Einträge mit schon gesehenen `seq` überspringen.
 - Auch Löschungen tragen einen `ciphertext` (Klartext mit `row: null`). So bleibt der Schlüssel
   `k` für das Gerät lesbar, das die Löschung anwendet.
 - Der Server sendet einem Gerät auch seine eigenen Einträge zurück. Der Client erkennt sie an
@@ -317,6 +319,7 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Pull: `gone` auch bei `after` > `latestSeq` (Server-Sicherung zurückgespielt). |
 | 2026-11-23 | A | `DELETE /account`: `204`, `revoked` an alle Geräte. |
 | 2026-11-23 | A | Kopplung: Sitzung nötig, einheitlich `not_found`, Prüfung von Schlüssel und Wrap, `204`/`conflict` bei `complete`, `link` an alle Geräte des Kontos. |
 | 2026-11-23 | A | WebSocket: Fehler vor dem Upgrade, `changed` auch an das pushende Gerät, Close-Codes. |

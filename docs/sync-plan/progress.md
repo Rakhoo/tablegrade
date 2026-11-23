@@ -13,6 +13,49 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:50 UTC · Stream A · sync/server
+- Erledigt: A12 Abschluss. Alle Endpunkte aus protocol.md sind vorhanden und haben Go-Tests
+  (Test-Datei in Klammern, alle in `server/internal/api/`):
+  - `GET /health` (`api_test.go`)
+  - `POST /auth/passkey/register/begin|finish`, `POST /auth/passkey/login/begin|finish`
+    (`passkey_test.go`)
+  - `GET /auth/oidc/{provider}/config`, `POST /auth/oidc/{provider}/exchange` (`oidc_test.go`)
+  - `GET /auth/session`, `POST /auth/logout`, `POST /auth/dev/login` (`api_test.go`)
+  - `GET /devices`, `PATCH /devices/{id}`, `POST /devices/{id}/revoke` (`api_test.go`,
+    `ws_test.go`)
+  - `GET /keys`, `PUT /keys/{id}`, `DELETE /keys/{id}` (`keys_test.go`)
+  - `POST /records/push`, `GET /records/pull` (`records_test.go`)
+  - `PUT /blobs/{id}`, `GET /blobs/{id}` (`blobs_test.go`)
+  - `GET /ws` (`ws_test.go`)
+  - `POST /link`, `GET /link/by-code/{code}`, `POST /link/{linkId}/complete`,
+    `GET /link/{linkId}` (`links_test.go`)
+  - `DELETE /account` (`account_test.go`)
+- Aufgeräumt: ungenutzte Funktion `auth.Sessions.End` entfernt.
+- Testabdeckung: `internal/api` 81 %, `store/sqlite` 88 %, `oidc` 88 %, `hub` 94 %.
+- Offen für Mario: blockers.md (Verhalten nach Zurückspielen einer Sicherung); echte Logins
+  (Microsoft, Google, Passkeys auf iPad/PC), Image-Build und Pi-Betrieb (siehe manual-steps.md).
+- Merge-Punkt A12 erreicht, `sync/server` in `sync/integration` gemergt.
+
+**Stream A fertig**
+
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: A11 Docker und Pi. `server/Dockerfile` (Cross-Compile, distroless static,
+  UID 65532, Healthcheck über `notenfeder-server healthcheck`), `server/deploy/compose.yaml`
+  (`server` nur auf 127.0.0.1, `backup` mit `rclone/rclone:1.75`), `.env.example`,
+  systemd-Timer `notenfeder-update.*`, Workflow `.github/workflows/server-image.yml`,
+  Pi-Anleitung in `server/README.md` (Einrichten, Update, Sicherung zurückspielen).
+- Entschieden: Kein Watchtower. `containrrr/watchtower` ist seit 17.12.2025 archiviert und
+  passt nicht zu Docker 29. Statt eines Forks ein systemd-Timer mit
+  `docker compose pull && up -d` alle 30 Minuten. Grund: kein fremdes Image mit Zugriff auf
+  den Docker-Socket, keine neue Abhängigkeit. manual-steps.md und Plan-Tabelle angepasst.
+- Entschieden: Daten als Bind-Mount `./data` statt Named Volume. Grund: Sicherung zurückspielen
+  und rclone-Zugriff sind so einfacher.
+- Entschieden: `GET /records/pull` gibt `410 gone` auch bei `after` > `latestSeq` (nach
+  Zurückspielen einer Sicherung). Folgefrage in blockers.md (betrifft Stream B).
+- Ungetestet: Image-Build und Compose (kein Docker-Daemon in der Cloud), Workflow (läuft erst
+  auf `main`). Healthcheck lokal mit dem Binary geprüft.
+- Nächster Schritt: A12 Abschluss.
+
 ## 2026-11-23, 17:35 UTC · Stream A · sync/server
 - Erledigt: A10 Konto und Betrieb. `DELETE /account` (`internal/api/account.go`, löscht DB-Daten
   und Blob-Ordner, `revoked` an alle Geräte), tägliche Sicherung (`internal/api/backup.go`,

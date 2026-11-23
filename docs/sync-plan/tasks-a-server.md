@@ -83,27 +83,27 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A11 Docker und Pi
 
-- [ ] `server/Dockerfile`: mehrstufig, statisches Binary (`CGO_ENABLED=0`), kleines
+- [x] `server/Dockerfile`: mehrstufig, statisches Binary (`CGO_ENABLED=0`), kleines
       Laufzeit-Image (z. B. distroless static), Nutzer ohne Root, Plattformen `linux/arm64`
       und `linux/amd64`.
-- [ ] `server/deploy/compose.yaml`: Dienste `server` (Port nur auf `127.0.0.1`, Volume
+- [x] `server/deploy/compose.yaml`: Dienste `server` (Port nur auf `127.0.0.1`, Volume
       `/data`), `watchtower` (nur dieses Image, Abfrage z. B. alle 30 Minuten), `backup`
       (`rclone/rclone`, synchronisiert `/data/backup` und `/data/blobs` täglich zum
       konfigurierten Ziel). `.env.example` mit allen Variablen.
-- [ ] Prüfen, ob `containrrr/watchtower` noch gepflegt wird. Wenn nicht: gepflegten Fork
+- [x] Prüfen, ob `containrrr/watchtower` noch gepflegt wird. Wenn nicht: gepflegten Fork
       nehmen oder ein systemd-Timer mit `docker compose pull && docker compose up -d`
       (`server/deploy/`). Entscheidung in progress.md begründen.
-- [ ] `.github/workflows/server-image.yml`: bei Push auf `main` mit Änderungen in `server/`
+- [x] `.github/workflows/server-image.yml`: bei Push auf `main` mit Änderungen in `server/`
       Image für beide Plattformen bauen und nach `ghcr.io/rakhoo/notenfeder-server` pushen
       (Tags `latest` und Commit-SHA). Läuft nur auf `main`, also erst nach Marios Merge.
       Gleiche Steuerung per Commit-Message wie `deploy.yml`: `[skip deploy]` baut nichts,
       `[deploy dev]` pusht nur den Tag `dev` (nicht `latest`, Watchtower bleibt unberührt).
       Manuell startbar mit Auswahl `production`/`dev`.
-- [ ] `server/README.md`: Einrichtung des Pi Schritt für Schritt (Docker, GHCR-Login mit
+- [x] `server/README.md`: Einrichtung des Pi Schritt für Schritt (Docker, GHCR-Login mit
       Token `read:packages`, `.env`, `tailscale funnel`, rclone-Ziel einrichten, Update,
       Backup zurückspielen).
 
 ## A12 Abschluss
 
-- [ ] Alle Endpunkte aus protocol.md vorhanden und getestet. Liste in progress.md.
-- [ ] **Merge-Punkt**, „Stream A fertig“ in progress.md.
+- [x] Alle Endpunkte aus protocol.md vorhanden und getestet. Liste in progress.md.
+- [x] **Merge-Punkt**, „Stream A fertig“ in progress.md.

@@ -120,8 +120,8 @@ func queryInt(r *http.Request, name string, fallback int64) (int64, bool) {
 	return n, err == nil && n >= 0
 }
 
-// handlePull returns records after a seq. A device whose seq lies before purged tombstones
-// gets gone, because it would miss deletions.
+// handlePull returns records after a seq. A device whose seq lies before purged tombstones or
+// after the latest seq gets gone, because it would miss deletions or new records.
 func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess store.Session) {
 	after, okAfter := queryInt(r, "after", 0)
 	limit, okLimit := queryInt(r, "limit", defaultPullLimit)
@@ -144,6 +144,12 @@ func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess store.S
 	pull, err := s.store.PullRecords(r.Context(), sess.UserID, after, int(limit))
 	if err != nil {
 		writeError(w, err)
+		return
+	}
+	// A seq beyond the server's means the database was restored from a backup; the device must
+	// start over, or it would skip records that get these seq numbers again.
+	if after > pull.LatestSeq {
+		writeError(w, errGone)
 		return
 	}
 	records := make([]recordJSON, len(pull.Records))

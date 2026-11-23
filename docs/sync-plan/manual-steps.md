@@ -66,6 +66,7 @@ Die genaue Anleitung schreibt Stream A in `server/README.md`. Überblick:
 4. `server/deploy/compose.yaml` und `.env` auf den Pi kopieren, Werte eintragen.
 5. rclone-Ziel für das Backup einrichten (z. B. OneDrive), Konfiguration ins Volume legen.
 6. `docker compose up -d`. `GET <adresse>/api/v1/health` muss antworten.
+7. Update-Timer installieren (`notenfeder-update.timer`, statt Watchtower).
 
 ## 7. Anmelde-Apps registrieren (kostenlos)
 
@@ -110,4 +111,4 @@ Diese Punkte kann keine Session prüfen. Am besten früh testen, sobald A und B 
 ## 10. Abschluss
 
 `sync/integration` prüfen und selbst nach `main` mergen. Danach baut Actions das Server-Image,
-Watchtower aktualisiert den Pi, Cloudflare Pages deployt die App.
+der systemd-Timer `notenfeder-update.timer` aktualisiert den Pi, Cloudflare Pages deployt die App.
