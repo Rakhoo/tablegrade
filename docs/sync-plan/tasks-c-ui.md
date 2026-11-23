@@ -12,9 +12,9 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 
 ## C1 Einstellungs-Bereich
 
-- [ ] Neuer Tab „Konto & Sync“ in den Einstellungen. Zustände: aus, Einrichtung, Schlüssel
-      fehlt, aktiv, gesperrt, Update nötig.
-- [ ] Im Zustand „aus“: kurze Erklärung (Daten verschlüsselt, niemand außer ihr kann sie
+- [x] Neuer Tab „Konto & Sync“ in den Einstellungen. Zustände: aus, Einrichtung, Schlüssel
+      fehlt, aktiv, gesperrt, Update nötig. (Update nötig: siehe blockers.md)
+- [x] Im Zustand „aus“: kurze Erklärung (Daten verschlüsselt, niemand außer ihr kann sie
       lesen, Schlüssel gut aufbewahren) und Knopf „Einrichten“.
 
 ## C2 Einrichtung (neues Konto)

@@ -20,6 +20,7 @@ import { PointSettings } from "./PointSettings";
 import { SchoolSettings } from "./SchoolSettings";
 import { SeatLayoutSettings } from "./SeatLayoutSettings";
 import type { SettingsLoaderData } from "./settingsLoader";
+import { SyncSettings } from "./SyncSettings";
 import { TimetableSettings } from "./TimetableSettings";
 import { TraitSettings } from "./TraitSettings";
 import { paths } from "../../lib/paths";
@@ -32,6 +33,7 @@ const TABS = [
   { key: "students", label: "Schüler" },
   { key: "display", label: "Darstellung" },
   { key: "data", label: "Daten und Export" },
+  { key: "sync", label: "Konto & Sync" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -132,6 +134,7 @@ export function SettingsPage() {
         {devUnlocked && <DevSettings />}
       </>
     ),
+    sync: <SyncSettings />,
   };
 
   return (

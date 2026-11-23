@@ -429,6 +429,10 @@ the tab used last:
   shirt colors), oral grades, absences, warnings, comments, exams with retakes, a project and
   a partial grade, traits and duties. Always the same data
   ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
+- **Konto & Sync** (in progress, see [docs/sync-plan](docs/sync-plan/README.md)): one card
+  whose content follows the sync status (`lib/syncView.ts`): off (explanation and
+  "Einrichten"), setup, missing key on a new device, active (state, last sync, "Jetzt
+  synchronisieren") and an expired sign-in (the app keeps working locally).
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

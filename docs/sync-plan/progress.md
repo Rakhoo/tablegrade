@@ -98,3 +98,16 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Nächster Schritt: 0.3 Drizzle-Schema auf `text`, Queries, Typen, Loader, `paths`, Rückweg,
   Sortierung in `lessons.ts` (Tie-Break nach ID durch stabile Alternative ersetzen).
 
+
+## 2026-11-23, 15:20 UTC · Stream C · sync/ui
+- Erledigt: Branch `sync/ui` von `sync/integration` angelegt. C1: Tab „Konto & Sync“ mit Karte
+  `SyncSettings`, Ansichten nach `lib/syncView.ts` (aus, Einrichtung, Schlüssel fehlt, aktiv,
+  gesperrt) mit Vitest-Test, Erklärung und „Einrichten“ im Zustand „aus“, `useSyncAction`
+  für Lade- und Fehlerzustand, README-Eintrag.
+- Entschieden: „gesperrt“ = `signedOut` mit `lastSyncAt != null`; „Einrichtung“ = `signedOut`
+  ohne früheren Abgleich. Grund: Die Fassade hat dafür keine eigene Phase.
+- Entschieden: Ohne Engine (Stub wirft „not implemented“) zeigt die UI „Die Synchronisierung
+  ist in dieser Version noch nicht verfügbar.“
+- Offen: „Update nötig“ fehlt in der Fassade (blockers.md).
+- Nicht geprüft: Darstellung im Browser (keine Browser-Tests).
+- Nächster Schritt: C2 Anmeldeweg wählen (Passkey, Microsoft, Google) in der Ansicht „Einrichtung“.
