@@ -69,6 +69,8 @@ export type SyncStatus = {
   error: string | null;
   /** Set during the first upload or download, otherwise `null`. */
   progress: SyncProgress | null;
+  /** Set after an imported backup turned sync off, until dismissed or sync is turned on. */
+  importNotice: boolean;
 };
 
 /** A device of the account. */

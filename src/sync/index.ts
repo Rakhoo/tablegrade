@@ -43,10 +43,12 @@ function real(): SyncService {
 
 /**
  * Starts sync when the app opens: checks for an imported backup, finishes an OIDC return and
- * starts the session checks and the engine. Does nothing in builds without a sync server.
+ * starts the session checks and the engine. Does nothing in builds without a sync server; the
+ * demo only shows the import hint.
  */
 export async function startSync(): Promise<void> {
-  if (DEMO || !SYNC_URL) return;
+  if (DEMO) return demo.start();
+  if (!SYNC_URL) return;
   await real().start();
 }
 
@@ -185,6 +187,11 @@ export async function hasLocalData(): Promise<boolean> {
  */
 export async function replaceLocalData(): Promise<void> {
   return DEMO ? demo.replaceLocalData() : real().replaceLocalData();
+}
+
+/** Hides the hint about an imported backup (`SyncStatus.importNotice`). */
+export async function dismissImportNotice(): Promise<void> {
+  return DEMO ? demo.dismissImportNotice() : real().dismissImportNotice();
 }
 
 /** Sends and receives changes now instead of waiting for the next trigger. */

@@ -50,9 +50,8 @@ import type {
 /** Interval of the outbox check that sends local changes. */
 export const LOCAL_CHANGE_INTERVAL = 5000;
 
-/** Hint after a backup import turned sync off. */
-const IMPORT_NOTICE =
-  "Eine Sicherung wurde eingespielt. Die Synchronisierung ist deshalb aus.";
+/** Device store entries that `disableSync` removes besides the session; the data key stays. */
+const OFF_KEYS = ["wanted", "syncId", "syncUserId", "importNotice"] as const;
 
 /** Browser parts of the service. */
 export type ServiceDeps = {
@@ -124,7 +123,8 @@ export function createSyncService(deps: ServiceDeps) {
   async function refresh(check?: SessionCheck): Promise<void> {
     if (!(await store.get("wanted"))) {
       engine.stop();
-      updateStatus({ ...OFF_STATUS, error: readStatus().error });
+      const { error, importNotice } = readStatus();
+      updateStatus({ ...OFF_STATUS, error, importNotice });
       return;
     }
     const session = await store.get("session");
@@ -194,6 +194,12 @@ export function createSyncService(deps: ServiceDeps) {
     if (pending) void engine.requestSync();
   }
 
+  /** Removes the hint about an imported backup from store and status. */
+  async function clearImportNotice() {
+    await store.delete("importNotice");
+    updateStatus({ importNotice: false });
+  }
+
   /** Starts the OIDC redirect; with a session the server links the identity instead. */
   async function redirectToProvider(
     provider: OidcProvider,
@@ -210,12 +216,12 @@ export function createSyncService(deps: ServiceDeps) {
     /** Checks for an imported backup, finishes an OIDC return and starts the checks. */
     async start() {
       if (stopMonitor) return;
-      // The guard sets `importNotice` when an imported backup turned sync off
+      // The guard sets `importNotice` when an imported backup turned sync off; it stays
+      // until the user dismisses it or turns sync on again
       await checkImportedDatabase(db, store);
       if (await store.get("importNotice")) {
         await store.delete("wanted");
-        await store.delete("importNotice");
-        updateStatus({ error: IMPORT_NOTICE });
+        updateStatus({ importNotice: true });
       }
       await handleOidcReturn();
       // The monitor runs a check right away, which also starts the engine
@@ -230,6 +236,7 @@ export function createSyncService(deps: ServiceDeps) {
       if (localTimer) clearInterval(localTimer);
     },
     async enableSync() {
+      await clearImportNotice();
       await store.set("wanted", true);
       updateStatus({ error: null });
       await refresh();
@@ -239,8 +246,7 @@ export function createSyncService(deps: ServiceDeps) {
       await signOut(keyring);
       token = null;
       await turnOff(db);
-      for (const key of ["wanted", "syncId", "syncUserId"] as const)
-        await store.delete(key);
+      for (const key of OFF_KEYS) await store.delete(key);
       updateStatus(OFF_STATUS);
     },
     startPasskeySignup: async (deviceName: string) =>
@@ -311,6 +317,7 @@ export function createSyncService(deps: ServiceDeps) {
       token = null;
       updateStatus(OFF_STATUS);
     },
+    dismissImportNotice: clearImportNotice,
     /** Calls `listener` after pulled data was written, so the UI reloads. */
     subscribeApplied(listener: () => void) {
       appliedListeners.add(listener);

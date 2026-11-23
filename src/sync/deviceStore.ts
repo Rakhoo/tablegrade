@@ -35,7 +35,7 @@ export type DeviceValues = {
   syncId: string;
   /** Account the current activation belongs to; another account starts from scratch. */
   syncUserId: string;
-  /** Set when an imported backup turned sync off; the UI shows a hint once. */
+  /** Set when an imported backup turned sync off; the UI shows a hint until dismissed. */
   importNotice: true;
 };
 

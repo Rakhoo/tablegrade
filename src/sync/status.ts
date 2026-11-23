@@ -8,6 +8,7 @@ export const OFF_STATUS: SyncStatus = {
   pending: 0,
   error: null,
   progress: null,
+  importNotice: false,
 };
 
 /** Latest snapshot; replaced, never mutated. */
