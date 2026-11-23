@@ -12,6 +12,7 @@ import { Outlet, useLoaderData, useNavigation } from "react-router";
 import { LoadingFeather } from "./components/brand/LoadingFeather";
 import { LockScreen } from "./components/LockScreen";
 import { StorageErrorPage } from "./features/errors/StorageErrorPage";
+import { SyncNoticeBanner } from "./components/SyncNoticeBanner";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { useAppTheme } from "./hooks/useAppTheme";
 import { PIN_LOCK_ENABLED } from "./lib/pin";
@@ -66,6 +67,7 @@ export function App() {
               </div>
             )}
             <UpdateBanner />
+            <SyncNoticeBanner />
           </LocalizationProvider>
         </ThemeProvider>
       </StyledEngineProvider>

@@ -12,54 +12,76 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 
 ## C1 Einstellungs-Bereich
 
-- [ ] Neuer Tab „Konto & Sync“ in den Einstellungen. Zustände: aus, Einrichtung, Schlüssel
+- [x] Neuer Tab „Konto & Sync“ in den Einstellungen. Zustände: aus, Einrichtung, Schlüssel
       fehlt, aktiv, gesperrt, Update nötig.
-- [ ] Im Zustand „aus“: kurze Erklärung (Daten verschlüsselt, niemand außer ihr kann sie
+- [x] Im Zustand „aus“: kurze Erklärung (Daten verschlüsselt, niemand außer ihr kann sie
       lesen, Schlüssel gut aufbewahren) und Knopf „Einrichten“.
 
 ## C2 Einrichtung (neues Konto)
 
-- [ ] Anmeldeweg wählen: Passkey, Microsoft, Google.
-- [ ] Wiederherstellungsschlüssel anzeigen:
+- [x] Anmeldeweg wählen: Passkey, Microsoft, Google.
+- [x] Wiederherstellungsschlüssel anzeigen:
       - Formular mit Benutzername „Notenfeder-Wiederherstellung“ und Feld
         `autocomplete="new-password"`, damit der Browser das Speichern anbietet.
       - Knöpfe „Kopieren“, „Drucken“, „Als Datei speichern“.
       - Deutlicher Hinweis: Ohne diesen Schlüssel sind die Daten bei Verlust aller Geräte weg.
         Niemand kann ihn zurücksetzen.
-- [ ] Bestätigung: zwei zufällige Vierergruppen eingeben.
-- [ ] Angebot „Passkey zum Entsperren hinzufügen“ (wenn noch keiner mit PRF vorhanden).
-- [ ] Erst-Upload mit Fortschritt, danach Zustand „aktiv“.
+- [x] Bestätigung: zwei zufällige Vierergruppen eingeben.
+- [x] Angebot „Passkey zum Entsperren hinzufügen“ (wenn noch keiner mit PRF vorhanden).
+- [x] Erst-Upload mit Fortschritt, danach Zustand „aktiv“.
 
 ## C3 Neues Gerät
 
-- [ ] Anmelden (Passkey, Microsoft, Google).
-- [ ] Zustand „Schlüssel fehlt“: drei Wege
+- [x] Anmelden (Passkey, Microsoft, Google).
+- [x] Zustand „Schlüssel fehlt“: drei Wege (Passkey-Weg nur mit Entsperr-Passkey)
       - „Mit Passkey entsperren“ (nur wenn ein PRF-Passkey vorhanden ist),
       - „Mit anderem Gerät koppeln“: Code anzeigen, danach Prüfcode vergleichen,
       - „Wiederherstellungsschlüssel eingeben“ (Einfügen aus dem Passwortmanager erlaubt).
-- [ ] Danach Download aller Daten mit Fortschritt. Hat das Gerät schon lokale Daten: vorher
+- [x] Danach Download aller Daten mit Fortschritt. Hat das Gerät schon lokale Daten: vorher
       fragen (ersetzen oder abbrechen; zusammenführen gibt es nicht).
-- [ ] Auf dem alten Gerät: „Gerät koppeln“ mit Code-Eingabe und Prüfcode-Bestätigung.
+- [x] Auf dem alten Gerät: „Gerät koppeln“ mit Code-Eingabe und Prüfcode-Bestätigung.
 
 ## C4 Konto verwalten
 
-- [ ] Anmeldewege: Liste, „Passkey hinzufügen“, „Microsoft verknüpfen“, „Google verknüpfen“.
-- [ ] Geräte: Liste mit letzter Aktivität, umbenennen, sperren (`ConfirmDialog`).
-- [ ] „Neuen Wiederherstellungsschlüssel erstellen“ (gleicher Ablauf wie C2, alter wird ungültig).
-- [ ] „Sync ausschalten“, „Abmelden“, „Konto löschen“ (Bestätigung durch Eintippen eines
+- [x] Anmeldewege: Liste, „Passkey hinzufügen“, „Microsoft verknüpfen“, „Google verknüpfen“.
+- [x] Geräte: Liste mit letzter Aktivität, umbenennen, sperren (`ConfirmDialog`).
+- [x] „Neuen Wiederherstellungsschlüssel erstellen“ (gleicher Ablauf wie C2, alter wird ungültig).
+- [x] „Sync ausschalten“, „Abmelden“, „Konto löschen“ (Bestätigung durch Eintippen eines
       Worts; Wahl, ob die Daten auf diesem Gerät bleiben).
 
 ## C5 Status in der App
 
-- [ ] Kleiner Sync-Status für alle Seiten (z. B. im `PageHeader` oder neben dem Speed Dial):
+- [x] Kleiner Sync-Status für alle Seiten (z. B. im `PageHeader` oder neben dem Speed Dial):
       synchronisiert, läuft, offline, Fehler. Mit `data-help`.
-- [ ] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
+- [x] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
       anmelden, um zu synchronisieren“ mit Knopf. Kein Sperrbildschirm.
-- [ ] Hinweis bei „Update nötig“.
-- [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B).
+- [x] Hinweis bei „Update nötig“.
+- [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B). Blockiert:
+      Fassade gibt `importNotice` nicht heraus (blockers.md).
+
+## C7 Nachträge aus blockers.md (Antworten vom 2026-11-23)
+
+Braucht die Fassaden-Ergänzungen aus B7. Fehlen sie noch in `sync/integration`: im Demo-Modus
+(`src/sync/demo.ts`) vorbauen ist erlaubt, sonst die nächste freie Aufgabe nehmen.
+
+- [x] „Update nötig“: eigene Ansicht in `lib/syncView.ts` für `phase == "upgradeRequired"`,
+      Hinweis in der Karte und in der App (C5) mit Knopf „Neu laden“ (`reloadApp`).
+- [x] Neues Konto ohne Schlüssel: Bei `locked` und `account.hasDataKey == false` den Ablauf
+      „Schlüssel erstellen“ (wie C2) statt der Entsperr-Wege zeigen. Gilt auch nach der
+      Anmeldung mit Microsoft oder Google.
+- [x] „Mit Passkey entsperren“ (C3) nur bei `account.hasPrfPasskey`. Angebot „Passkey zum
+      Entsperren hinzufügen“ (C2) nur ohne; es ruft `addPasskey()`.
+- [x] Fortschritt von Erst-Upload (C2) und Erst-Download (C3) aus `SyncStatus.progress`.
+- [x] Vor dem Erst-Download `hasLocalData()`; wenn ja, fragen (ersetzen oder abbrechen), bei
+      „ersetzen“ `replaceLocalData()`.
+- [x] Geräte umbenennen: Stift-Knopf in `SyncDevices`, ruft `renameDevice(id, name)`.
+- [x] Anmeldewege: „Passkey hinzufügen“ (`addPasskey()`), „Microsoft verknüpfen“ und „Google
+      verknüpfen“ (`linkOidcIdentity(provider)`).
+- [x] Danach die Vermerke „siehe blockers.md“ in C1 bis C5 entfernen, die offenen Punkte dort
+      abhaken und die Einträge in blockers.md auf „erledigt“ setzen.
 
 ## C6 Abschluss
 
-- [ ] README: Feature-Abschnitt „Konto & Sync“, Hilfe-Texte, Projektstruktur
+- [x] README: Feature-Abschnitt „Konto & Sync“, Hilfe-Texte, Projektstruktur
       (`src/crypto/`, `src/sync/`, `server/`).
 - [ ] **Merge-Punkt**, „Stream C fertig“ in progress.md.

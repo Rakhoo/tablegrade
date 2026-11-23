@@ -363,3 +363,121 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Nächster Schritt: 0.3 Drizzle-Schema auf `text`, Queries, Typen, Loader, `paths`, Rückweg,
   Sortierung in `lessons.ts` (Tie-Break nach ID durch stabile Alternative ersetzen).
 
+
+## 2026-11-23, 15:20 UTC · Stream C · sync/ui
+- Erledigt: Branch `sync/ui` von `sync/integration` angelegt. C1: Tab „Konto & Sync“ mit Karte
+  `SyncSettings`, Ansichten nach `lib/syncView.ts` (aus, Einrichtung, Schlüssel fehlt, aktiv,
+  gesperrt) mit Vitest-Test, Erklärung und „Einrichten“ im Zustand „aus“, `useSyncAction`
+  für Lade- und Fehlerzustand, README-Eintrag.
+- Entschieden: „gesperrt“ = `signedOut` mit `lastSyncAt != null`; „Einrichtung“ = `signedOut`
+  ohne früheren Abgleich. Grund: Die Fassade hat dafür keine eigene Phase.
+- Entschieden: Ohne Engine (Stub wirft „not implemented“) zeigt die UI „Die Synchronisierung
+  ist in dieser Version noch nicht verfügbar.“
+- Offen: „Update nötig“ fehlt in der Fassade (blockers.md).
+- Nicht geprüft: Darstellung im Browser (keine Browser-Tests).
+- Erledigt: C2 Anmeldeweg (`SyncSignIn`: Gerätename, „Neues Konto mit Passkey“, „Mit Passkey
+  anmelden“, Microsoft, Google). Bei „gesperrt“ nur Anmelden, kein neues Konto.
+- Offen: Nach `startPasskeySignup` mit `isNewUser` zeigt die Karte noch „Schlüssel fehlt“
+  (Fassade setzt `locked`). Der Ablauf Wiederherstellungsschlüssel (C2) muss das abfangen.
+- Nächster Schritt: C2 Wiederherstellungsschlüssel anzeigen.
+
+## 2026-11-23, 16:20 UTC · Stream C · sync/ui
+- Erledigt: `sync/integration` (B1 Krypto) gemergt. C2 Wiederherstellungsschlüssel:
+  `SyncRecoveryKey` (Knopf „Schlüssel erstellen“, Anzeige im Formular mit Benutzername
+  „Notenfeder-Wiederherstellung“ und `autocomplete="new-password"`, Kopieren, Drucken, Als
+  Datei speichern, Warnhinweis) und `SyncRecoveryKeyCheck` (zwei zufällige Gruppen,
+  `lib/recoveryKeyCheck.ts` mit Vitest-Test). Datei und Druck in
+  `services/recoveryKeyExport.ts`; `saveFile` aus `backup.ts` dafür exportiert.
+- Entschieden: Nach `startPasskeySignup` mit `isNewUser` zeigt die Karte den Schlüssel-Ablauf
+  statt „Schlüssel fehlt“ (lokaler Zustand in `SyncSettings`). Der Schlüssel entsteht erst
+  per Knopf, damit Fehler sichtbar bleiben und ein neuer Versuch möglich ist. Die Komponente
+  hat einen `intro`-Text, damit C4 („Neuen Schlüssel erstellen“) sie wiederverwenden kann.
+- Entschieden: Drucken über einen versteckten iframe, damit nur der Schlüssel gedruckt wird.
+- Offen: Neues Konto über Microsoft/Google (Rückkehr per Redirect) erkennt die UI nicht
+  (blockers.md). Verlässt die Nutzerin die Seite vor der Kontrolle, ist der Ablauf weg.
+- Nicht geprüft: Ob Safari/Chrome das Speichern im Passwortmanager anbieten (Feld ist
+  `type="text"`, damit der Schlüssel lesbar bleibt) und ob Drucken in der iPad-PWA geht.
+  Test auf dem iPad nötig. Keine Browser-Tests.
+- Nächster Schritt: C2 „Passkey zum Entsperren hinzufügen“.
+- Erledigt: C3 Anmelden (über `SyncSignIn` im Zustand „Einrichtung“) und „Schlüssel fehlt“:
+  `SyncUnlock` mit „Mit Passkey entsperren“, `SyncDeviceLink` (Code anzeigen, Prüfcode
+  vergleichen, „Stimmt überein“/„Abbrechen“) und Eingabe des Wiederherstellungsschlüssels
+  (verstecktes Benutzername-Feld, `autocomplete="current-password"`).
+- Entschieden: „Mit Passkey entsperren“ steht immer da; die Fassade sagt nicht, ob ein
+  PRF-Passkey existiert (blockers.md). Ohne passenden Passkey zeigt der Knopf den Fehler.
+- Offen: Lehnt Stream B `checkCode` nach `cancel()` ab, zeigt die UI kurz einen Fehler.
+  Verlässt die Nutzerin die Seite während der Kopplung, läuft der Code erst serverseitig ab.
+- Nicht geprüft: Ob Passwortmanager das versteckte Benutzername-Feld nutzen (iPad-Test).
+- C2 „Passkey hinzufügen“ und „Erst-Upload mit Fortschritt“ sowie C3 „Download mit
+  Fortschritt“ sind blockiert (Fassade fehlt, blockers.md).
+- Nächster Schritt: C3 „Gerät koppeln“ auf dem alten Gerät (`confirmDeviceLink`), dann C4.
+- Erledigt: C3 „Gerät koppeln“ auf dem alten Gerät (`SyncApproveLink` in der Ansicht „aktiv“:
+  Code eingeben, Prüfcode vergleichen, „Stimmt überein“ sendet den Schlüssel).
+- Erledigt: C4 Geräte (`SyncDevices` in „aktiv“): Liste auf Knopfdruck, letzte Aktivität,
+  gesperrte Geräte durchgestrichen, „Sperren“ mit `ConfirmDialog`.
+- Entschieden: Liste lädt erst auf „Geräte anzeigen“. Grund: kein Netzaufruf beim bloßen
+  Öffnen der Einstellungen, kein Effect nötig.
+- Offen: Umbenennen fehlt in der Fassade (blockers.md).
+- Erledigt: C4 neuer Wiederherstellungsschlüssel (`SyncRecoveryKey` mit `onCancel`),
+  „Abmelden“, „Synchronisierung ausschalten“, „Konto löschen“ (`SyncAccountActions`, alle mit
+  `ConfirmDialog`; Löschen erst nach Eintippen von „LÖSCHEN“).
+- Entschieden: „Auch Daten auf diesem Gerät löschen“ nutzt `deleteSchoolData` (Klassen,
+  Schüler, Einträge, Merkmale, Dienste). Einstellungen, Ferien und Schuljahre bleiben.
+  Erst wird das Konto gelöscht, dann lokal; scheitert das Konto-Löschen, bleibt alles.
+- Entschieden: Hinweis der Ansicht „gesperrt“ lautet jetzt „Abgemeldet oder Anmeldung
+  abgelaufen.“, weil „Abmelden“ in dieselbe Ansicht führt.
+- Offen: C4 „Anmeldewege“ (Liste, Passkey/Microsoft/Google verknüpfen) fehlt in der Fassade
+  (nur `AccountInfo.identities`, kein Verknüpfen; siehe blockers.md Punkt 1 für Passkey).
+- Nächster Schritt: C4 Anmeldewege (Liste ist möglich, Verknüpfen blockiert), dann C5.
+- Erledigt: C5 Status: `SyncBadge` in der Leiste des Speed Dials (Punkt grün/violett
+  pulsierend/gelb/rot, Text im Querformat, Link auf `paths.settings("sync")`), Logik
+  `getSyncBadge` in `lib/syncView.ts` mit Test. `paths.settings` nimmt jetzt einen Tab.
+  Hinweis bei „gesperrt“: `SyncSignInBanner` (Snackbar unten, „Anmelden“, „Später“), nicht
+  in den Einstellungen.
+- Entschieden: Status neben dem Speed Dial statt im `PageHeader`, weil nur zwei Seiten den
+  Header haben, der Speed Dial aber auf allen Hauptseiten ist.
+- Offen: Nach bewusstem „Abmelden“ zeigt der Hinweis auch „Anmeldung abgelaufen“ (Fassade
+  unterscheidet das nicht). „Später“ blendet ihn bis zum nächsten Start aus.
+- Nicht geprüft: Platz der Leiste im Hochformat auf dem iPad (keine Browser-Tests).
+- Nächster Schritt: C5 „Update nötig“ und Sicherungs-Import (beide blockiert), sonst C6.
+- Erledigt: C4 Anmeldewege als Liste (`SyncIdentities` aus `status.account.identities`).
+  Hinzufügen/Verknüpfen bleibt offen (blockers.md).
+- Offen: C5 Hinweis beim Sicherungs-Import wartet auf B2 (Logik „Sync ausschalten“ beim
+  Import). C5 „Update nötig“ wartet auf die Fassade (blockers.md). C6 erst danach.
+- Kein Merge nach `sync/integration`: Der einzige Merge-Punkt von Stream C ist C6.
+
+### 2026-11-23 · Stream C
+- Erledigt: C7 „Update nötig“ (Ansicht `upgrade` in `lib/syncView.ts`, Karte mit „Neu laden“,
+  Hinweis auf allen Seiten; `SyncSignInBanner` heißt jetzt `SyncNoticeBanner`).
+- Erledigt: C7 neues Konto ohne Schlüssel (Ansicht `createKey` bei `hasDataKey == false`,
+  auch nach Microsoft/Google). `SyncSignIn.onSignedIn` entfällt, die Ansicht folgt dem Status.
+- Erledigt: C7/C2 Passkey: „Mit Passkey entsperren“ nur bei `hasPrfPasskey`, sonst Angebot
+  „Passkey hinzufügen“ in der aktiven Ansicht (`SyncAddPasskey`, ruft `addPasskey()`).
+- Entschieden: B7 ist noch nicht in `sync/integration`. Die Signaturen aus B7
+  (`upgradeRequired`, `hasDataKey`, `hasPrfPasskey`, `addPasskey`) sind in `types.ts`,
+  `index.ts` und `demo.ts` vorgebaut. Beim nächsten Merge von `sync/integration` die Fassung
+  von Stream B übernehmen.
+- Erledigt: C7 Geräte umbenennen (Stift-Knopf, `ConfirmDialog` mit Namensfeld) und
+  Anmeldewege („Passkey hinzufügen“ bei vorhandenem Entsperr-Passkey, sonst im Angebot;
+  „Microsoft/Google verknüpfen“ nur für noch nicht verknüpfte). `renameDevice` und
+  `linkOidcIdentity` ebenfalls in Fassade und Demo vorgebaut.
+- Nicht geprüft: Ansichten im Browser (keine Browser-Tests).
+- Erledigt: C7 Fortschritt (Balken „Erster Abgleich: x von y Einträgen“ in der aktiven
+  Ansicht aus `SyncStatus.progress`) und Frage vor dem Erst-Download (`SyncReplaceCheck`:
+  „Daten ersetzen“ mit `ConfirmDialog` oder „Abbrechen“ = Sync aus). C7 damit fertig,
+  Stream-C-Einträge in blockers.md auf „erledigt“.
+- Entschieden: Ist `hasLocalData()` fehlgeschlagen, fragt die UI trotzdem (sicherer).
+- Offen: C5 Hinweis beim Sicherungs-Import wartet auf B2.
+- Nächster Schritt: C6 (README, Merge-Punkt), sobald B7 in `sync/integration` ist und die
+  vorgebauten Signaturen damit abgeglichen sind.
+
+## 2026-11-23, 18:40 UTC · Stream C · sync/ui
+- Erledigt: `sync/integration` gemergt (B2, B5, B7). Konflikte in `src/sync/types.ts`,
+  `index.ts`, `demo.ts`: Fassung von Stream B übernommen. Die UI kompiliert damit ohne Änderung.
+- Erledigt: C6 README (Datenschutz mit optionalem Sync, Feature „Konto & Sync“, Hilfe-Texte,
+  Projektstruktur `src/sync/`, `settings/Sync*`, `server/`). CLAUDE.md bleibt Stream D.
+- Blockiert: C5 Hinweis beim Sicherungs-Import. B2 speichert `importNotice` nur im
+  Gerätespeicher, die Fassade gibt ihn nicht heraus (blockers.md, Vorschlag für Stream B).
+- Entschieden: Stream C nach `sync/integration` gemergt, obwohl C5 noch offen ist. Grund: alle
+  übrigen Aufgaben fertig, Prüfungen grün. „Stream C fertig“ erst nach C5.
+- Geprüft: tsc, lint, build, vitest (106 Tests), `go vet`, `go test`. Nicht geprüft: Browser.

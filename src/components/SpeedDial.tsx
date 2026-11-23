@@ -4,6 +4,7 @@ import { rememberReturnPage } from "../lib/returnPage";
 import { HelpOverlay } from "./help/HelpOverlay";
 import { ChevronDownIcon, HelpIcon, SettingsIcon } from "./icons";
 import { paths } from "../lib/paths";
+import { SyncBadge } from "./SyncBadge";
 
 /** An entry of the speed dial: a link, an action or a toggle. */
 export type SpeedDialEntry = {
@@ -249,6 +250,7 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
               </span>
             </Link>
           ))}
+          <SyncBadge />
           <button
             type="button"
             aria-label="Hilfe"
