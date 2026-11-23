@@ -2,6 +2,7 @@ import { Alert, Button, LinearProgress } from "@mui/material";
 import { format } from "date-fns";
 import { useState, type ReactNode } from "react";
 import { RefreshIcon } from "../../components/icons";
+import { SyncImportNotice } from "../../components/SyncImportNotice";
 import { useSyncStatus } from "../../hooks/useSyncStatus";
 import { disableSync, syncNow, type SyncStatus } from "../../sync";
 import { getSyncView, type SyncView } from "../../lib/syncView";
@@ -72,6 +73,7 @@ export function SyncSettings() {
       hint={HINTS[keySetup ? "createKey" : view]}
       help="Konto für den verschlüsselten Abgleich der Daten zwischen eigenen Geräten: einrichten, Gerät hinzufügen, Status."
     >
+      {status.importNotice && <SyncImportNotice />}
       {keySetup ? (
         <SyncRecoveryKey
           intro="Das Konto ist angelegt. Jetzt den Wiederherstellungsschlüssel erstellen und sicher aufbewahren."

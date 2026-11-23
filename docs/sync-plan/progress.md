@@ -518,3 +518,14 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
   zeigt den Hinweis beim Start (`startSync`), damit Stream C die UI prüfen kann.
 - Geprüft: tsc, lint, build, vitest (117 Tests), `go vet`, `go test`. Nicht geprüft: Browser.
 - Nächster Schritt: Stream C setzt C8 um. Stream B hat keine offenen Aufgaben.
+
+## 2026-11-23, 18:45 UTC · Stream C · sync/ui
+- Erledigt: `sync/integration` gemergt (B8).
+- Erledigt: C8 Import-Hinweis. Bei `status.importNotice` zeigen `SyncNoticeBanner` und die Karte
+  „Konto & Sync“ den Hinweis mit Knopf „Verstanden“ (`dismissImportNotice()`). Texte und Knopf
+  gemeinsam in `components/SyncImportNotice.tsx`. C5 abgehakt, blockers.md auf „erledigt“.
+- Entschieden: Der Import-Hinweis hat Vorrang vor den übrigen Hinweisen im Banner. „Später“
+  bleibt zusätzlich, wie bei den anderen Hinweisen.
+- Erledigt: README ergänzt (Import schaltet Sync aus, Hinweis).
+- Geprüft: tsc, lint, build, vitest (117 Tests), `go vet`, `go test`. Nicht geprüft: Browser.
+- **Stream fertig:** Stream C nach `sync/integration` gemergt (Merge-Punkt C6).

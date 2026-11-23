@@ -56,7 +56,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 - [x] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
       anmelden, um zu synchronisieren“ mit Knopf. Kein Sperrbildschirm.
 - [x] Hinweis bei „Update nötig“.
-- [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B). Umsetzung
+- [x] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B). Umsetzung
       in C8.
 
 ## C7 Nachträge aus blockers.md (Antworten vom 2026-11-23)
@@ -84,13 +84,13 @@ Braucht die Fassaden-Ergänzungen aus B7. Fehlen sie noch in `sync/integration`:
 
 Braucht B8 in `sync/integration`. Fehlt B8 noch: nächste freie Aufgabe nehmen (kein Vorbau).
 
-- [ ] Bei `status.importNotice` Hinweis im `SyncNoticeBanner` und in der Karte „Konto & Sync“:
+- [x] Bei `status.importNotice` Hinweis im `SyncNoticeBanner` und in der Karte „Konto & Sync“:
       „Sicherung eingespielt. Synchronisierung ist aus. Zum Fortsetzen neu einschalten.“
       Knopf „Verstanden“ ruft `dismissImportNotice()`. Mit `data-help`.
-- [ ] Danach C5 abhaken, Eintrag in blockers.md auf „erledigt“.
+- [x] Danach C5 abhaken, Eintrag in blockers.md auf „erledigt“.
 
 ## C6 Abschluss
 
 - [x] README: Feature-Abschnitt „Konto & Sync“, Hilfe-Texte, Projektstruktur
       (`src/crypto/`, `src/sync/`, `server/`).
-- [ ] **Merge-Punkt**, „Stream C fertig“ in progress.md.
+- [x] **Merge-Punkt**, „Stream C fertig“ in progress.md.

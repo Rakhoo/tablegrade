@@ -73,7 +73,7 @@ Vorschlag der Session: Stream B ergänzt `linkOidcIdentity(provider)` (Redirect 
 `startOidcLogin`, Rückkehr verknüpft statt anmeldet) und `addPasskey()` (siehe oben).
 Antwort Mario: 5a: Stream B ergänzt `linkOidcIdentity(provider)`. Aufgaben: B7, C7.
 
-## 2026-11-23 · Stream C · beantwortet
+## 2026-11-23 · Stream C · erledigt
 Frage: C5 „Hinweis beim Import einer Sicherung mit aktivem Sync“. B2 legt dafür
 `importNotice` im Gerätespeicher ab (`src/sync/importGuard.ts`). Die Fassade
 (`src/sync/index.ts`) gibt ihn nicht heraus. Stream C darf nur die Fassade nutzen.

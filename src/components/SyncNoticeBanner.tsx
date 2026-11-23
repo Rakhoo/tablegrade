@@ -6,6 +6,11 @@ import { paths } from "../lib/paths";
 import { rememberCurrentPageFor } from "../lib/returnPage";
 import { getSyncView, type SyncView } from "../lib/syncView";
 import { reloadApp } from "../services/pwa";
+import {
+  DismissImportNoticeButton,
+  IMPORT_NOTICE_HELP,
+  IMPORT_NOTICE_MESSAGE,
+} from "./SyncImportNotice";
 
 /** Link to the sync settings, which show the sign-in. */
 const SYNC_SETTINGS = paths.settings("sync");
@@ -41,13 +46,24 @@ const NOTICES: Partial<Record<SyncView, Notice>> = {
   },
 };
 
+/** Notice after a backup import turned sync off; it stays until dismissed. */
+const IMPORT_NOTICE: Notice = {
+  help: IMPORT_NOTICE_HELP,
+  message: IMPORT_NOTICE_MESSAGE,
+  action: <DismissImportNoticeButton />,
+};
+
 /**
  * Notice on every page when sync stopped but the app keeps working locally: the sign-in ended
- * (sign in again) or the app is too old for the server (reload). Can be closed until the app
- * starts again; the settings show the same state themselves.
+ * (sign in again), the app is too old for the server (reload) or a backup import turned sync
+ * off (turn it on again). Can be closed until the app starts again; the settings show the same
+ * state themselves.
  */
 export function SyncNoticeBanner() {
-  const notice = NOTICES[getSyncView(useSyncStatus())];
+  const status = useSyncStatus();
+  const notice = status.importNotice
+    ? IMPORT_NOTICE
+    : NOTICES[getSyncView(status)];
   const { pathname } = useLocation();
   const [closed, setClosed] = useState(false);
   return (
