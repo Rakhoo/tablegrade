@@ -279,7 +279,7 @@ export function TimetableGrid({
    * Short labels of a lesson's types to fit the cell: a project or extension reads "Proj.", a
    * retake "N.Klausur", or only "…" after a project on the same date.
    */
-  const typeLabelsOf = (classId: number, date: string) => {
+  const typeLabelsOf = (classId: string, date: string) => {
     const types = lessonTypes[lessonKey(classId, date)] ?? [];
     const withProject = types.some((type) => MARK_KIND[type] == "project");
     return [

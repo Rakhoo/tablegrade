@@ -419,7 +419,7 @@ export function createMockData(
       upper ? random.between(14, 22) : random.between(22, 28),
     );
     const dates = getLessonDates(
-      { ...cls, id: 0 },
+      { ...cls, id: "" },
       calendar,
       { days: [], lessons: [] },
       today,

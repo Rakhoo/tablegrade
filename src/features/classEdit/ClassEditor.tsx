@@ -240,7 +240,7 @@ export function ClassEditor({
   };
   const hasNoLetter = !hasLetters(form.number);
 
-  const draft = { ...form, id: cls?.id ?? -1 };
+  const draft = { ...form, id: cls?.id ?? "" };
   const collisions = allClasses.filter(
     (other) =>
       other.id != cls?.id && doSchoolClassesCollide(draft, other, calendar),

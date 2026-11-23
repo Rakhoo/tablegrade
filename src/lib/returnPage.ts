@@ -4,13 +4,16 @@ const STORAGE_KEY = "return";
 const PAGE_NAMES: [RegExp, string][] = [
   [/^\/timetable/, "Stundenplan"],
   [/^\/classes\/new/, "Neue Klasse"],
-  [/^\/classes\/\d+\/edit/, "Bearbeiten"],
-  [/^\/classes\/\d+\/names/, "Namen lernen"],
-  [/^\/classes\/\d+\/table/, "Übersicht"],
-  [/^\/classes\/\d+/, "Sitzplan"],
+  [/^\/classes\/[\w-]+\/edit/, "Bearbeiten"],
+  [/^\/classes\/[\w-]+\/names/, "Namen lernen"],
+  [/^\/classes\/[\w-]+\/table/, "Übersicht"],
+  [/^\/classes\/[\w-]+/, "Sitzplan"],
   [/^\/classes/, "Übersichten"],
   [/^\/settings/, "Einstellungen"],
 ];
+
+/** URL of a class page with a former integer id. */
+const LEGACY_CLASS_URL = /^\/classes\/\d+(\/|\?|$)/;
 
 /** Storage key per target page, without its query, so each target keeps its own way back. */
 const keyOf = (url: string) => `${STORAGE_KEY}:${url.split("?")[0]}`;
@@ -35,7 +38,9 @@ export const rememberCurrentPageFor = (to: string) =>
 export function getReturnPage(pathname: string, fallback: string) {
   let url = fallback;
   try {
-    url = sessionStorage.getItem(keyOf(pathname)) ?? fallback;
+    const stored = sessionStorage.getItem(keyOf(pathname));
+    // Pages of a class with an integer id stem from before the UUID migration and no longer exist
+    if (stored && !LEGACY_CLASS_URL.test(stored)) url = stored;
   } catch {
     // The fallback is the way back then
   }

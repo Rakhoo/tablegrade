@@ -6,21 +6,21 @@ import { client, db } from "../client";
 import { classStudents, grades, lessonTypes, type GradeEntry } from "../schema";
 
 /** Returns the grades, comments and warnings of a class for one lesson date. */
-export const getGrades = (classId: number, date: string) =>
+export const getGrades = (classId: string, date: string) =>
   db
     .select()
     .from(grades)
     .where(and(eq(grades.classId, classId), eq(grades.date, date)));
 
 /** Returns all grades, comments and warnings of a class, for the overview table. */
-export const getClassGrades = (classId: number) =>
+export const getClassGrades = (classId: string) =>
   db.select().from(grades).where(eq(grades.classId, classId));
 
 /** Returns all entries of all classes, to check them against a new calendar. */
 export const getAllGrades = () => db.select().from(grades);
 
 /** Deletes the given entries. */
-export const deleteEntries = (ids: number[]) =>
+export const deleteEntries = (ids: string[]) =>
   db.delete(grades).where(inArray(grades.id, ids));
 
 /** Returns the special lessons as a map from lesson key to their types. */
@@ -38,7 +38,7 @@ export async function getLessonTypes() {
  * Returns the keys (see `lessonKey`) of all complete lessons, judged by their oral grades (or
  * the marks of an exam) as in `getLessonCompletion`; hidden students do not count.
  */
-export async function getCompletedLessons(classId?: number) {
+export async function getCompletedLessons(classId?: string) {
   const [entries, members, types] = await Promise.all([
     db
       .select({
@@ -98,7 +98,7 @@ export async function getCompletedLessons(classId?: number) {
 }
 
 /** Drops entries of a lesson that became empty. */
-const emptyEntries = (classId: number, date: string) =>
+const emptyEntries = (classId: string, date: string) =>
   and(
     eq(grades.classId, classId),
     eq(grades.date, date),
@@ -116,7 +116,7 @@ const emptyEntries = (classId: number, date: string) =>
  * extension no project marks.
  */
 export async function setLessonTypes(
-  classId: number,
+  classId: string,
   date: string,
   types: LessonType[],
 ) {
@@ -148,7 +148,7 @@ export async function setLessonTypes(
 
 /** Inserts or updates the grade entry of a student and drops entries that became empty. */
 async function upsertGrade(
-  key: { classId: number; studentId: number; date: string },
+  key: { classId: string; studentId: string; date: string },
   values: Partial<
     Pick<
       GradeEntry,
@@ -175,8 +175,8 @@ async function upsertGrade(
 
 /** Changes the symbol, marks or comment of a student for a lesson date; `null` removes them. */
 export const setAssessment = (
-  classId: number,
-  studentId: number,
+  classId: string,
+  studentId: string,
   date: string,
   values: Partial<
     Pick<GradeEntry, "grade" | "mark" | "projectMark" | "absent" | "comment">
@@ -185,8 +185,8 @@ export const setAssessment = (
 
 /** Sets the number of warnings (0–2) of a student for a lesson date. */
 export const setWarnings = (
-  classId: number,
-  studentId: number,
+  classId: string,
+  studentId: string,
   date: string,
   warnings: number,
 ) => upsertGrade({ classId, studentId, date }, { warnings });
@@ -200,7 +200,7 @@ export type LessonParts = {
 
 /** Resets the selected parts of all entries of a class for one lesson date. */
 export async function clearLesson(
-  classId: number,
+  classId: string,
   date: string,
   parts: LessonParts,
 ) {

@@ -33,7 +33,7 @@ export async function classEditLoader({ params, request }: LoaderFunctionArgs) {
   let cls: SchoolClass | undefined;
   let roster: SeatedStudent[] = [];
   if (params.id) {
-    cls = await getSchoolClass(Number(params.id));
+    cls = await getSchoolClass(params.id);
     if (!cls) return redirect(paths.notFound());
     roster = await getClassStudents(cls.id);
   }

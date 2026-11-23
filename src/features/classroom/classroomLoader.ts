@@ -30,7 +30,7 @@ export async function classroomLoader({ params, request }: LoaderFunctionArgs) {
   const dateParam = parseISO(
     new URL(request.url).searchParams.get("date") ?? "",
   );
-  const cls = await getSchoolClass(Number(params.id));
+  const cls = await getSchoolClass(params.id ?? "");
   if (!cls) return redirect(paths.notFound());
   const [
     holidays,

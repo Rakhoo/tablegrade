@@ -5,7 +5,7 @@ import type { SpeedDialEntry } from "./SpeedDial";
 
 /** The speed dial entries of the seating plan and overview leading to a class's sub pages. */
 export const classPageEntries = (
-  classId: number,
+  classId: string,
   date: string | null,
   hasPhotos: boolean,
 ): SpeedDialEntry[] => [

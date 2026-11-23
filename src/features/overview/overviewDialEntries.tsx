@@ -16,7 +16,7 @@ import {
 } from "../../components/icons";
 
 type OverviewDialOptions = {
-  classId: number;
+  classId: string;
   lessonDate: string | null;
   hasPhotos: boolean;
   hasTraits: boolean;

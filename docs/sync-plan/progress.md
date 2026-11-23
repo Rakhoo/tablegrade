@@ -13,6 +13,23 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 13:50 UTC · Stream 0 · sync/foundation
+- Erledigt: 0.3 komplett. Drizzle-Schema mit `text`-IDs und `$defaultFn(crypto.randomUUID)`,
+  Typen `number` → `string` in Queries, Loadern, `paths`, lib, Komponenten. Test für Import
+  alter Sicherungen (Version 20 → aktuell).
+- Entschieden: Gleichstand gleicher Stunde in `lib/lessons.ts` jetzt per
+  `id.localeCompare` statt `id - id`. Grund: stabil, Reihenfolge bei gleicher Stunde ist
+  ohnehin ohne Bedeutung.
+- Entschieden: `returnPage.ts` verwirft gespeicherte Rückwege mit alter Integer-Klassen-ID,
+  die Seite nutzt dann ihren Rückfall. `localStorage` enthält keine IDs, nichts zu tun.
+  Eine alte URL wie `#/classes/5` nach dem Update zeigt die 404-Seite (wie bisher bei
+  gelöschten Klassen).
+- Ungetestet: Lauf in der App mit SQLocal (keine Browser-Tests erlaubt). Insbesondere
+  `ALTER TABLE … RENAME` aktualisiert Fremdschlüssel nur bei `legacy_alter_table = OFF`
+  (Standard, in Node-Test geprüft). Mario sollte das Update einmal mit einer Kopie der
+  echten Daten prüfen.
+- Nächster Schritt: 0.4 Outbox-Tabellen und Trigger.
+
 ## 2026-11-23, 13:30 UTC · Stream 0 · sync/foundation
 - Erledigt: 0.1 (Branches `sync/integration` und `sync/foundation`, CLAUDE.md-Abschnitt),
   0.2 (Vitest, `src/test/sqliteDb.ts` mit `node:sqlite`, Smoke-Test),

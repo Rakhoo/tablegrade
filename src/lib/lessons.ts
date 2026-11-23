@@ -11,7 +11,7 @@ import {
 } from "./schoolYear";
 
 /** A single lesson: a class on a specific date (`YYYY-MM-DD`). */
-export type Lesson = { id: number; date: string };
+export type Lesson = { id: string; date: string };
 
 /** Display names of the lesson types. */
 export const LESSON_TYPE_LABELS: Record<LessonType, string> = {
@@ -54,7 +54,7 @@ export function toggleLessonType(types: LessonType[], type: LessonType) {
 export type CancelledDates = { days: string[]; lessons: string[] };
 
 /** Key identifying a lesson in lists of cancelled or complete lessons. */
-export const lessonKey = (classId: number, date: string) =>
+export const lessonKey = (classId: string, date: string) =>
   `${classId}|${date}`;
 
 /** The date (`YYYY-MM-DD`) of a lesson key. */
@@ -90,7 +90,7 @@ export function getLessonsOn(
         isSchoolClassActive(cls, date, calendar) &&
         !cancelled.lessons.includes(lessonKey(cls.id, iso)),
     )
-    .sort((a, b) => a.hour - b.hour || a.id - b.id);
+    .sort((a, b) => a.hour - b.hour || a.id.localeCompare(b.id));
 }
 
 /**
@@ -109,7 +109,8 @@ export function getAdjacentLesson(
     getClassOccurrences(cls).find((lesson) => lesson.day == date.getDay()) ??
     cls;
   const compare = (other: SchoolClass) =>
-    (other.hour - current.hour || other.id - current.id) * direction;
+    (other.hour - current.hour || other.id.localeCompare(current.id)) *
+    direction;
   const sameDay = getLessonsOn(date, classList, calendar, cancelled).filter(
     (other) => compare(other) > 0,
   );

@@ -31,7 +31,7 @@ export function DutySettings({ duties }: DutySettingsProps) {
     (suggestion) => !duties.some((duty) => duty.name == suggestion.name),
   );
 
-  const save = async (duty: Omit<Duty, "id"> & { id?: number }) => {
+  const save = async (duty: Omit<Duty, "id"> & { id?: string }) => {
     await saveDuty(duty);
     revalidate();
   };

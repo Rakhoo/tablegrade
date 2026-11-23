@@ -20,7 +20,9 @@ export const holidays = sqliteTable("Holidays", {
 
 /** A recurring weekly lesson of one subject in one class for a school year (or half of it). */
 export const schoolClasses = sqliteTable("Classes", {
-  id: int("id").primaryKey({ autoIncrement: true }),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   subject: text("subject").notNull(),
   /** Grade level: "5"…"10" or "EF" | "Q1" | "Q2". */
   number: text("number").notNull(),
@@ -46,7 +48,9 @@ export const schoolClassesRelations = relations(schoolClasses, ({ many }) => ({
 }));
 
 export const students = sqliteTable("Students", {
-  id: int("id").primaryKey({ autoIncrement: true }),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   firstName: text("firstName").notNull(),
   lastName: text("lastName").notNull(),
   /** Name to show instead of the first name. */
@@ -63,10 +67,10 @@ export const studentsRelations = relations(students, ({ many }) => ({
 export const classStudents = sqliteTable(
   "Classes2Students",
   {
-    classId: int("classId")
+    classId: text("classId")
       .notNull()
       .references(() => schoolClasses.id, { onDelete: "cascade" }),
-    studentId: int("studentId")
+    studentId: text("studentId")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
     /** Column of the seat's top left cell in half seats, `null` if the student has no seat. */
@@ -76,7 +80,9 @@ export const classStudents = sqliteTable(
     /** Hidden students stay in the class with their grades, but only show up in its editor. */
     hidden: int("hidden", { mode: "boolean" }).notNull().default(false),
     /** The duty the student has in this class, if any. */
-    dutyId: int("dutyId").references(() => duties.id, { onDelete: "set null" }),
+    dutyId: text("dutyId").references(() => duties.id, {
+      onDelete: "set null",
+    }),
   },
   (table) => [primaryKey({ columns: [table.classId, table.studentId] })],
 );
@@ -96,7 +102,9 @@ export const classStudentsRelations = relations(classStudents, ({ one }) => ({
 export const grades = sqliteTable(
   "Grades",
   {
-    id: int("id").primaryKey({ autoIncrement: true }),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     /** Oral grade, see `GRADE_VALUES` in `src/lib/grades.ts`. */
     grade: real("grade"),
     comment: text("comment"),
@@ -110,10 +118,10 @@ export const grades = sqliteTable(
     warnings: int("warnings").notNull().default(0),
     /** Lesson date as `YYYY-MM-DD`. */
     date: text("date").notNull(),
-    classId: int("classId")
+    classId: text("classId")
       .notNull()
       .references(() => schoolClasses.id, { onDelete: "cascade" }),
-    studentId: int("studentId")
+    studentId: text("studentId")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
   },
@@ -135,7 +143,9 @@ export const gradesRelations = relations(grades, ({ one }) => ({
 
 /** Student properties, edited in the settings. */
 export const traits = sqliteTable("Traits", {
-  id: int("id").primaryKey({ autoIncrement: true }),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   /** Unique color of the dot on the seating plan. */
   color: text("color").notNull(),
@@ -143,7 +153,9 @@ export const traits = sqliteTable("Traits", {
 
 /** Class duties ("Dienste"), edited in the settings and given to students per class. */
 export const duties = sqliteTable("Duties", {
-  id: int("id").primaryKey({ autoIncrement: true }),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   /** Key of its symbol, see `DUTY_SYMBOLS` in `src/components/dutySymbols.tsx`. */
   symbol: text("symbol").notNull(),
@@ -155,10 +167,10 @@ export const duties = sqliteTable("Duties", {
 export const studentTraits = sqliteTable(
   "Students2Traits",
   {
-    studentId: int("studentId")
+    studentId: text("studentId")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
-    traitId: int("traitId")
+    traitId: text("traitId")
       .notNull()
       .references(() => traits.id, { onDelete: "cascade" }),
   },
@@ -175,7 +187,7 @@ export const cancelledDays = sqliteTable("CancelledDays", {
 export const lessonTypes = sqliteTable(
   "LessonTypes",
   {
-    classId: int("classId")
+    classId: text("classId")
       .notNull()
       .references(() => schoolClasses.id, { onDelete: "cascade" }),
     /** Date as `YYYY-MM-DD`. */
@@ -191,7 +203,7 @@ export const lessonTypes = sqliteTable(
 export const reports = sqliteTable(
   "Reports",
   {
-    classId: int("classId")
+    classId: text("classId")
       .notNull()
       .references(() => schoolClasses.id, { onDelete: "cascade" }),
     /** Date as `YYYY-MM-DD`. */
@@ -205,11 +217,11 @@ export const reports = sqliteTable(
 export const reportGrades = sqliteTable(
   "ReportGrades",
   {
-    classId: int("classId").notNull(),
+    classId: text("classId").notNull(),
     /** Date as `YYYY-MM-DD`. */
     date: text("date").notNull(),
     kind: text("kind").$type<"partial" | "half">().notNull(),
-    studentId: int("studentId")
+    studentId: text("studentId")
       .notNull()
       .references(() => students.id, { onDelete: "cascade" }),
     /** See `GRADE_VALUES` in `src/lib/grades.ts`. */
@@ -226,7 +238,7 @@ export const reportGrades = sqliteTable(
 export const cancelledLessons = sqliteTable(
   "CancelledLessons",
   {
-    classId: int("classId")
+    classId: text("classId")
       .notNull()
       .references(() => schoolClasses.id, { onDelete: "cascade" }),
     /** Date as `YYYY-MM-DD`. */

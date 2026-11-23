@@ -65,8 +65,8 @@ export function canBeFollowUp(
   date: string,
   dates: string[],
   typesOf: TypesOf,
-  studentIds: number[],
-  hasMark: (studentId: number, date: string) => boolean,
+  studentIds: string[],
+  hasMark: (studentId: string, date: string) => boolean,
 ) {
   const base = CONTINUES[type];
   const before = dates.filter((other) => other < date).sort();
@@ -96,7 +96,7 @@ export function getLessonTypeLabel(
 
 /** What completeness needs of an entry. */
 export type CompletionEntry = {
-  studentId: number;
+  studentId: string;
   date: string;
   grade: number | null;
   mark: number | null;
@@ -115,20 +115,20 @@ export type CompletionEntry = {
 export function getLessonCompletion(
   date: string,
   types: LessonType[],
-  studentIds: number[],
+  studentIds: string[],
   entries: CompletionEntry[],
   chains: LessonChains,
 ) {
-  const entryOf = (id: number, day: string) =>
+  const entryOf = (id: string, day: string) =>
     entries.find((entry) => entry.studentId == id && entry.date == day);
-  const lockedIn = (kind: MarkKind, id: number) =>
+  const lockedIn = (kind: MarkKind, id: string) =>
     isMarkLocked(
       chains[kind],
       date,
       (day) => entryOf(id, day)?.[MARK_FIELD[kind]] != null,
     );
   const settled = (
-    due: number[],
+    due: string[],
     value: (entry: CompletionEntry) => number | null,
     excusedCounts = false,
   ) =>
@@ -182,24 +182,24 @@ export function getLessonCompletion(
 export function createMarkRules(
   dates: string[],
   typesOf: TypesOf,
-  studentIds: number[],
+  studentIds: string[],
   entries: CompletionEntry[],
 ) {
   const chains = getLessonChains(dates, typesOf);
   const byKey = new Map(
     entries.map((entry) => [`${entry.studentId}|${entry.date}`, entry]),
   );
-  const markOf = (kind: MarkKind, studentId: number, date: string) =>
+  const markOf = (kind: MarkKind, studentId: string, date: string) =>
     byKey.get(`${studentId}|${date}`)?.[MARK_FIELD[kind]] ?? null;
-  const hasMark = (kind: MarkKind, studentId: number, date: string) =>
+  const hasMark = (kind: MarkKind, studentId: string, date: string) =>
     markOf(kind, studentId, date) != null;
   /** Whether a student's mark of `kind` on `date` lies on another date of its chain. */
-  const isLocked = (kind: MarkKind, studentId: number, date: string) =>
+  const isLocked = (kind: MarkKind, studentId: string, date: string) =>
     isMarkLocked(chains[kind], date, (other) =>
       hasMark(kind, studentId, other),
     );
   /** On a retake day, whether a student writes it: without the exam mark on another date. */
-  const isRetaker = (studentId: number, date: string) =>
+  const isRetaker = (studentId: string, date: string) =>
     typesOf(date).includes("retake") && !isLocked("exam", studentId, date);
 
   return {
@@ -210,14 +210,14 @@ export function createMarkRules(
      * Whether a part of a student's entry on `date` is closed: its mark lies on another date,
      * or it is a retaker's oral grade or project mark.
      */
-    isClosed: (studentId: number, date: string, target: GradeTarget) =>
+    isClosed: (studentId: string, date: string, target: GradeTarget) =>
       target == "mark" || isExamDay(typesOf(date))
         ? isLocked("exam", studentId, date)
         : target == "projectMark"
           ? isLocked("project", studentId, date) || isRetaker(studentId, date)
           : isRetaker(studentId, date),
     /** The mark a student got on another date of the chain `date` belongs to. */
-    chainMark: (kind: MarkKind, studentId: number, date: string) =>
+    chainMark: (kind: MarkKind, studentId: string, date: string) =>
       chains[kind]
         .get(date)
         ?.map((other) => markOf(kind, studentId, other))

@@ -31,7 +31,7 @@ import { createCalendar } from "../../lib/schoolYear";
  */
 export async function overviewLoader({ params, request }: LoaderFunctionArgs) {
   await waitForDatabase();
-  const cls = await getSchoolClass(Number(params.id));
+  const cls = await getSchoolClass(params.id ?? "");
   if (!cls) return redirect(paths.notFound());
   const [
     students,

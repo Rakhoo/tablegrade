@@ -315,6 +315,9 @@ else in camelCase files; JSDoc on exported functions and components.
 
 The SQL table names are kept for compatibility; the TypeScript names differ (e.g.
 `schoolClasses`, `classStudents`).
+Classes, students, grades, traits and duties have text UUIDs as `id` (since schema version
+22), created with `crypto.randomUUID()` on insert, so several devices can add rows without
+conflicts. Only `Holidays` keeps integer ids (a cache, never synced).
 
 ### Migrations
 

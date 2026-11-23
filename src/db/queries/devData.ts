@@ -66,7 +66,7 @@ export async function replaceWithMockData(data: MockData) {
     .insert(duties)
     .values(data.duties)
     .returning({ id: duties.id, name: duties.name });
-  const idOf = (rows: { id: number; name: string }[], name: string) =>
+  const idOf = (rows: { id: string; name: string }[], name: string) =>
     rows.find((row) => row.name == name)?.id;
 
   for (const mock of data.classes) {

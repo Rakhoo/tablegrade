@@ -134,11 +134,11 @@ export function ClassroomPage() {
     students.map((student) => student.id),
     classGrades,
   );
-  const isRetaker = (studentId: number) => rules.isRetaker(studentId, date);
+  const isRetaker = (studentId: string) => rules.isRetaker(studentId, date);
 
   /** The part of a student's entry a tool sets, `undefined` for erasing everything. */
   const targetOf = (
-    studentId: number,
+    studentId: string,
     option: GradeTool,
   ): GradeTarget | undefined => {
     if (option == "erase") return undefined;
@@ -147,7 +147,7 @@ export function ClassroomPage() {
     return "oral";
   };
   /** Whether a tool cannot be used on a student: graded elsewhere, or a retaker's oral grade. */
-  const isClosed = (studentId: number, option: GradeTool) => {
+  const isClosed = (studentId: string, option: GradeTool) => {
     const target = targetOf(studentId, option);
     return !!target && rules.isClosed(studentId, date, target);
   };
@@ -181,7 +181,7 @@ export function ClassroomPage() {
   );
 
   /** The parts of a student's entry holding a grade; none on exam days, which have only one. */
-  const filledParts = (studentId: number): GradeTarget[] => {
+  const filledParts = (studentId: string): GradeTarget[] => {
     const entry = gradeMap.get(studentId);
     if (!entry || examDay) return [];
     const retaker = isRetaker(studentId);

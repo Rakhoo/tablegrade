@@ -25,15 +25,15 @@ type SeatGridProps = {
   /** Whether the seats show the students' photos. */
   showPhotos: boolean;
   /** Grade entries of the current lesson, by student id. */
-  grades: Map<number, GradeEntry>;
+  grades: Map<string, GradeEntry>;
   /** Suggested symbols for students without one, by student id. */
-  suggestions: Map<number, number>;
+  suggestions: Map<string, number>;
   /** Arrange mode: students are dragged instead of tapped. */
   arranging: boolean;
   /** Comment mode: comments show their first words in a speech bubble. */
   showComments: boolean;
   /** Students shown grayed out, e.g. already marked in a retake's exam. */
-  dimmed?: Set<number>;
+  dimmed?: Set<string>;
   /** Enlarges the smallest part of the room holding all seated students (not while arranging). */
   zoomed?: boolean;
   /** Called when a student is tapped outside of arrange mode. */
@@ -97,9 +97,7 @@ export function SeatGrid({
       const seat = (event.target as HTMLElement).closest<HTMLElement>(
         "[data-student]",
       );
-      const student = students.find(
-        (s) => s.id == Number(seat?.dataset.student),
-      );
+      const student = students.find((s) => s.id == seat?.dataset.student);
       if (!student) return;
       event.currentTarget.setPointerCapture(event.pointerId);
       const pointer = { x: event.clientX, y: event.clientY };

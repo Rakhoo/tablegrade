@@ -39,14 +39,14 @@ alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `Le
       `PRAGMA foreign_key_check` am Ende leer. Gespeicherte IDs in `Settings`-JSON mit umsetzen.
 - [x] Tests mit `node:sqlite`: Beispieldaten auf alter Version anlegen, migrieren, alle
       Beziehungen und Kaskaden prüfen.
-- [ ] Drizzle-Schema auf `text` umstellen. Alle Queries, Typen (`number` → `string`),
+- [x] Drizzle-Schema auf `text` umstellen. Alle Queries, Typen (`number` → `string`),
       Loader, `paths`, Rückweg, Hilfsfunktionen anpassen. Neue IDs per
       `crypto.randomUUID()` beim Einfügen.
-- [ ] Gespeicherte Werte im `localStorage` mit alten IDs: beim Start verwerfen oder umsetzen
+- [x] Gespeicherte Werte im `localStorage` mit alten IDs: beim Start verwerfen oder umsetzen
       (Entscheidung nach Audit, in progress.md begründen).
-- [ ] Alte Backups (Version ≤ vorher) importieren weiter, weil der Import die Migrationen
+- [x] Alte Backups (Version ≤ vorher) importieren weiter, weil der Import die Migrationen
       ausführt. Prüfen und testen.
-- [ ] `npx tsc -b --noEmit`, `npm run lint`, `npm run build`, `npm test` grün.
+- [x] `npx tsc -b --noEmit`, `npm run lint`, `npm run build`, `npm test` grün.
 
 ## 0.4 Änderungen erfassen
 

@@ -15,8 +15,8 @@ export type SeatedStudent = Student & {
   x: number | null;
   y: number | null;
   hidden: boolean;
-  dutyId: number | null;
-  traitIds: number[];
+  dutyId: string | null;
+  traitIds: string[];
 };
 
 /** Returns all selectable traits, sorted alphabetically (ignoring case). */
@@ -33,7 +33,7 @@ export async function getDuties() {
 
 /** Returns all students of a class, also hidden ones, with seats and traits, ordered by name. */
 export async function getClassStudents(
-  classId: number,
+  classId: string,
 ): Promise<SeatedStudent[]> {
   const members = await db
     .select({
@@ -72,13 +72,13 @@ export const deleteOrphanStudents = () =>
 
 /** A student's seat, `null` coordinates for no seat. */
 export type SeatPosition = {
-  studentId: number;
+  studentId: string;
   x: number | null;
   y: number | null;
 };
 
 /** Puts students back on given seats, e.g. to undo a move. */
-export async function setStudentSeats(classId: number, seats: SeatPosition[]) {
+export async function setStudentSeats(classId: string, seats: SeatPosition[]) {
   await client.transaction(async (tx) => {
     for (const { studentId, x, y } of seats) {
       await tx.query(
@@ -101,8 +101,8 @@ export async function setStudentSeats(classId: number, seats: SeatPosition[]) {
  * one other student, both swap their places; overlapping several students does nothing.
  */
 export async function moveStudentSeat(
-  classId: number,
-  studentId: number,
+  classId: string,
+  studentId: string,
   x: number,
   y: number,
 ) {
@@ -118,7 +118,7 @@ export async function moveStudentSeat(
   // A swap moves the mover exactly onto the occupant's place
   if (occupant) ({ x, y } = occupant as { x: number; y: number });
 
-  const seatOf = (sid: number) =>
+  const seatOf = (sid: string) =>
     and(eq(classStudents.classId, classId), eq(classStudents.studentId, sid));
   await client.transaction(async (tx) => {
     if (occupant) {

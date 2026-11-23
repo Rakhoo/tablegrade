@@ -77,7 +77,7 @@ export const resetEditHistory = () => setState({ undo: [], redo: [] });
  * @param onChanged Reloads the page's data after a change.
  */
 export function useEditHistory(
-  classId: number | undefined,
+  classId: string | undefined,
   page: EditPage,
   onChanged: () => void,
 ) {
@@ -99,7 +99,7 @@ export function useEditHistory(
   /** Applies `values` to a student's entry as a new step, dropping undone steps. */
   const change = async (
     action: "Bewertung" | "Kommentar",
-    studentId: number,
+    studentId: string,
     date: string,
     entry: Partial<EntryValues> | undefined,
     values: Partial<EntryValues>,
@@ -127,7 +127,7 @@ export function useEditHistory(
   /** Sets a student's grade in a report as a new step; `null` is the calculated grade. */
   const changeReport = async (
     report: Report,
-    studentId: number,
+    studentId: string,
     before: number | null,
     after: number | null,
     description: string,
@@ -145,7 +145,7 @@ export function useEditHistory(
 
   /** Sets the warning level of a student in a lesson as a new step. */
   const changeWarnings = async (
-    studentId: number,
+    studentId: string,
     date: string,
     before: number,
     after: number,
@@ -166,7 +166,7 @@ export function useEditHistory(
    * swap two of them.
    */
   const moveSeat = async (
-    studentId: number,
+    studentId: string,
     x: number,
     y: number,
     seats: SeatPosition[],

@@ -41,7 +41,7 @@ export function StudentDialog({
   const update = (changes: Partial<RosterEntry>) =>
     setForm((prev) => ({ ...prev, ...changes }));
 
-  const toggleTrait = (id: number) =>
+  const toggleTrait = (id: string) =>
     update({
       traitIds: form.traitIds.includes(id)
         ? form.traitIds.filter((traitId) => traitId != id)

@@ -1,6 +1,11 @@
 import type { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import { migrateTo, openTestDb } from "../test/sqliteDb";
+import {
+  LATEST_VERSION,
+  migrateTo,
+  openTestDb,
+  userVersion,
+} from "../test/sqliteDb";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -180,6 +185,30 @@ describe("migration 22 (UUIDs)", () => {
     expect(
       all(db, `SELECT count(*) AS n FROM Grades WHERE studentId = '${anna}'`),
     ).toEqual([{ n: 0 }]);
+    expect(all(db, "PRAGMA foreign_key_check")).toEqual([]);
+  });
+
+  it("upgrades a backup of the first release (version 20)", () => {
+    // `importDatabase` runs the same migrations on the imported file
+    const db = openTestDb(20);
+    db.exec(`
+      INSERT INTO Classes (id, subject, number, year, part, day, hour, double)
+        VALUES (3, 'Kunst', '5', 2024, '2', 2, 1, 0);
+      INSERT INTO Students (id, firstName, lastName) VALUES (4, 'Dana', 'Dorn');
+      INSERT INTO Classes2Students (classId, studentId) VALUES (3, 4);
+      INSERT INTO Grades (id, date, classId, studentId, grade) VALUES (1, '2025-02-03', 3, 4, 2);
+    `);
+    migrateTo(db);
+    expect(userVersion(db)).toBe(LATEST_VERSION);
+    expect(
+      all(
+        db,
+        "SELECT c.subject, s.firstName, cs.dutyId FROM Classes2Students cs JOIN Classes c ON c.id = cs.classId JOIN Students s ON s.id = cs.studentId",
+      ),
+    ).toEqual([{ subject: "Kunst", firstName: "Dana", dutyId: null }]);
+    expect(
+      all(db, "SELECT grade FROM Grades g JOIN Classes c ON c.id = g.classId"),
+    ).toEqual([{ grade: 2 }]);
     expect(all(db, "PRAGMA foreign_key_check")).toEqual([]);
   });
 

@@ -65,17 +65,17 @@ export const deleteSchoolYear = (year: number) =>
 export async function saveTrait({
   id,
   ...values
-}: Omit<Trait, "id"> & { id?: number }) {
+}: Omit<Trait, "id"> & { id?: string }) {
   if (id) await db.update(traits).set(values).where(eq(traits.id, id));
   else await db.insert(traits).values(values);
 }
 
 /** Deletes a trait; students lose it through the cascade. */
-export const deleteTrait = (id: number) =>
+export const deleteTrait = (id: string) =>
   db.delete(traits).where(eq(traits.id, id));
 
 /** Counts how many students have a trait. */
-export async function countTraitUses(id: number) {
+export async function countTraitUses(id: string) {
   const rows = await db
     .select()
     .from(studentTraits)
@@ -87,17 +87,17 @@ export async function countTraitUses(id: number) {
 export async function saveDuty({
   id,
   ...values
-}: Omit<Duty, "id"> & { id?: number }) {
+}: Omit<Duty, "id"> & { id?: string }) {
   if (id) await db.update(duties).set(values).where(eq(duties.id, id));
   else await db.insert(duties).values(values);
 }
 
 /** Deletes a duty; students lose it through the foreign key. */
-export const deleteDuty = (id: number) =>
+export const deleteDuty = (id: string) =>
   db.delete(duties).where(eq(duties.id, id));
 
 /** Counts how many students have a duty, over all classes. */
-export async function countDutyUses(id: number) {
+export async function countDutyUses(id: string) {
   const rows = await db
     .select()
     .from(classStudents)

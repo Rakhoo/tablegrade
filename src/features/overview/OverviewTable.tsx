@@ -32,7 +32,7 @@ const COMPACT_SIZES = {
 } as CSSProperties;
 
 type OverviewTableProps = {
-  classId: number;
+  classId: string;
   columns: OverviewColumn[];
   /** Students in display order. */
   rows: SeatedStudent[];
@@ -53,8 +53,8 @@ type OverviewTableProps = {
   showTraits: boolean;
   /** Student whose entries alone stay visible. */
   shown: SeatedStudent | undefined;
-  onShow: (studentId: number | null) => void;
-  entryOf: (studentId: number, date: string) => GradeEntry | undefined;
+  onShow: (studentId: string | null) => void;
+  entryOf: (studentId: string, date: string) => GradeEntry | undefined;
   typesOf: TypesOf;
   isCancelled: (date: string) => boolean;
   rules: MarkRules;

@@ -56,7 +56,7 @@ import type { OverviewLoaderData } from "./overviewLoader";
 import { OverviewTable } from "./OverviewTable";
 import { useDateMenu } from "./useDateMenu";
 
-const entryKey = (studentId: number, date: string) => `${studentId}|${date}`;
+const entryKey = (studentId: string, date: string) => `${studentId}|${date}`;
 
 /**
  * Overview table of a class and school year half: students in rows, lesson dates in columns
@@ -87,7 +87,7 @@ export function OverviewPage() {
   const [mode, setMode] = useState<OverviewMode>("view");
   const grading = mode == "grade";
   /** Student whose entries alone stay visible, e.g. to show them to the student. */
-  const [shownStudent, setShownStudent] = useState<number | null>(null);
+  const [shownStudent, setShownStudent] = useState<string | null>(null);
   // The arrows switch the class without leaving the page, the student may not be in the new one
   const [shownClass, setShownClass] = useState(cls.id);
   if (shownClass != cls.id) {
@@ -128,7 +128,7 @@ export function OverviewPage() {
   const entryMap = new Map<string, GradeEntry>(
     entries.map((entry) => [entryKey(entry.studentId, entry.date), entry]),
   );
-  const entryOf = (studentId: number, date: string) =>
+  const entryOf = (studentId: string, date: string) =>
     entryMap.get(entryKey(studentId, date));
   // The lesson the seating plan was left from, otherwise today's or the next one
   const lessonDate = searchParams.get("date") ?? seatingDate;
