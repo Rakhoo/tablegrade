@@ -67,7 +67,7 @@ keyWraps    id, userId, kind ('passkey' | 'recovery' | 'org'), credentialId?, al
 | `GET  /auth/session` | Prüfung der Sitzung: `{ userId, deviceId, identities[], devices[] }`. |
 | `POST /auth/logout` | Sitzung beenden. |
 | `GET  /devices` / `POST /devices/{id}/revoke` / `PATCH /devices/{id}` | Geräte auflisten, sperren, umbenennen. |
-| `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). |
+| `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). Antwort `204`; verbundene Geräte bekommen per WebSocket `revoked`, ihre Sitzungen gelten danach als ungültig (`unauthorized`). |
 | `POST /auth/dev/login` | Nur mit `DEV_AUTH=1` (Tests). Body `{ deviceName, userId? }`. Ohne `userId` neues Konto, mit `userId` weiteres Gerät dieses Kontos. Antwort wie jede Anmeldung. |
 
 Antwort bei erfolgreicher Anmeldung:
@@ -317,6 +317,7 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | `DELETE /account`: `204`, `revoked` an alle Geräte. |
 | 2026-11-23 | A | Kopplung: Sitzung nötig, einheitlich `not_found`, Prüfung von Schlüssel und Wrap, `204`/`conflict` bei `complete`, `link` an alle Geräte des Kontos. |
 | 2026-11-23 | A | WebSocket: Fehler vor dem Upgrade, `changed` auch an das pushende Gerät, Close-Codes. |
 | 2026-11-23 | A | Fotos: `201`/`200` bei `PUT`, Prüfregeln, Cache-Header bei `GET`, Verwaist-Zeit ab Upload. |

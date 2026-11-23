@@ -75,11 +75,11 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A10 Konto und Betrieb
 
-- [ ] `DELETE /account`: löscht alles des Kontos inklusive Blobs.
-- [ ] Tägliches Backup: `VACUUM INTO` nach `DATA_DIR/backup/notenfeder-<datum>.sqlite3`,
+- [x] `DELETE /account`: löscht alles des Kontos inklusive Blobs.
+- [x] Tägliches Backup: `VACUUM INTO` nach `DATA_DIR/backup/notenfeder-<datum>.sqlite3`,
       die letzten 7 behalten. Blobs liegen ohnehin als Dateien vor.
-- [ ] Strukturierte Logs (`log/slog`) ohne Tokens, Chiffretext und lange gespeicherte IPs.
-- [ ] **Merge-Punkt.**
+- [x] Strukturierte Logs (`log/slog`) ohne Tokens, Chiffretext und lange gespeicherte IPs.
+- [x] **Merge-Punkt.**
 
 ## A11 Docker und Pi
 

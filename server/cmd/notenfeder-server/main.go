@@ -32,6 +32,8 @@ func main() {
 }
 
 func run() error {
+	// JSON lines are easy to filter in `docker compose logs`.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 	cfg, err := config.FromEnv()
 	if err != nil {
 		return err
@@ -52,6 +54,7 @@ func run() error {
 		Addr:              cfg.ListenAddr,
 		Handler:           server.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
+		ErrorLog:          slog.NewLogLogger(slog.Default().Handler(), slog.LevelWarn),
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
