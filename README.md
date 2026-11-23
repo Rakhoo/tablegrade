@@ -216,6 +216,7 @@ npm run dev
 | `npm run build`               | type check and production build into `dist/`               |
 | `npm run preview`             | serve the production build locally (temporary database)    |
 | `npm run lint`                | oxlint                                                     |
+| `npm test`                    | Vitest unit tests (`src/**/*.test.ts`, Node, no browser)   |
 | `npm run generate-pwa-assets` | render `public/apple-touch-icon.png` from its SVG source   |
 
 SQLocal needs cross-origin isolation. The dev server gets the headers from the SQLocal Vite
@@ -265,6 +266,7 @@ src/
 │                                   overview export
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
+├── test/                           test helpers (in-memory `node:sqlite` with all migrations)
 └── lib/                            pure helpers: dates, school year, lessons and their mark
                                     rules, seating, grades and grading tools, reports,
                                     warnings, colors, formatters, paths, page memory
@@ -324,7 +326,8 @@ runs in its own transaction. To change the schema, append a new entry (never edi
 existing one) and update `schema.ts` accordingly. Migrations run on every connect and after
 importing a backup, so older backups of a release are upgraded automatically; backups of
 development versions (below 20) or of a newer app version are refused before anything is
-replaced.
+replaced. Tests check migrations in Node with `openTestDb` from
+[src/test/sqliteDb.ts](src/test/sqliteDb.ts) (`node:sqlite`, Node 22.13 or newer).
 
 ### Backup and restore
 

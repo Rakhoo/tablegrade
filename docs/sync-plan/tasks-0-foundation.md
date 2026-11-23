@@ -6,21 +6,21 @@ Server-Gerüst und CI stehen, `src/sync/` hat eine Fassade, gegen die Stream C b
 
 ## 0.1 Branches und Regeln
 
-- [ ] `sync/integration` von `main` anlegen und pushen (falls nicht vorhanden).
-- [ ] `sync/foundation` von `sync/integration` anlegen.
-- [ ] In `CLAUDE.md` einen Abschnitt „Sync-Projekt (autonome Sessions)“ ergänzen: verweist auf
+- [x] `sync/integration` von `main` anlegen und pushen (falls nicht vorhanden).
+- [x] `sync/foundation` von `sync/integration` anlegen.
+- [x] In `CLAUDE.md` einen Abschnitt „Sync-Projekt (autonome Sessions)“ ergänzen: verweist auf
       `docs/sync-plan/README.md` Abschnitt 4 und 5, erlaubt dort das Committen, Pushen und
       Mergen nach `sync/integration`. Die Regel „Nur Mario merged nach main“ ausdrücklich
       nennen.
 
 ## 0.2 Testumgebung
 
-- [ ] `vitest` als Dev-Abhängigkeit, Skript `"test": "vitest run"`, Konfiguration für
+- [x] `vitest` als Dev-Abhängigkeit, Skript `"test": "vitest run"`, Konfiguration für
       `src/**/*.test.ts` mit Node-Umgebung.
-- [ ] Hilfsmodul für Tests mit `node:sqlite` (in Node 22.5+ eingebaut, Node 24 ohne Flag):
+- [x] Hilfsmodul für Tests mit `node:sqlite` (in Node 22.5+ eingebaut, Node 24 ohne Flag):
       öffnet eine In-Memory-DB und führt `BASELINE` plus `MIGRATIONS` aus. Damit testen
       Stream 0 und B Migrationen, Trigger und die Sync-Engine ohne Browser.
-- [ ] Ein Smoke-Test, dass die heutige DB-Version entsteht.
+- [x] Ein Smoke-Test, dass die heutige DB-Version entsteht.
 
 ## 0.3 Migration auf UUIDs
 
