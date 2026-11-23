@@ -28,23 +28,25 @@ type testEnv struct {
 	handler http.Handler
 	clock   *storetest.Clock
 	store   *sqlite.DB
+	dataDir string
 }
 
 // cfg is the configuration of every test server.
 func (e *testEnv) cfg() config.Config {
-	return config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID, DevAuth: true}
+	return config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID, DevAuth: true, DataDir: e.dataDir}
 }
 
 // newEnv starts a server with DEV_AUTH enabled and the given options.
 func newEnv(t *testing.T, opts ...Option) *testEnv {
 	t.Helper()
 	clock := storetest.NewClock()
-	db, err := sqlite.Open(filepath.Join(t.TempDir(), "db.sqlite3"), sqlite.WithClock(clock.Now))
+	dir := t.TempDir()
+	db, err := sqlite.Open(filepath.Join(dir, "db.sqlite3"), sqlite.WithClock(clock.Now))
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	e := &testEnv{t: t, clock: clock, store: db}
+	e := &testEnv{t: t, clock: clock, store: db, dataDir: dir}
 	srv, err := New(e.cfg(), db, append([]Option{WithClock(clock.Now)}, opts...)...)
 	if err != nil {
 		t.Fatal(err)

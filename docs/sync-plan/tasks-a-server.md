@@ -55,9 +55,9 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A7 Fotos
 
-- [ ] Interface `blob.Store`, Umsetzung im Dateisystem (`DATA_DIR/blobs/<user>/<id>`),
+- [x] Interface `blob.Store`, Umsetzung im Dateisystem (`DATA_DIR/blobs/<user>/<id>`),
       später S3-fähig.
-- [ ] `PUT/GET /blobs/{id}`, 2 MB Limit, Referenzen aus dem Push, Aufräumen nach 30 Tagen
+- [x] `PUT/GET /blobs/{id}`, 2 MB Limit, Referenzen aus dem Push, Aufräumen nach 30 Tagen
       ohne Referenz.
 
 ## A8 WebSocket

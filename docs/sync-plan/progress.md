@@ -13,6 +13,17 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:30 UTC · Stream A · sync/server
+- Erledigt: A7 Fotos. `blob.Store` mit Umsetzung `blob.FS` (`DATA_DIR/blobs/<user>/<id>`,
+  Schreiben über Temp-Datei und Umbenennen), `PUT/GET /blobs/{id}` (`internal/api/blobs.go`),
+  Aufräumen verwaister Blobs nach 30 Tagen in `Server.Maintain`.
+- Entschieden: `blob.Store` bewegt nur Bytes; Registrierung und Verweise bleiben in
+  `store.Store`. Grund: S3 später nur als zweite Umsetzung des kleinen Interfaces.
+- Entschieden: Beim Aufräumen zuerst die Datei, dann die Registrierung löschen. Grund: Ein
+  Fehler lässt nur einen Eintrag zurück, den der nächste Lauf erneut versucht.
+- Protokoll ergänzt (Fotos, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A8 WebSocket.
+
 ## 2026-11-23, 17:21 UTC · Stream A · sync/server
 - Erledigt: A6 Einträge (`internal/api/records.go`): `POST /records/push`, `GET /records/pull`,
   Last Write Wins (auch doppelte ID im selben Push), Limits, `410 gone`. Täglicher Lauf

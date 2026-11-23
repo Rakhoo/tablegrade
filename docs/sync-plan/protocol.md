@@ -237,6 +237,14 @@ Die interne Tabelle `_outbox` und Sync-Tabellen (`_sync_*`) werden nie synchroni
 | `PUT /blobs/{blobId}` | Hochladen (max. 2 MB). Gibt es den Blob schon: `200` ohne Änderung. |
 | `GET /blobs/{blobId}` | Herunterladen. |
 
+- `PUT` antwortet `201` bei neuem Blob, `200` bei vorhandenem (der Body wird dann ignoriert).
+  `blobId` muss 16 Bytes Base64url sein, der Body mindestens 28 Bytes (`bad_request`), höchstens
+  2 MB (`too_large`).
+- `GET` liefert die Bytes als `application/octet-stream` mit
+  `Cache-Control: private, max-age=31536000, immutable`. Fremde oder unbekannte IDs: `not_found`.
+- Ein hochgeladener Blob ohne Verweis zählt ab dem Upload als verwaist. Der Client pusht den
+  Eintrag darum innerhalb von 30 Tagen nach dem Upload.
+
 Der Server löscht Blobs, auf die 30 Tage lang kein Eintrag mehr verweist. Dafür meldet der
 Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Eintrag
 (der Server sieht nur die IDs).
@@ -296,6 +304,7 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Fotos: `201`/`200` bei `PUT`, Prüfregeln, Cache-Header bei `GET`, Verwaist-Zeit ab Upload. |
 | 2026-11-23 | A | Einträge: Prüfregeln für Push und Pull, Push-Limit 60 pro Minute und Konto, `limit` über 1000 wird gekürzt. |
 | 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |

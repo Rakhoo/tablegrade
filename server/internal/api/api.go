@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 
 	"github.com/Rakhoo/tablegrade/server/internal/auth"
+	"github.com/Rakhoo/tablegrade/server/internal/blob"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
 	"github.com/Rakhoo/tablegrade/server/internal/oidc"
 	"github.com/Rakhoo/tablegrade/server/internal/ratelimit"
@@ -42,6 +44,7 @@ type Server struct {
 	pushLimit  *ratelimit.Limiter
 	webauthn   *webauthn.WebAuthn
 	challenges *auth.Challenges[passkeyCeremony]
+	blobs      blob.Store
 	// oidc holds the enabled identity providers by name (store.ProviderMicrosoft, …).
 	oidc map[string]*oidc.Provider
 }
@@ -56,7 +59,8 @@ func WithClock(now func() time.Time) Option {
 
 // New returns the server with all routes. It fails if the WebAuthn settings are invalid.
 func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
-	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg)}
+	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg),
+		blobs: blob.NewFS(filepath.Join(cfg.DataDir, "blobs"))}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -98,6 +102,9 @@ func (s *Server) Handler() http.Handler {
 
 	mux.Handle("POST /api/v1/records/push", s.withSession(s.handlePush))
 	mux.Handle("GET /api/v1/records/pull", s.withSession(s.handlePull))
+
+	mux.Handle("PUT /api/v1/blobs/{id}", s.withSession(s.handlePutBlob))
+	mux.Handle("GET /api/v1/blobs/{id}", s.withSession(s.handleGetBlob))
 
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))

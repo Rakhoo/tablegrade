@@ -21,7 +21,7 @@ baut Stream A ([../docs/sync-plan/tasks-a-server.md](../docs/sync-plan/tasks-a-s
 | `internal/store/sqlite/` | SQLite-Umsetzung: WAL, eine Schreib-Verbindung, Migrationen nur anhängen |
 | `internal/store/storetest/` | Gemeinsame Tests für jede Store-Umsetzung (später auch Postgres) |
 | `internal/hub/` | WebSocket-Benachrichtigungen |
-| `internal/blob/` | Verschlüsselte Fotos als Dateien |
+| `internal/blob/` | Verschlüsselte Fotos als Dateien (`DATA_DIR/blobs/<userId>/<blobId>`), Interface für später S3 |
 | `internal/vectors/` | Lädt die Testvektoren für Tests |
 | `testdata/` | `vectors.json` und das Skript `gen-vectors.mjs`, das sie erzeugt |
 
