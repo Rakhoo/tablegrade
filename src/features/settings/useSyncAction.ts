@@ -32,13 +32,11 @@ export function useSyncAction() {
 
 /**
  * German text for a failed step. The facade raises German messages; browser errors (network,
- * a cancelled passkey dialog) and the placeholder of the missing engine get fixed texts.
+ * a cancelled passkey dialog) get fixed texts.
  */
 function germanMessage(failure: unknown) {
   if (failure instanceof DOMException && failure.name == "NotAllowedError")
     return "Der Vorgang wurde abgebrochen.";
-  if (failure instanceof Error && failure.message == "not implemented")
-    return "Die Synchronisierung ist in dieser Version noch nicht verfügbar.";
   if (failure instanceof TypeError || failure instanceof DOMException)
     return FALLBACK_ERROR;
   return failure instanceof Error && failure.message

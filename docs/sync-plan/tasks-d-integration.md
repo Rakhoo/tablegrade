@@ -4,9 +4,9 @@ Branch: `sync/final`. Start erst, wenn A, B und C in progress.md als fertig steh
 
 ## D1 Zusammenführen
 
-- [ ] `sync/final` von `sync/integration`. Alle Prüfungen grün machen.
-- [ ] Stubs der Fassade entfernt? UI nutzt überall die echte Engine?
-- [ ] Protokoll und Umsetzung abgleichen: jeder Endpunkt aus protocol.md hat Server-Code,
+- [x] `sync/final` von `sync/integration`. Alle Prüfungen grün machen.
+- [x] Stubs der Fassade entfernt? UI nutzt überall die echte Engine?
+- [x] Protokoll und Umsetzung abgleichen: jeder Endpunkt aus protocol.md hat Server-Code,
       Client-Aufruf und Test.
 
 ## D2 Gesamttest ohne Browser
