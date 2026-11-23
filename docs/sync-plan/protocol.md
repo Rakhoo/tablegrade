@@ -1,11 +1,11 @@
-# Protokoll (Entwurf)
+# Protokoll
 
-Stream 0 macht diesen Entwurf verbindlich: Lücken füllen, Testvektoren in
-`server/testdata/` anlegen, Status unten auf „verbindlich“ setzen. Danach ändern Streams A–D
-das Protokoll nur gemeinsam: Änderung hier eintragen, im Abschnitt „Änderungen“ vermerken,
-in progress.md ankündigen.
+Streams A–D ändern das Protokoll nur gemeinsam: Änderung hier eintragen, im Abschnitt
+„Änderungen“ vermerken, in progress.md ankündigen. Die Testvektoren in
+`server/testdata/vectors.json` (erzeugt von `server/testdata/gen-vectors.mjs`) sind Teil des
+Protokolls. Go- und Vitest-Tests prüfen gegen sie.
 
-Status: **Entwurf**
+Status: **verbindlich** (seit 2026-11-23, Stream 0)
 
 ## 1. Grundregeln
 
@@ -21,8 +21,20 @@ Status: **Entwurf**
 - Fehler: HTTP-Status plus `{ "error": "<code>", "message": "<deutsch, für die UI>" }`.
   Codes: `unauthorized`, `session_revoked`, `not_found`, `conflict`, `too_large`,
   `rate_limited`, `upgrade_required`, `bad_request`.
-- Jede Antwort trägt `X-Protocol-Version: 1`. Sendet der Client eine höhere
-  Hauptversion als der Server kennt: `upgrade_required`.
+- Weitere Codes: `gone` (410, siehe 4), `forbidden` (403).
+- Status je Code: `bad_request` 400, `unauthorized` 401, `session_revoked` 401, `forbidden` 403,
+  `not_found` 404, `conflict` 409, `gone` 410, `too_large` 413, `upgrade_required` 426,
+  `rate_limited` 429 (mit Header `Retry-After` in Sekunden).
+- Jede Antwort trägt `X-Protocol-Version: 1`. Der Client sendet denselben Header. Sendet der
+  Client eine höhere Hauptversion als der Server kennt: `upgrade_required`.
+- Texte (Labels, AAD, HMAC-Eingaben) sind immer UTF-8. `‖` heißt Bytes aneinanderhängen.
+- HKDF ist immer HKDF-SHA256 mit 32 Bytes Ausgabe. `salt=""` heißt leeres Salt (WebCrypto:
+  `new Uint8Array(0)`, nach RFC 5869 gleichwertig zu 32 Null-Bytes).
+- AES-256-GCM immer mit 12 Bytes Nonce und 16 Bytes Tag. Format überall
+  `nonce(12) ‖ ciphertext ‖ tag(16)` (WebCrypto liefert `ciphertext ‖ tag` am Stück).
+- Crockford-Base32: Alphabet `0123456789ABCDEFGHJKMNPQRSTVWXYZ`, Bits von vorne (MSB zuerst),
+  ohne Padding. Eingabe-Normalisierung: Leerzeichen und `-` entfernen, Großbuchstaben,
+  `O`→`0`, `I` und `L`→`1`. `U` und andere Zeichen sind ungültig.
 
 ## 2. Konten, Identitäten, Sitzungen
 
@@ -58,7 +70,25 @@ keyWraps    id, userId, kind ('passkey' | 'recovery' | 'org'), credentialId?, al
 | `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). |
 
 Antwort bei erfolgreicher Anmeldung:
-`{ "sessionToken", "userId", "deviceId", "isNewUser" }`.
+`{ "sessionToken", "userId", "deviceId", "isNewUser" }`. `sessionToken` ist Base64url.
+
+- `register/begin` und `login/begin` liefern `{ challengeId, options }`. `options` sind die
+  WebAuthn-Optionen im JSON-Format (`PublicKeyCredentialCreationOptionsJSON` bzw.
+  `…RequestOptionsJSON`, Binärfelder Base64url). `finish` bekommt
+  `{ challengeId, credential, deviceName }`, `credential` per `toJSON()`. Eine Challenge
+  gilt 5 Minuten und nur einmal.
+- `register/finish` speichert `prfCapable = true`, wenn der Client
+  `clientExtensionResults.prf.enabled = true` meldet.
+- Gerät: Jede neue Sitzung ohne bestehende Sitzung legt ein neues Gerät mit `deviceName` an.
+- `GET /auth/oidc/{provider}/config` liefert
+  `{ clientId, authorizeUrl, scopes: ["openid"], redirectUri }`. Der Browser nutzt PKCE
+  (`S256`) und `state`; beides prüft nur der Browser.
+- Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
+  `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
+  speichert der Server nicht.
+- `GET /devices` liefert `{ devices: [{ id, name, createdAt, lastSeenAt, revokedAt, current }] }`.
+  `PATCH /devices/{id}` mit `{ name }`. Ein Gerät kann sich selbst nicht sperren (`conflict`),
+  dafür gibt es `logout`.
 
 Microsoft: Mandant `consumers` (nur private Konten). Google: normale OAuth-Client-ID vom Typ
 „Webanwendung“. Redirect-URI ist die App-Origin mit Pfad `/` und Query `?oidc=callback`.
@@ -76,14 +106,23 @@ KEK je Art:
 - **passkey:** PRF-Ausgabe (32 Bytes) für das feste Salt `SHA-256("notenfeder/prf/v1")`,
   dann `HKDF-SHA256(prf, salt="", info="notenfeder/kek/passkey/v1")`. Ein Wrap pro Passkey
   (`credentialId`). Passkeys ohne PRF dienen nur zum Login.
-- **recovery:** 20 Zufallsbytes (160 Bit). Anzeige als Crockford-Base32 plus 1 Prüfzeichen,
-  in Vierergruppen mit `-`. KEK = `HKDF-SHA256(bytes, salt="", info="notenfeder/kek/recovery/v1")`.
-  Kein langsames KDF nötig, die Entropie ist hoch genug.
+- **recovery:** 20 Zufallsbytes (160 Bit). KEK = `HKDF-SHA256(bytes, salt="",
+  info="notenfeder/kek/recovery/v1")`. Kein langsames KDF nötig, die Entropie ist hoch genug.
+  Text: 32 Zeichen Crockford-Base32 der Bytes, dann 4 Prüfzeichen = die ersten 20 Bit von
+  `SHA-256("notenfeder/recovery/v1" ‖ bytes)` als Crockford-Base32. Zusammen 36 Zeichen,
+  angezeigt in 9 Vierergruppen mit `-`, z. B. `K7QF-M2XA-…`. Eingabe: normalisieren (siehe 1),
+  Länge 36 prüfen, Prüfzeichen prüfen. Falsche Prüfzeichen → Meldung „Tippfehler im
+  Schlüssel“, ohne Serveranfrage.
 - **org:** später (Master-Key der Schule, öffentlicher Schlüssel). Das Format `alg` lässt Platz.
+
+- Ein Wrap als JSON: `{ id, kind, credentialId?, alg, wrapped, createdAt }`. `id` ist eine
+  UUID vom Client. `alg` ist `"A256GCM"` für passkey und recovery. `wrapped` ist Base64url.
+- Pro Konto gibt es höchstens einen `recovery`-Wrap. Ein neuer Wiederherstellungsschlüssel
+  ersetzt den alten (`PUT` mit neuer `id`, dann `DELETE` der alten).
 
 | Methode, Pfad | Zweck |
 |---|---|
-| `GET /keys` | Alle Wraps des Kontos. |
+| `GET /keys` | Alle Wraps des Kontos: `{ keys: [ … ] }`. |
 | `PUT /keys/{id}` | Wrap anlegen oder ersetzen (z. B. neuer Passkey, neuer Wiederherstellungsschlüssel). |
 | `DELETE /keys/{id}` | Wrap löschen. Der letzte `recovery`-Wrap lässt sich nicht löschen. |
 
@@ -93,42 +132,72 @@ KEK je Art:
 records  userId, id, seq, updatedAt, deleted, schema, ciphertext, deviceId
 ```
 
-- `id` = Base64url von `HMAC-SHA256(IDK, "<tabelle>|<primärschlüssel>")`, gekürzt auf 16 Bytes.
-  Der Primärschlüssel ist die UUID bzw. bei zusammengesetzten Schlüsseln die Werte in
-  Schema-Reihenfolge, getrennt mit `|`. So verrät die ID weder Tabelle noch Datum.
+- `id` = Base64url von `HMAC-SHA256(IDK, "<tabelle>|<primärschlüssel>")`, gekürzt auf 16 Bytes
+  (22 Zeichen). Der Primärschlüssel ist die UUID bzw. bei zusammengesetzten Schlüsseln die
+  Werte in Schema-Reihenfolge, getrennt mit `|`. Zahlen (`SchoolYears.year`) als Dezimalzahl
+  ohne führende Nullen. UUIDs klein geschrieben. `<tabelle>` ist der SQL-Name (z. B.
+  `Classes`). So verrät die ID weder Tabelle noch Datum.
 - `seq` vergibt der Server, streng steigend pro Konto.
 - Klartext vor der Verschlüsselung:
   `{ "t": "<tabelle>", "k": [<primärschlüssel>], "v": <schema-version>, "row": { … } | null }`.
   `row: null` bei Löschung.
+- `row` enthält alle Spalten mit ihren SQL-Namen und Werten wie in SQLite (Text, Zahl,
+  `null`). Der Klartext ist UTF-8-JSON; die Reihenfolge der Felder ist egal.
 - Verschlüsselung: AES-256-GCM mit DEK, Nonce 12 Zufallsbytes, AAD = `notenfeder/record/v1/<userId>/<id>`.
-  `ciphertext` = `nonce ‖ ciphertext+tag`.
+  `ciphertext` = `nonce ‖ ciphertext+tag`, im JSON als Base64url.
 - `schema` = Version der lokalen DB (wie `BASELINE_VERSION + Migrationen`), unverschlüsselt,
   damit ein altes Gerät neue Einträge erkennt und zurückstellt.
 
 | Methode, Pfad | Zweck |
 |---|---|
-| `POST /records/push` | Body: `{ records: [{ id, deleted, schema, ciphertext }] }`, max. 500 Einträge bzw. 5 MB. Antwort: `{ results: [{ id, seq, updatedAt }] }`. Last Write Wins: der neue Eintrag ersetzt immer den alten. |
-| `GET /records/pull?after=<seq>&limit=<n>` | Einträge mit `seq > after`, aufsteigend, max. 1000. Antwort `{ records, more, latestSeq }`. |
+| `POST /records/push` | Body: `{ records: [{ id, deleted, schema, ciphertext, blobs }] }`, max. 500 Einträge bzw. 5 MB. Antwort: `{ results: [{ id, seq, updatedAt }] }` in derselben Reihenfolge. Last Write Wins: der neue Eintrag ersetzt immer den alten. Eine ID doppelt im selben Push: der letzte gewinnt. |
+| `GET /records/pull?after=<seq>&limit=<n>` | Einträge mit `seq > after`, aufsteigend, max. 1000 (Standard 500). Antwort `{ records: [{ id, seq, updatedAt, deleted, schema, ciphertext, deviceId }], more, latestSeq }`. |
+
+- Auch Löschungen tragen einen `ciphertext` (Klartext mit `row: null`). So bleibt der Schlüssel
+  `k` für das Gerät lesbar, das die Löschung anwendet.
+- Der Server sendet einem Gerät auch seine eigenen Einträge zurück. Der Client erkennt sie an
+  `deviceId` und überspringt sie, wenn für den Schlüssel nichts Neueres in `_outbox` liegt.
 
 Tombstones bleiben mindestens 180 Tage. Ein Gerät, das länger offline war (`after` älter als
-die älteste aufbewahrte Löschung), bekommt `410` und lädt dann alles neu.
+die älteste aufbewahrte Löschung), bekommt `410 gone` und lädt dann alles neu (`after=0`). Gelöschte Einträge mit `seq` älter
+als 180 Tage darf der Server entfernen; er merkt sich die höchste entfernte `seq` pro Konto als
+Grenze für `gone`.
 
 ### Synchronisierte Tabellen
 
 Alle Tabellen aus `src/db/schema.ts` außer:
 
 - `Holidays` (Cache der Ferien-API, jedes Gerät lädt selbst),
-- Einträge in `Settings`, die nur das Gerät betreffen. Stream 0 legt die Liste fest
-  (z. B. zuletzt geöffneter Einstellungs-Tab, Entwickler-Optionen).
+- Einträge in `Settings`, die nur das Gerät betreffen (`DEVICE_SETTING_KEYS` in
+  `src/lib/settings.ts`): `holidayCache`, `lastBackup`, `pinHash`, `colorMode`,
+  `compactTable`, `compactTimetable`. Der Einstellungs-Tab und die Anzeige-Optionen liegen im
+  `localStorage` und sind ohnehin nicht in der DB.
+
+Primärschlüssel je Tabelle (Reihenfolge gilt für `pk` und `k`): `Classes`, `Students`,
+`Grades`, `Traits`, `Duties`: `id`; `Classes2Students`: `classId, studentId`;
+`Students2Traits`: `studentId, traitId`; `CancelledDays`: `date`; `CancelledLessons`:
+`classId, date`; `LessonTypes`: `classId, date, type`; `Reports`: `classId, date, kind`;
+`ReportGrades`: `classId, date, kind, studentId`; `SchoolYears`: `year`; `Settings`: `key`.
+
+Lokale Erfassung (Migration 23): Trigger schreiben bei INSERT, UPDATE und DELETE
+`(tbl, pk = JSON-Array des Schlüssels, changedAt in ms)` nach `_outbox`, wenn
+`_sync_state.enabled = '1'` und `_sync_state.applying != '1'`. Ändert ein UPDATE den
+Schlüssel, wird auch der alte Schlüssel erfasst (wird als gelöscht gesendet). Kaskaden über
+Fremdschlüssel lösen die Trigger ebenfalls aus. Die Sync-Engine liest beim Senden die
+aktuelle Zeile zum Schlüssel; fehlt sie, sendet sie eine Löschung.
 
 Die interne Tabelle `_outbox` und Sync-Tabellen (`_sync_*`) werden nie synchronisiert.
 
 ## 5. Fotos
 
 - Fotos stehen lokal weiter als Data-URL in `Students.image`.
+- Bilddaten = die UTF-8-Bytes der vollständigen Data-URL (`data:image/…;base64,…`). So bleibt
+  der Bildtyp erhalten.
 - Beim Sync ersetzt die Engine `image` im Klartext durch `{ "blob": "<blobId>" }`.
-  `blobId` = Base64url von `HMAC-SHA256(IDK, "blob|" + SHA-256(Bilddaten))`, 16 Bytes.
+  `blobId` = Base64url von `HMAC-SHA256(IDK, "blob|" ‖ SHA-256(Bilddaten))` (Hash als 32 rohe
+  Bytes), gekürzt auf 16 Bytes.
 - Das Foto selbst: AES-256-GCM mit DEK, AAD = `notenfeder/blob/v1/<userId>/<blobId>`.
+  Hochgeladen wird `nonce ‖ ciphertext+tag` als `application/octet-stream`.
 
 | Methode, Pfad | Zweck |
 |---|---|
@@ -143,22 +212,34 @@ Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Ei
 
 1. Neues Gerät (angemeldet, aber ohne DEK) erzeugt ein ECDH-P-256-Schlüsselpaar und ruft
    `POST /link` mit seinem öffentlichen Schlüssel auf. Antwort: `{ linkId, code }`.
-   `code` = 8 Zeichen Crockford-Base32, gültig 10 Minuten.
+   `code` = 8 Zeichen Crockford-Base32 (40 Zufallsbits vom Server), gültig 10 Minuten.
+   Öffentliche Schlüssel immer im Rohformat (unkomprimierter Punkt, 65 Bytes, `0x04 ‖ x ‖ y`),
+   im JSON Base64url.
 2. Das neue Gerät zeigt den `code`.
-3. Altes Gerät (mit DEK) gibt den `code` ein, holt `GET /link/{code}` → öffentlicher Schlüssel.
-4. Beide Geräte zeigen einen **Prüfcode**: die ersten 6 Ziffern aus
-   `SHA-256(pubNeu ‖ pubAlt)` als Zahl. Die Nutzerin bestätigt am alten Gerät, dass sie gleich
-   sind.
-5. Altes Gerät leitet per ECDH plus HKDF (`info="notenfeder/link/v1"`) einen Schlüssel ab,
-   wrappt die DEK und sendet `POST /link/{linkId}/complete` mit `{ publicKey, wrapped }`.
-6. Neues Gerät holt das Ergebnis (`GET /link/{linkId}` oder per WebSocket-Nachricht), packt
-   die DEK aus.
+3. Altes Gerät (mit DEK) gibt den `code` ein, holt `GET /link/by-code/{code}` →
+   `{ linkId, publicKey }`.
+4. Beide Geräte zeigen einen **Prüfcode**: die ersten 4 Bytes von `SHA-256(pubNeu ‖ pubAlt)`
+   als vorzeichenlose Zahl (Big Endian) modulo 1 000 000, mit führenden Nullen auf 6 Ziffern.
+   Das neue Gerät kennt `pubAlt` erst nach Schritt 5 und zeigt den Code dann. Die Nutzerin
+   bestätigt am alten Gerät, dass beide gleich sind; das neue Gerät übernimmt die DEK erst nach
+   eigener Bestätigung.
+5. Altes Gerät leitet per ECDH (gemeinsames Geheimnis = x-Koordinate, 32 Bytes) plus
+   `HKDF(secret, salt="", info="notenfeder/link/v1")` einen Schlüssel ab, wrappt die DEK wie in 3
+   mit `kind = link` (AAD `notenfeder/wrap/v1/link/<userId>`) und sendet
+   `POST /link/{linkId}/complete` mit `{ publicKey, wrapped }`.
+6. Neues Gerät holt das Ergebnis (`GET /link/{linkId}` →
+   `{ status: "waiting" | "done", publicKey?, wrapped? }`, oder per WebSocket-Nachricht), packt
+   die DEK aus. Nach dem ersten Abruf mit `done` löscht der Server die Kopplung.
+
+`linkId` ist eine UUID vom Server. Ein falscher `code` zählt zum Rate-Limit der
+`auth`-Endpunkte; nach 5 Fehlversuchen für ein Konto verfallen dessen offene Kopplungen.
 
 Nur Geräte desselben Kontos dürfen eine Kopplung abschließen.
 
 ## 7. WebSocket
 
-`GET /ws?token=…`. Nachrichten vom Server, JSON:
+`GET /ws?token=…`. Nachrichten vom Server, JSON mit Feld `type` und den Feldern daneben,
+z. B. `{"type":"changed","latestSeq":42,"deviceId":"…"}`:
 
 | Typ | Inhalt | Bedeutung |
 |---|---|---|
@@ -180,4 +261,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 
 | Datum | Stream | Änderung |
 |---|---|---|
-| | | |
+| 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |

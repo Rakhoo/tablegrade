@@ -18,7 +18,7 @@ export function SeatLayoutSettings() {
 
   // The seating plan shows the seats as students named by their number
   const seats: SeatedStudent[] = layout.map(({ x, y }, index) => ({
-    id: index + 1,
+    id: String(index + 1),
     firstName: String(index + 1),
     lastName: "",
     nickname: null,
@@ -31,7 +31,7 @@ export function SeatLayoutSettings() {
   }));
 
   const move = (seat: SeatedStudent, x: number, y: number) => {
-    const index = seat.id - 1;
+    const index = Number(seat.id) - 1;
     const overlapped = layout.filter(
       (other, otherIndex) =>
         otherIndex != index && seatsOverlap(other, { x, y }),

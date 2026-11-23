@@ -15,7 +15,7 @@ export const REPORT_LABELS: Record<ReportKind, string> = {
 export type Report = { date: string; kind: ReportKind };
 
 /** A grade set by hand, replacing the calculated one. */
-export type ReportOverride = Report & { studentId: number; grade: number };
+export type ReportOverride = Report & { studentId: string; grade: number };
 
 /** A column of a report: a read-only part of it or, if `main`, the editable grade itself. */
 export type ReportColumn = {
@@ -27,9 +27,9 @@ export type ReportColumn = {
   /** Number of columns of this report on its first column, otherwise 0. */
   groupSize: number;
   /** Shown grades by student id; `null` if there is none. */
-  values: Map<number, number | null>;
+  values: Map<string, number | null>;
   /** Calculated grades by student id, which `values` of the main column may override. */
-  suggestions: Map<number, number | null>;
+  suggestions: Map<string, number | null>;
 };
 
 /**
@@ -57,7 +57,7 @@ const sortReports = (reports: Report[]) =>
 export function getReportColumns(
   reports: Report[],
   overrides: ReportOverride[],
-  studentIds: number[],
+  studentIds: string[],
   entries: GradeEntry[],
   rules: GradingRules,
 ) {
@@ -67,10 +67,10 @@ export function getReportColumns(
 
   for (const { date, kind } of sortReports(reports)) {
     const base = { kind: "report" as const, date, report: kind, groupSize: 0 };
-    const toMap = (getValue: (studentId: number) => number | null) =>
+    const toMap = (getValue: (studentId: string) => number | null) =>
       new Map(studentIds.map((id) => [id, getValue(id)]));
     let parts: ReportColumn[];
-    let suggestions: Map<number, number | null>;
+    let suggestions: Map<string, number | null>;
 
     if (kind == "half" && partials.length > 0) {
       parts = partials.map((partial, index) => ({

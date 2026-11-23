@@ -25,7 +25,7 @@ export type OverviewExport = {
   title: string;
   /** `image` and `traits` hold what the overview shows; only the PDF uses them. */
   students: {
-    id: number;
+    id: string;
     name: string;
     /** First name, last name and nickname, hidden in comments of the anonymous CSV. */
     nameParts: string[];
@@ -33,7 +33,7 @@ export type OverviewExport = {
     traits: Trait[];
   }[];
   columns: OverviewColumn[];
-  entryOf: (studentId: number, date: string) => GradeEntry | undefined;
+  entryOf: (studentId: string, date: string) => GradeEntry | undefined;
   typesOf: (date: string) => LessonType[];
   settings: AppSettings;
 };
@@ -69,7 +69,7 @@ const columnTitle = (column: OverviewColumn, types: LessonType[]) => {
 };
 
 /** Text of a report's cell; a main column has "n.b." without a grade. */
-function reportText(column: ReportColumn, studentId: number, points: boolean) {
+function reportText(column: ReportColumn, studentId: string, points: boolean) {
   const value = column.values.get(studentId);
   if (value != null) return formatGrade(value, points);
   return column.main ? "n.b." : "";
@@ -302,7 +302,7 @@ export async function exportPdf(data: OverviewExport) {
   );
   const rowHeight =
     maxTraitLines > 0 ? 5.5 + maxTraitLines * TRAIT_LINE_HEIGHT : ROW_HEIGHT;
-  const photos = new Map<number, string>();
+  const photos = new Map<string, string>();
   for (const { id, image } of students) {
     if (image) photos.set(id, await renderPhoto(image));
   }

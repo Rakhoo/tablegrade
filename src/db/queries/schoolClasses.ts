@@ -14,19 +14,19 @@ import { getCompletedLessons } from "./grades";
 import { getSettings } from "./settings";
 import { deleteOrphanStudents, getClassStudents } from "./students";
 
-export type SchoolClassInput = Omit<SchoolClass, "id"> & { id?: number };
+export type SchoolClassInput = Omit<SchoolClass, "id"> & { id?: string };
 /** A roster entry from the edit dialog; entries without `id` are new students. */
 export type RosterEntry = {
-  id?: number;
+  id?: string;
   firstName: string;
   lastName: string;
   nickname: string | null;
   image: string | null;
-  traitIds: number[];
+  traitIds: string[];
   /** Hidden from the seating plan and overview, while the grades stay. */
   hidden: boolean;
   /** The student's duty in this class. */
-  dutyId: number | null;
+  dutyId: string | null;
   /** Preferred seat for a new member, taken over from the class it was copied from. */
   seat?: { x: number; y: number };
 };
@@ -39,7 +39,7 @@ export const getSchoolClasses = () =>
     .orderBy(asc(schoolClasses.day), asc(schoolClasses.hour));
 
 /** Returns a single class or `undefined`. */
-export async function getSchoolClass(id: number) {
+export async function getSchoolClass(id: string) {
   const [cls] = await db
     .select()
     .from(schoolClasses)
@@ -105,7 +105,7 @@ export async function saveSchoolClass(
           .values(values)
           .returning({ id: schoolClasses.id }),
       );
-      savedId = row.id as number;
+      savedId = row.id as string;
     }
 
     if (removedIds.length > 0) {
@@ -156,7 +156,7 @@ export async function saveSchoolClass(
         const [row] = await tx.query(
           db.insert(students).values(fields).returning({ id: students.id }),
         );
-        studentId = row.id as number;
+        studentId = row.id as string;
       }
       for (const traitId of traitIds) {
         await tx.query(db.insert(studentTraits).values({ studentId, traitId }));
@@ -227,7 +227,7 @@ export async function saveSchoolClass(
 }
 
 /** Deletes a class including its memberships and grades. */
-export async function deleteSchoolClass(id: number) {
+export async function deleteSchoolClass(id: string) {
   await db.delete(schoolClasses).where(eq(schoolClasses.id, id));
   await deleteOrphanStudents();
 }

@@ -21,7 +21,7 @@ export async function getCancelledLessons() {
 }
 
 /** Counts the grade entries (symbols, comments, warnings) on a date, optionally of one class. */
-export async function countEntriesOn(date: string, classId?: number) {
+export async function countEntriesOn(date: string, classId?: string) {
   const rows = await db
     .select({ classId: grades.classId })
     .from(grades)
@@ -60,7 +60,7 @@ export async function setDayCancelled(date: string, cancelled: boolean) {
  * Cancelling deletes the grade entries of that lesson.
  */
 export async function setLessonCancelled(
-  classId: number,
+  classId: string,
   date: string,
   cancelled: boolean,
 ) {

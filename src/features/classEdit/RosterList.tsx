@@ -27,7 +27,7 @@ type RosterListProps = {
   duties: Duty[];
   onEdit: (row: RosterRow) => void;
   onToggleHidden: (row: RosterRow) => void;
-  onDutyChange: (row: RosterRow, dutyId: number | null) => void;
+  onDutyChange: (row: RosterRow, dutyId: string | null) => void;
   onRemove: (row: RosterRow) => void;
 };
 
@@ -49,7 +49,7 @@ export function RosterList({
     duties.find((duty) => duty.id == row.dutyId);
 
   /** Gives the student of the open menu a duty, or none. */
-  const chooseDuty = (dutyId: number | null) => {
+  const chooseDuty = (dutyId: string | null) => {
     if (dutyMenu) onDutyChange(dutyMenu.row, dutyId);
     setDutyMenu(null);
   };

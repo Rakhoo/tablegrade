@@ -46,7 +46,7 @@ type PendingChange = {
   state: string;
   years: SchoolYear[];
   holidays: Awaited<ReturnType<typeof getHolidays>>;
-  orphanIds: number[];
+  orphanIds: string[];
   removedClasses: SchoolClass[];
 };
 

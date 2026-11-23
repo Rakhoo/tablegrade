@@ -18,7 +18,7 @@ import {
 } from "../../components/icons";
 
 type ClassroomDialOptions = {
-  classId: number;
+  classId: string;
   date: string;
   hasPhotos: boolean;
   hasDuties: boolean;

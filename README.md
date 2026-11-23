@@ -216,6 +216,7 @@ npm run dev
 | `npm run build`               | type check and production build into `dist/`               |
 | `npm run preview`             | serve the production build locally (temporary database)    |
 | `npm run lint`                | oxlint                                                     |
+| `npm test`                    | Vitest unit tests (`src/**/*.test.ts`, Node, no browser)   |
 | `npm run generate-pwa-assets` | render `public/apple-touch-icon.png` from its SVG source   |
 
 SQLocal needs cross-origin isolation. The dev server gets the headers from the SQLocal Vite
@@ -263,12 +264,16 @@ src/
 │   └── queries/                    data access per entity
 ├── services/                       side effects: holiday API, backups, PWA, WebUntis PDF,
 │                                   overview export
+├── sync/                           facade of account and sync (docs/sync-plan); sample
+│                                   values with `VITE_SYNC_DEMO=true` until the engine exists
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
+├── test/                           test helpers (in-memory `node:sqlite` with all migrations)
 └── lib/                            pure helpers: dates, school year, lessons and their mark
                                     rules, seating, grades and grading tools, reports,
                                     warnings, colors, formatters, paths, page memory
 public/                             _headers and icons
+server/                             sync server (Go), see server/README.md
 pwa-assets.config.ts                generator config for the PNG home screen icon
 ```
 
@@ -313,6 +318,12 @@ else in camelCase files; JSDoc on exported functions and components.
 
 The SQL table names are kept for compatibility; the TypeScript names differ (e.g.
 `schoolClasses`, `classStudents`).
+Classes, students, grades, traits and duties have text UUIDs as `id` (since schema version
+22), created with `crypto.randomUUID()` on insert, so several devices can add rows without
+conflicts. Only `Holidays` keeps integer ids (a cache, never synced).
+The internal tables `_sync_state` and `_outbox` (schema version 23) record changed rows for
+the coming sync; their triggers only write while sync is enabled (see
+[docs/sync-plan/protocol.md](docs/sync-plan/protocol.md)).
 
 ### Migrations
 
@@ -324,7 +335,8 @@ runs in its own transaction. To change the schema, append a new entry (never edi
 existing one) and update `schema.ts` accordingly. Migrations run on every connect and after
 importing a backup, so older backups of a release are upgraded automatically; backups of
 development versions (below 20) or of a newer app version are refused before anything is
-replaced.
+replaced. Tests check migrations in Node with `openTestDb` from
+[src/test/sqliteDb.ts](src/test/sqliteDb.ts) (`node:sqlite`, Node 22.13 or newer).
 
 ### Backup and restore
 

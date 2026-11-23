@@ -83,6 +83,9 @@ von mehr-schulferien.de (ohne personenbezogene Daten). Die App läuft nur instal
 - `src/lib/`: reine Logik ohne Seiteneffekte (keine DOM-/DB-Zugriffe), z. B. Notenregeln
   (`createMarkRules` in `lessonChains.ts` – nicht in Seiten nachbauen), `gradeTools`, `paths`.
 - `src/services/`: Seiteneffekte nach außen (Ferien-API, Backup, PWA, PDF-Import/-Export).
+- `src/crypto/`: reine Krypto-Logik mit WebCrypto (kein DOM, keine DB). `src/sync/`: Konto und
+  Sync (Netz, DB), Regeln wie `src/services/`; die UI nutzt nur `src/sync/index.ts`.
+- `server/`: Go-Server des Syncs, eigenes `go.mod` (siehe `server/README.md`).
 - `src/db/`: Schema, Migrationen, Client; Zugriffe nur über `src/db/queries/*`, exportiert
   über `src/db/index.ts`.
 - URLs nur über `paths` (`src/lib/paths.ts`) bauen, nie als String-Literal; neue Routen in
@@ -105,3 +108,11 @@ von mehr-schulferien.de (ohne personenbezogene Daten). Die App läuft nur instal
 - Lint-Regeln in `.oxlintrc.json` nicht abschwächen; Ausnahmen nur einzeln per
   `oxlint-disable-next-line` mit kurzer Begründung darüber.
 - Prettier auf `src/` nach Änderungen ausführen.
+
+## Sync-Projekt (autonome Sessions)
+
+- Sessions, die `docs/sync-plan/` abarbeiten, folgen `docs/sync-plan/README.md` Abschnitt 4
+  und 5. Diese Regeln gehen dort den obigen Regeln vor.
+- Sie dürfen auf ihrem Stream-Branch committen und pushen, PRs nach `sync/integration`
+  öffnen und nach grünen Prüfungen selbst mergen.
+- **Nur Mario merged nach `main`.** Kein Push, PR oder Merge nach `main` durch Sessions.

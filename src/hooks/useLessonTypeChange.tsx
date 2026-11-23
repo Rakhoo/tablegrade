@@ -11,7 +11,7 @@ type PendingChange = { date: string; types: LessonType[]; lost: string[] };
  * @returns The function to request a change and the confirmation dialog to render.
  */
 export function useLessonTypeChange(
-  classId: number | undefined,
+  classId: string | undefined,
   onDone: () => void,
 ) {
   const [pending, setPending] = useState<PendingChange | null>(null);

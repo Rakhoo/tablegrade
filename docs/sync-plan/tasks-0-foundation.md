@@ -6,21 +6,21 @@ Server-Gerüst und CI stehen, `src/sync/` hat eine Fassade, gegen die Stream C b
 
 ## 0.1 Branches und Regeln
 
-- [ ] `sync/integration` von `main` anlegen und pushen (falls nicht vorhanden).
-- [ ] `sync/foundation` von `sync/integration` anlegen.
-- [ ] In `CLAUDE.md` einen Abschnitt „Sync-Projekt (autonome Sessions)“ ergänzen: verweist auf
+- [x] `sync/integration` von `main` anlegen und pushen (falls nicht vorhanden).
+- [x] `sync/foundation` von `sync/integration` anlegen.
+- [x] In `CLAUDE.md` einen Abschnitt „Sync-Projekt (autonome Sessions)“ ergänzen: verweist auf
       `docs/sync-plan/README.md` Abschnitt 4 und 5, erlaubt dort das Committen, Pushen und
       Mergen nach `sync/integration`. Die Regel „Nur Mario merged nach main“ ausdrücklich
       nennen.
 
 ## 0.2 Testumgebung
 
-- [ ] `vitest` als Dev-Abhängigkeit, Skript `"test": "vitest run"`, Konfiguration für
+- [x] `vitest` als Dev-Abhängigkeit, Skript `"test": "vitest run"`, Konfiguration für
       `src/**/*.test.ts` mit Node-Umgebung.
-- [ ] Hilfsmodul für Tests mit `node:sqlite` (in Node 22.5+ eingebaut, Node 24 ohne Flag):
+- [x] Hilfsmodul für Tests mit `node:sqlite` (in Node 22.5+ eingebaut, Node 24 ohne Flag):
       öffnet eine In-Memory-DB und führt `BASELINE` plus `MIGRATIONS` aus. Damit testen
       Stream 0 und B Migrationen, Trigger und die Sync-Engine ohne Browser.
-- [ ] Ein Smoke-Test, dass die heutige DB-Version entsteht.
+- [x] Ein Smoke-Test, dass die heutige DB-Version entsteht.
 
 ## 0.3 Migration auf UUIDs
 
@@ -28,42 +28,42 @@ Betroffen: `Classes`, `Students`, `Grades`, `Traits`, `Duties` (Integer-Primärs
 alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `LessonTypes`,
 `Reports`, `ReportGrades`, `CancelledLessons`, dazu `ClassStudents.dutyId`.
 
-- [ ] **Audit vorher:** Wo stehen IDs außerhalb dieser Spalten? Zu prüfen sind
+- [x] **Audit vorher:** Wo stehen IDs außerhalb dieser Spalten? Zu prüfen sind
       `Settings`-Werte (JSON), `localStorage` (z. B. `useDisplayOption`, Rückweg in
       `lib/returnPage.ts`), `lessonKey` in `lib/lessons.ts`, URLs (`lib/paths.ts`,
       `router.tsx`, Loader mit `Number(params…)`), Backup-Import, `devData.ts`.
       Ergebnis als Liste in progress.md.
-- [ ] Neue Migration (nur anhängen): Tabellen mit `TEXT`-Schlüsseln neu bauen, alte Integer
+- [x] Neue Migration (nur anhängen): Tabellen mit `TEXT`-Schlüsseln neu bauen, alte Integer
       über Zuordnungstabellen in UUID v4 umsetzen (in SQL aus `randomblob(16)` gebildet),
       Daten und Beziehungen vollständig übernehmen, `PRAGMA foreign_keys` beachten,
       `PRAGMA foreign_key_check` am Ende leer. Gespeicherte IDs in `Settings`-JSON mit umsetzen.
-- [ ] Tests mit `node:sqlite`: Beispieldaten auf alter Version anlegen, migrieren, alle
+- [x] Tests mit `node:sqlite`: Beispieldaten auf alter Version anlegen, migrieren, alle
       Beziehungen und Kaskaden prüfen.
-- [ ] Drizzle-Schema auf `text` umstellen. Alle Queries, Typen (`number` → `string`),
+- [x] Drizzle-Schema auf `text` umstellen. Alle Queries, Typen (`number` → `string`),
       Loader, `paths`, Rückweg, Hilfsfunktionen anpassen. Neue IDs per
       `crypto.randomUUID()` beim Einfügen.
-- [ ] Gespeicherte Werte im `localStorage` mit alten IDs: beim Start verwerfen oder umsetzen
+- [x] Gespeicherte Werte im `localStorage` mit alten IDs: beim Start verwerfen oder umsetzen
       (Entscheidung nach Audit, in progress.md begründen).
-- [ ] Alte Backups (Version ≤ vorher) importieren weiter, weil der Import die Migrationen
+- [x] Alte Backups (Version ≤ vorher) importieren weiter, weil der Import die Migrationen
       ausführt. Prüfen und testen.
-- [ ] `npx tsc -b --noEmit`, `npm run lint`, `npm run build`, `npm test` grün.
+- [x] `npx tsc -b --noEmit`, `npm run lint`, `npm run build`, `npm test` grün.
 
 ## 0.4 Änderungen erfassen
 
-- [ ] Neue Migration: Tabellen `_sync_state (key TEXT PRIMARY KEY, value TEXT)` und
+- [x] Neue Migration: Tabellen `_sync_state (key TEXT PRIMARY KEY, value TEXT)` und
       `_outbox (seq INTEGER PRIMARY KEY AUTOINCREMENT, tbl TEXT, pk TEXT, changedAt INTEGER)`.
       `pk` ist JSON des Primärschlüssels.
-- [ ] Trigger für INSERT, UPDATE, DELETE auf allen synchronisierten Tabellen (Liste in
+- [x] Trigger für INSERT, UPDATE, DELETE auf allen synchronisierten Tabellen (Liste in
       protocol.md 4). Bedingung: `_sync_state.enabled = '1'` und `_sync_state.applying != '1'`.
       Gerätespezifische `Settings`-Schlüssel ausnehmen.
-- [ ] Gerätespezifische `Settings`-Schlüssel festlegen und in protocol.md eintragen.
-- [ ] Tests: Trigger feuern bei allen Operationen, auch bei Kaskaden-Löschungen über
+- [x] Gerätespezifische `Settings`-Schlüssel festlegen und in protocol.md eintragen.
+- [x] Tests: Trigger feuern bei allen Operationen, auch bei Kaskaden-Löschungen über
       Fremdschlüssel. Feuern **nicht** bei `applying = '1'` und nicht bei `enabled != '1'`.
 
 ## 0.5 Protokoll verbindlich machen
 
-- [ ] protocol.md prüfen, Lücken schließen, Status auf „verbindlich“.
-- [ ] `server/testdata/vectors.json` mit Testvektoren: Wiederherstellungsschlüssel
+- [x] protocol.md prüfen, Lücken schließen, Status auf „verbindlich“.
+- [x] `server/testdata/vectors.json` mit Testvektoren: Wiederherstellungsschlüssel
       (Bytes ↔ Text, Prüfzeichen, Eingabe-Normalisierung), HKDF-Ableitungen, Wrap mit festem
       Nonce, Record-ID, Record-Verschlüsselung mit festem Nonce, Blob-ID, Prüfcode der
       Kopplung. Erzeugt per Skript `server/testdata/gen-vectors.mjs` (Node WebCrypto), Skript
@@ -71,31 +71,31 @@ alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `Le
 
 ## 0.6 Fassade für den Client
 
-- [ ] `src/sync/index.ts` mit den öffentlichen Funktionen und Typen, die die UI braucht
+- [x] `src/sync/index.ts` mit den öffentlichen Funktionen und Typen, die die UI braucht
       (z. B. `getSyncStatus`, `subscribeSyncStatus`, `startPasskeySignup`, `loginWithPasskey`,
       `startOidcLogin(provider)`, `unlockWithRecoveryKey`, `unlockWithPasskey`,
       `startDeviceLink`, `confirmDeviceLink`, `createRecoveryKey`, `listDevices`,
       `revokeDevice`, `enableSync`, `disableSync`, `logout`, `deleteAccount`).
       JSDoc an jeder Funktion. Implementierung vorerst als Stub mit `throw new Error("not implemented")`
       bzw. festen Beispielwerten hinter einem Schalter, damit Stream C die Oberfläche bauen kann.
-- [ ] Hook `src/hooks/useSyncStatus.ts` auf Basis der Fassade.
+- [x] Hook `src/hooks/useSyncStatus.ts` auf Basis der Fassade.
 
 ## 0.7 Server-Gerüst und CI
 
-- [ ] `server/go.mod` (Modul `github.com/Rakhoo/tablegrade/server`, aktuelle Go-Version),
+- [x] `server/go.mod` (Modul `github.com/Rakhoo/tablegrade/server`, aktuelle Go-Version),
       `cmd/notenfeder-server/main.go`: Konfiguration aus Umgebungsvariablen
       (`LISTEN_ADDR`, `DATA_DIR`, `APP_ORIGINS`, `RP_ID`, OIDC-Werte), `GET /api/v1/health`,
       sauberes Beenden.
-- [ ] Paketgerüst `internal/config`, `internal/store`, `internal/auth`, `internal/api`,
+- [x] Paketgerüst `internal/config`, `internal/store`, `internal/auth`, `internal/api`,
       `internal/hub`, `internal/blob` mit kurzen Paket-Kommentaren.
-- [ ] Ein Go-Test, der die Testvektoren aus `server/testdata/vectors.json` liest (erst nur
+- [x] Ein Go-Test, der die Testvektoren aus `server/testdata/vectors.json` liest (erst nur
       Laden und Format prüfen; Stream A nutzt sie für die Server-seitigen Teile).
-- [ ] `.github/workflows/ci.yml`: bei Push und PR auf `sync/**` und `main`: Frontend
+- [x] `.github/workflows/ci.yml`: bei Push und PR auf `sync/**` und `main`: Frontend
       (`tsc`, `lint`, `test`, `build`) und Server (`go vet`, `go test`). Der bestehende
       `deploy.yml` bleibt unverändert.
-- [ ] `server/README.md` als Gerüst (Zweck, lokale Entwicklung, Konfiguration).
+- [x] `server/README.md` als Gerüst (Zweck, lokale Entwicklung, Konfiguration).
 
 ## 0.8 Abschluss
 
-- [ ] **Merge-Punkt:** PR `sync/foundation` → `sync/integration`, grün, selbst mergen.
-- [ ] In progress.md: „Stream 0 fertig“. Damit starten A, B und C.
+- [x] **Merge-Punkt:** PR `sync/foundation` → `sync/integration`, grün, selbst mergen.
+- [x] In progress.md: „Stream 0 fertig“. Damit starten A, B und C.

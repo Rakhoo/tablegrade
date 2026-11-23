@@ -4,19 +4,19 @@ import { db } from "../client";
 import { reportGrades, reports } from "../schema";
 
 /** Returns the partial and half year grades of a class. */
-export const getReports = (classId: number) =>
+export const getReports = (classId: string) =>
   db.select().from(reports).where(eq(reports.classId, classId));
 
 /** Returns the grades set by hand in the reports of a class. */
-export const getReportGrades = (classId: number) =>
+export const getReportGrades = (classId: string) =>
   db.select().from(reportGrades).where(eq(reportGrades.classId, classId));
 
 /** Adds a report to a lesson date. */
-export const addReport = (classId: number, report: Report) =>
+export const addReport = (classId: string, report: Report) =>
   db.insert(reports).values({ classId, ...report });
 
 /** Removes a report with its grades set by hand. */
-export const removeReport = (classId: number, { date, kind }: Report) =>
+export const removeReport = (classId: string, { date, kind }: Report) =>
   db
     .delete(reports)
     .where(
@@ -29,9 +29,9 @@ export const removeReport = (classId: number, { date, kind }: Report) =>
 
 /** Sets a student's grade in a report by hand; `null` returns to the calculated one. */
 export async function setReportGrade(
-  classId: number,
+  classId: string,
   { date, kind }: Report,
-  studentId: number,
+  studentId: string,
   grade: number | null,
 ) {
   const key = { classId, date, kind, studentId };

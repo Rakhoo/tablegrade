@@ -29,14 +29,14 @@ export const paths = {
     } = {},
   ) => withQuery("/classes/new", preset),
   /** The seating plan of a lesson. */
-  seating: (id: number, date?: string | null) =>
+  seating: (id: string, date?: string | null) =>
     withQuery(`/classes/${id}`, { date }),
   /** The overview table of a class, highlighting the lesson it was opened from. */
-  table: (id: number, date?: string | null) =>
+  table: (id: string, date?: string | null) =>
     withQuery(`/classes/${id}/table`, { date }),
-  edit: (id: number, date?: string | null) =>
+  edit: (id: string, date?: string | null) =>
     withQuery(`/classes/${id}/edit`, { date }),
-  names: (id: number, date?: string | null) =>
+  names: (id: string, date?: string | null) =>
     withQuery(`/classes/${id}/names`, { date }),
   settings: () => "/settings",
   notFound: () => "/404",

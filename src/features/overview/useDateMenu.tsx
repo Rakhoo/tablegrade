@@ -13,7 +13,7 @@ import type { OverviewLoaderData } from "./overviewLoader";
 import { LessonTypeMenu } from "./LessonTypeMenu";
 
 type DateMenuOptions = {
-  classId: number;
+  classId: string;
   entries: GradeEntry[];
   reports: Report[];
   reportGrades: OverviewLoaderData["reportGrades"];
