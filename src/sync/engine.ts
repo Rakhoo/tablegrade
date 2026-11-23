@@ -11,6 +11,7 @@ import { applyPending, pullChanges } from "./pull";
 import { pushChanges } from "./push";
 import { classifyError, sessionStatus } from "./session";
 import { openSocket, type SocketLike, type SocketMessage } from "./socket";
+import type { SqlRunner } from "./syncDb";
 import { writeSyncState } from "./syncState";
 import { isSyncedKey, recordChange, SYNCED_TABLES } from "./tables";
 import type { SyncStatus } from "./types";
@@ -27,8 +28,8 @@ export type SyncRun = {
 };
 
 /** Number of entries in the outbox. */
-async function countOutbox(ctx: SyncContext): Promise<number> {
-  const [{ count }] = await ctx.db.all<{ count: number }>(
+export async function countOutbox(db: SqlRunner): Promise<number> {
+  const [{ count }] = await db.all<{ count: number }>(
     "SELECT COUNT(*) AS count FROM _outbox",
   );
   return count;
@@ -76,7 +77,7 @@ export async function runSync(
   onProgress?: ProgressHandler,
 ): Promise<SyncRun> {
   const pendingApplied = await applyPending(ctx);
-  const total = await countOutbox(ctx);
+  const total = await countOutbox(ctx.db);
   await pushChanges(ctx, (sent) => onProgress?.(Math.min(sent, total), total));
   let outcome;
   try {
@@ -139,7 +140,7 @@ export function createSyncEngine(options: EngineOptions) {
         options.onStatus({
           phase: run.deferred ? "upgradeRequired" : "idle",
           lastSyncAt: Date.now(),
-          pending: await countOutbox(ctx),
+          pending: await countOutbox(ctx.db),
           progress: null,
         });
         if (run.applied) options.onApplied();

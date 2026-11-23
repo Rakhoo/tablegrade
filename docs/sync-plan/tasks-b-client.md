@@ -99,5 +99,5 @@ Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream 
 - [x] Kopplung auf beiden Seiten laut protocol.md 6, mit Prüfcode-Bestätigung.
 - [x] Konto löschen: Server-Aufruf, dann lokale Sync-Daten und Schlüssel entfernen, die
       lokale App-DB bleibt (Nutzerin entscheidet in der UI).
-- [ ] Fassade vollständig umgesetzt (inklusive B7), Stubs entfernt.
-- [ ] **Merge-Punkt**, „Stream B fertig“ in progress.md.
+- [x] Fassade vollständig umgesetzt (inklusive B7), Stubs entfernt.
+- [x] **Merge-Punkt**, „Stream B fertig“ in progress.md.

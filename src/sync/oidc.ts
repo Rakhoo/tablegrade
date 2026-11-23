@@ -87,14 +87,15 @@ export function parseOidcCallback(href: string): OidcCallback | null {
 
 /**
  * Finishes the login after the redirect: checks `state`, sends the code to the server and
- * removes the pending state. Returns the session and where to go back to.
+ * removes the pending state. Returns the session (none after linking an identity) and where to
+ * go back to.
  * @throws {Error} With a German message if the login failed or was cancelled.
  */
 export async function finishOidcLogin(
   api: Api,
   callback: OidcCallback,
   storage: Storage,
-): Promise<{ grant: SessionGrant; returnTo: string }> {
+): Promise<{ grant: SessionGrant | undefined; returnTo: string }> {
   const stored = storage.getItem(PENDING_KEY);
   storage.removeItem(PENDING_KEY);
   const pending = stored ? (JSON.parse(stored) as PendingLogin) : null;

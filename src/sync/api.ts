@@ -244,7 +244,11 @@ export function createApi({ baseUrl, getToken, fetch: doFetch }: ApiOptions) {
         redirectUri: string;
         deviceName: string;
       },
-    ) => call<SessionGrant>(`/auth/oidc/${provider}/exchange`, { body }),
+    ) =>
+      // With a session the server links the identity and answers 204 without a body
+      call<SessionGrant | undefined>(`/auth/oidc/${provider}/exchange`, {
+        body,
+      }),
     session: () => call<SessionInfo>("/auth/session"),
     logout: () => call<void>("/auth/logout", { method: "POST" }),
     listDevices: () =>

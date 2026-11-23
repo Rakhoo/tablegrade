@@ -1,3 +1,4 @@
+import { memoryStorage } from "../test/memoryStorage";
 import { describe, expect, it } from "vitest";
 import { randomBytes } from "../crypto/primitives";
 import { RecoveryKeyError } from "../crypto/recoveryKey";
@@ -42,16 +43,6 @@ function fakeApi() {
     }),
   } as unknown as Api;
   return { api, keys, loggedOut: () => loggedOut };
-}
-
-/** Storage over a map, like `localStorage`. */
-function memoryStorage(): Storage {
-  const values = new Map<string, string>();
-  return {
-    getItem: (key) => values.get(key) ?? null,
-    setItem: (key, value) => void values.set(key, value),
-    removeItem: (key) => void values.delete(key),
-  } as Storage;
 }
 
 /** Sign-in answer for user `u`. */
