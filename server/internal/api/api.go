@@ -1,48 +1,101 @@
 // Package api wires the HTTP routes under /api/v1 and applies the rules every response follows:
-// CORS for the app origins, the protocol version header and the JSON error format
-// (protocol.md 1).
+// CORS for the app origins, the protocol version header, size and rate limits and the JSON
+// error format (protocol.md 1 and 8).
 package api
 
 import (
-	"encoding/json"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/go-webauthn/webauthn/webauthn"
+
+	"github.com/Rakhoo/tablegrade/server/internal/auth"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
+	"github.com/Rakhoo/tablegrade/server/internal/ratelimit"
+	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
 // ProtocolVersion is the major protocol version this server speaks.
 const ProtocolVersion = 1
 
-// Error is the JSON body of every error response.
-type Error struct {
-	Code    string `json:"error"`
-	Message string `json:"message"`
+// Limits from protocol.md 8.
+const (
+	authPerMinute = 10
+	maxDevices    = 10
+)
+
+// Server holds the dependencies of all handlers.
+type Server struct {
+	cfg      config.Config
+	store    store.Store
+	sessions auth.Sessions
+	now      func() time.Time
+	// authLimit counts auth requests per client IP.
+	authLimit  *ratelimit.Limiter
+	webauthn   *webauthn.WebAuthn
+	challenges *auth.Challenges[passkeyCeremony]
 }
 
-// NewHandler returns the root handler of the server.
-func NewHandler(cfg config.Config) http.Handler {
+// Option changes the behavior of New.
+type Option func(*Server)
+
+// WithClock replaces time.Now, e.g. in tests.
+func WithClock(now func() time.Time) Option {
+	return func(s *Server) { s.now = now }
+}
+
+// New returns the server with all routes. It fails if the WebAuthn settings are invalid.
+func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
+	s := &Server{cfg: cfg, store: st, now: time.Now}
+	for _, opt := range opts {
+		opt(s)
+	}
+	wa, err := newWebAuthn(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("webauthn: %w", err)
+	}
+	s.webauthn = wa
+	s.sessions = auth.Sessions{Store: st, Now: s.now}
+	s.authLimit = ratelimit.New(authPerMinute, time.Minute, s.now)
+	s.challenges = auth.NewChallenges[passkeyCeremony](s.now)
+	if cfg.DevAuth {
+		slog.Warn("DEV_AUTH=1: POST /api/v1/auth/dev/login creates accounts without sign-in. Never use this in production.")
+	}
+	return s, nil
+}
+
+// Handler returns the root handler.
+func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", handleHealth)
-	return withProtocol(withCORS(cfg.AppOrigins, mux))
+
+	mux.Handle("POST /api/v1/auth/passkey/register/begin", s.withAuthLimit(s.handlePasskeyRegisterBegin))
+	mux.Handle("POST /api/v1/auth/passkey/register/finish", s.withAuthLimit(s.handlePasskeyRegisterFinish))
+	mux.Handle("POST /api/v1/auth/passkey/login/begin", s.withAuthLimit(s.handlePasskeyLoginBegin))
+	mux.Handle("POST /api/v1/auth/passkey/login/finish", s.withAuthLimit(s.handlePasskeyLoginFinish))
+	mux.Handle("GET /api/v1/auth/session", s.withSession(s.handleSession))
+	mux.Handle("POST /api/v1/auth/logout", s.withSession(s.handleLogout))
+	if s.cfg.DevAuth {
+		mux.Handle("POST /api/v1/auth/dev/login", s.withAuthLimit(s.handleDevLogin))
+	}
+
+	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
+	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
+	mux.Handle("PATCH /api/v1/devices/{id}", s.withSession(s.handleRenameDevice))
+
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
+		writeError(w, errNotFound)
+	})
+	return withProtocol(withCORS(s.cfg.AppOrigins, mux))
 }
 
 func handleHealth(w http.ResponseWriter, _ *http.Request) {
-	WriteJSON(w, http.StatusOK, map[string]any{"status": "ok", "protocolVersion": ProtocolVersion})
-}
-
-// WriteJSON writes v as JSON with the given status.
-func WriteJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
-}
-
-// WriteError writes an error response with a code from protocol.md 1 and a German message.
-func WriteError(w http.ResponseWriter, status int, code, message string) {
-	WriteJSON(w, status, Error{Code: code, Message: message})
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "protocolVersion": ProtocolVersion})
 }
 
 // withProtocol sets X-Protocol-Version and rejects clients with a newer major version.
@@ -52,8 +105,7 @@ func withProtocol(next http.Handler) http.Handler {
 		if v := r.Header.Get("X-Protocol-Version"); v != "" {
 			major, err := strconv.Atoi(strings.SplitN(v, ".", 2)[0])
 			if err == nil && major > ProtocolVersion {
-				WriteError(w, http.StatusUpgradeRequired, "upgrade_required",
-					"Der Server ist älter als die App. Bitte später erneut versuchen.")
+				writeError(w, errUpgradeRequired)
 				return
 			}
 		}

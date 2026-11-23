@@ -22,9 +22,14 @@ type Config struct {
 	// AppOrigins are the origins allowed by CORS and WebAuthn.
 	AppOrigins []string
 	// RPID is the WebAuthn relying party id.
-	RPID      string
-	Microsoft OIDCProvider
-	Google    OIDCProvider
+	RPID string
+	// DevAuth enables POST /auth/dev/login for tests. Never set it in production.
+	DevAuth bool
+	// TrustForwardedFor takes the client IP for rate limits from the last X-Forwarded-For
+	// entry. Set it when the server runs behind a proxy such as Tailscale Funnel.
+	TrustForwardedFor bool
+	Microsoft         OIDCProvider
+	Google            OIDCProvider
 }
 
 // Defaults for local development and the production setup.
@@ -44,9 +49,11 @@ func Load(getenv func(string) string) (Config, error) {
 		return fallback
 	}
 	cfg := Config{
-		ListenAddr: get("LISTEN_ADDR", defaultListenAddr),
-		DataDir:    get("DATA_DIR", defaultDataDir),
-		RPID:       get("RP_ID", defaultRPID),
+		ListenAddr:        get("LISTEN_ADDR", defaultListenAddr),
+		DataDir:           get("DATA_DIR", defaultDataDir),
+		RPID:              get("RP_ID", defaultRPID),
+		DevAuth:           get("DEV_AUTH", "") == "1",
+		TrustForwardedFor: get("TRUST_FORWARDED_FOR", "") == "1",
 		Microsoft: OIDCProvider{
 			ClientID:     get("OIDC_MICROSOFT_CLIENT_ID", ""),
 			ClientSecret: get("OIDC_MICROSOFT_CLIENT_SECRET", ""),
