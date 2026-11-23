@@ -13,6 +13,17 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 15:20 UTC · Stream B · sync/client
+- Erledigt: B1 Krypto in `src/crypto/` (`encoding`, `primitives`, `keys`, `recoveryKey`,
+  `records`, `link`), alle Testvektoren bestehen (`src/crypto/crypto.test.ts`).
+- Entschieden: DEK als `DataKey = { dek, idk }` aus zwei `CryptoKey`s (AES extrahierbar, HMAC
+  nicht). Grund: IndexedDB speichert `CryptoKey` direkt, die IDK wird nicht jedes Mal neu
+  abgeleitet.
+- Entschieden: Fehler beim Wiederherstellungsschlüssel als `RecoveryKeyError` mit `problem`
+  (`length`, `character`, `checksum`) und deutscher Meldung; Prüfsumme: „Tippfehler im
+  Schlüssel“.
+- Nächster Schritt: B2 Lokale Speicherung (IndexedDB).
+
 ## 2026-11-23, 14:30 UTC · Stream 0 · sync/foundation
 - Erledigt: 0.8. `sync/foundation` per `git merge --no-ff` in `sync/integration` gemergt
   (kein PR, siehe README 4), Prüfungen auf `sync/integration` grün.
