@@ -26,3 +26,37 @@ export function getSyncView({ phase, lastSyncAt }: SyncStatus): SyncView {
       return "active";
   }
 }
+
+/** How the sync badge looks: fine, working, needs attention, failed. */
+export type SyncBadgeTone = "ok" | "busy" | "warning" | "error";
+
+/** Short state of the sync for the badge next to the speed dial. */
+export type SyncBadge = {
+  /** German label, e.g. "Synchronisiert". */
+  label: string;
+  /** Color of the badge. */
+  tone: SyncBadgeTone;
+};
+
+/** Badges of the views that are not an active sync. */
+const VIEW_BADGES: Record<Exclude<SyncView, "off" | "active">, SyncBadge> = {
+  setup: { label: "Einrichtung offen", tone: "warning" },
+  missingKey: { label: "Schlüssel fehlt", tone: "warning" },
+  expired: { label: "Abgemeldet", tone: "warning" },
+};
+
+/** Badges of the phases of an active sync. */
+const PHASE_BADGES: Partial<Record<SyncStatus["phase"], SyncBadge>> = {
+  idle: { label: "Synchronisiert", tone: "ok" },
+  syncing: { label: "Synchronisiert …", tone: "busy" },
+  offline: { label: "Offline", tone: "warning" },
+  error: { label: "Sync-Fehler", tone: "error" },
+};
+
+/** The badge for the sync status; `null` while sync is off, so nothing shows. */
+export function getSyncBadge(status: SyncStatus): SyncBadge | null {
+  const view = getSyncView(status);
+  if (view == "off") return null;
+  if (view != "active") return VIEW_BADGES[view];
+  return PHASE_BADGES[status.phase] ?? null;
+}

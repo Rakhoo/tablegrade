@@ -446,6 +446,10 @@ the tab used last:
   after a confirmation. Below: a new recovery key (same steps, the old one stops working),
   "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
   also delete the school data on this device).
+  While sync is on, a badge next to the speed dial (`components/SyncBadge.tsx`, state from
+  `getSyncBadge` in `lib/syncView.ts`) shows the state and opens this tab
+  (`paths.settings("sync")`); an expired sign-in also shows a closable notice on every other
+  page (`components/SyncSignInBanner.tsx`). There is no lock screen.
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

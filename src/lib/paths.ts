@@ -38,6 +38,7 @@ export const paths = {
     withQuery(`/classes/${id}/edit`, { date }),
   names: (id: string, date?: string | null) =>
     withQuery(`/classes/${id}/names`, { date }),
-  settings: () => "/settings",
+  /** The settings, optionally on a tab (`?tab=`, e.g. `sync`). */
+  settings: (tab?: string | null) => withQuery("/settings", { tab }),
   notFound: () => "/404",
 };

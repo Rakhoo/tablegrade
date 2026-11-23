@@ -51,9 +51,9 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 
 ## C5 Status in der App
 
-- [ ] Kleiner Sync-Status für alle Seiten (z. B. im `PageHeader` oder neben dem Speed Dial):
+- [x] Kleiner Sync-Status für alle Seiten (z. B. im `PageHeader` oder neben dem Speed Dial):
       synchronisiert, läuft, offline, Fehler. Mit `data-help`.
-- [ ] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
+- [x] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
       anmelden, um zu synchronisieren“ mit Knopf. Kein Sperrbildschirm.
 - [ ] Hinweis bei „Update nötig“.
 - [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B).

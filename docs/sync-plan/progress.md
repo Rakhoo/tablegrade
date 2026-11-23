@@ -175,3 +175,14 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Offen: C4 „Anmeldewege“ (Liste, Passkey/Microsoft/Google verknüpfen) fehlt in der Fassade
   (nur `AccountInfo.identities`, kein Verknüpfen; siehe blockers.md Punkt 1 für Passkey).
 - Nächster Schritt: C4 Anmeldewege (Liste ist möglich, Verknüpfen blockiert), dann C5.
+- Erledigt: C5 Status: `SyncBadge` in der Leiste des Speed Dials (Punkt grün/violett
+  pulsierend/gelb/rot, Text im Querformat, Link auf `paths.settings("sync")`), Logik
+  `getSyncBadge` in `lib/syncView.ts` mit Test. `paths.settings` nimmt jetzt einen Tab.
+  Hinweis bei „gesperrt“: `SyncSignInBanner` (Snackbar unten, „Anmelden“, „Später“), nicht
+  in den Einstellungen.
+- Entschieden: Status neben dem Speed Dial statt im `PageHeader`, weil nur zwei Seiten den
+  Header haben, der Speed Dial aber auf allen Hauptseiten ist.
+- Offen: Nach bewusstem „Abmelden“ zeigt der Hinweis auch „Anmeldung abgelaufen“ (Fassade
+  unterscheidet das nicht). „Später“ blendet ihn bis zum nächsten Start aus.
+- Nicht geprüft: Platz der Leiste im Hochformat auf dem iPad (keine Browser-Tests).
+- Nächster Schritt: C5 „Update nötig“ und Sicherungs-Import (beide blockiert), sonst C6.
