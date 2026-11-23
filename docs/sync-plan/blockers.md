@@ -73,7 +73,7 @@ Vorschlag der Session: Stream B ergänzt `linkOidcIdentity(provider)` (Redirect 
 `startOidcLogin`, Rückkehr verknüpft statt anmeldet) und `addPasskey()` (siehe oben).
 Antwort Mario: 5a: Stream B ergänzt `linkOidcIdentity(provider)`. Aufgaben: B7, C7.
 
-## 2026-11-23 · Stream C · offen
+## 2026-11-23 · Stream C · beantwortet
 Frage: C5 „Hinweis beim Import einer Sicherung mit aktivem Sync“. B2 legt dafür
 `importNotice` im Gerätespeicher ab (`src/sync/importGuard.ts`). Die Fassade
 (`src/sync/index.ts`) gibt ihn nicht heraus. Stream C darf nur die Fassade nutzen.
@@ -82,4 +82,5 @@ Vorschlag der Session: Stream B ergänzt `SyncStatus.importNotice: boolean` (ode
 `SyncNoticeBanner` und in der Karte „Konto & Sync“: „Sicherung eingespielt. Synchronisierung ist
 aus. Zum Fortsetzen neu einschalten.“ mit Knopf „Verstanden“. Kein Vorbau in `demo.ts`, weil
 Stream B die Fassade in B6 gerade umbaut (Konfliktgefahr).
-Antwort Mario: …
+Antwort Mario: a: Stream B ergänzt `SyncStatus.importNotice` und `dismissImportNotice()`,
+Stream C zeigt den Hinweis wie vorgeschlagen. Aufgaben: B8, C8.

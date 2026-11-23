@@ -94,6 +94,14 @@ Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream 
       `startOidcLogin`; die Rückkehr verknüpft die Identität mit dem angemeldeten Konto.
 - [x] **Merge-Punkt.**
 
+## B8 Import-Hinweis für Stream C (Antwort Mario, blockers.md, 2026-11-23)
+
+- [ ] `SyncStatus.importNotice: boolean`: `true`, solange `importNotice` im Gerätespeicher
+      steht (gesetzt von `checkImportedDatabase` bei `disabled`). Auch im Demo-Modus.
+- [ ] `dismissImportNotice(): Promise<void>`: löscht `importNotice`, setzt den Status neu.
+- [ ] Test in `importGuard.test.ts` oder eigenem Test.
+- [ ] **Merge-Punkt.**
+
 ## B6 Kopplung und Konto (Logik)
 
 - [x] Kopplung auf beiden Seiten laut protocol.md 6, mit Prüfcode-Bestätigung.

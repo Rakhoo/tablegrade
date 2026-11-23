@@ -56,8 +56,8 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 - [x] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
       anmelden, um zu synchronisieren“ mit Knopf. Kein Sperrbildschirm.
 - [x] Hinweis bei „Update nötig“.
-- [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B). Blockiert:
-      Fassade gibt `importNotice` nicht heraus (blockers.md).
+- [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B). Umsetzung
+      in C8.
 
 ## C7 Nachträge aus blockers.md (Antworten vom 2026-11-23)
 
@@ -79,6 +79,15 @@ Braucht die Fassaden-Ergänzungen aus B7. Fehlen sie noch in `sync/integration`:
       verknüpfen“ (`linkOidcIdentity(provider)`).
 - [x] Danach die Vermerke „siehe blockers.md“ in C1 bis C5 entfernen, die offenen Punkte dort
       abhaken und die Einträge in blockers.md auf „erledigt“ setzen.
+
+## C8 Import-Hinweis (Antwort vom 2026-11-23)
+
+Braucht B8 in `sync/integration`. Fehlt B8 noch: nächste freie Aufgabe nehmen (kein Vorbau).
+
+- [ ] Bei `status.importNotice` Hinweis im `SyncNoticeBanner` und in der Karte „Konto & Sync“:
+      „Sicherung eingespielt. Synchronisierung ist aus. Zum Fortsetzen neu einschalten.“
+      Knopf „Verstanden“ ruft `dismissImportNotice()`. Mit `data-help`.
+- [ ] Danach C5 abhaken, Eintrag in blockers.md auf „erledigt“.
 
 ## C6 Abschluss
 
