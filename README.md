@@ -264,6 +264,8 @@ src/
 │   └── queries/                    data access per entity
 ├── services/                       side effects: holiday API, backups, PWA, WebUntis PDF,
 │                                   overview export
+├── sync/                           facade of account and sync (docs/sync-plan); sample
+│                                   values with `VITE_SYNC_DEMO=true` until the engine exists
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
 ├── test/                           test helpers (in-memory `node:sqlite` with all migrations)
@@ -271,6 +273,7 @@ src/
                                     rules, seating, grades and grading tools, reports,
                                     warnings, colors, formatters, paths, page memory
 public/                             _headers and icons
+server/                             sync server (Go), see server/README.md
 pwa-assets.config.ts                generator config for the PNG home screen icon
 ```
 

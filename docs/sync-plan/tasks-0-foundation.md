@@ -62,8 +62,8 @@ alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `Le
 
 ## 0.5 Protokoll verbindlich machen
 
-- [ ] protocol.md prüfen, Lücken schließen, Status auf „verbindlich“.
-- [ ] `server/testdata/vectors.json` mit Testvektoren: Wiederherstellungsschlüssel
+- [x] protocol.md prüfen, Lücken schließen, Status auf „verbindlich“.
+- [x] `server/testdata/vectors.json` mit Testvektoren: Wiederherstellungsschlüssel
       (Bytes ↔ Text, Prüfzeichen, Eingabe-Normalisierung), HKDF-Ableitungen, Wrap mit festem
       Nonce, Record-ID, Record-Verschlüsselung mit festem Nonce, Blob-ID, Prüfcode der
       Kopplung. Erzeugt per Skript `server/testdata/gen-vectors.mjs` (Node WebCrypto), Skript
@@ -71,29 +71,29 @@ alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `Le
 
 ## 0.6 Fassade für den Client
 
-- [ ] `src/sync/index.ts` mit den öffentlichen Funktionen und Typen, die die UI braucht
+- [x] `src/sync/index.ts` mit den öffentlichen Funktionen und Typen, die die UI braucht
       (z. B. `getSyncStatus`, `subscribeSyncStatus`, `startPasskeySignup`, `loginWithPasskey`,
       `startOidcLogin(provider)`, `unlockWithRecoveryKey`, `unlockWithPasskey`,
       `startDeviceLink`, `confirmDeviceLink`, `createRecoveryKey`, `listDevices`,
       `revokeDevice`, `enableSync`, `disableSync`, `logout`, `deleteAccount`).
       JSDoc an jeder Funktion. Implementierung vorerst als Stub mit `throw new Error("not implemented")`
       bzw. festen Beispielwerten hinter einem Schalter, damit Stream C die Oberfläche bauen kann.
-- [ ] Hook `src/hooks/useSyncStatus.ts` auf Basis der Fassade.
+- [x] Hook `src/hooks/useSyncStatus.ts` auf Basis der Fassade.
 
 ## 0.7 Server-Gerüst und CI
 
-- [ ] `server/go.mod` (Modul `github.com/Rakhoo/tablegrade/server`, aktuelle Go-Version),
+- [x] `server/go.mod` (Modul `github.com/Rakhoo/tablegrade/server`, aktuelle Go-Version),
       `cmd/notenfeder-server/main.go`: Konfiguration aus Umgebungsvariablen
       (`LISTEN_ADDR`, `DATA_DIR`, `APP_ORIGINS`, `RP_ID`, OIDC-Werte), `GET /api/v1/health`,
       sauberes Beenden.
-- [ ] Paketgerüst `internal/config`, `internal/store`, `internal/auth`, `internal/api`,
+- [x] Paketgerüst `internal/config`, `internal/store`, `internal/auth`, `internal/api`,
       `internal/hub`, `internal/blob` mit kurzen Paket-Kommentaren.
-- [ ] Ein Go-Test, der die Testvektoren aus `server/testdata/vectors.json` liest (erst nur
+- [x] Ein Go-Test, der die Testvektoren aus `server/testdata/vectors.json` liest (erst nur
       Laden und Format prüfen; Stream A nutzt sie für die Server-seitigen Teile).
-- [ ] `.github/workflows/ci.yml`: bei Push und PR auf `sync/**` und `main`: Frontend
+- [x] `.github/workflows/ci.yml`: bei Push und PR auf `sync/**` und `main`: Frontend
       (`tsc`, `lint`, `test`, `build`) und Server (`go vet`, `go test`). Der bestehende
       `deploy.yml` bleibt unverändert.
-- [ ] `server/README.md` als Gerüst (Zweck, lokale Entwicklung, Konfiguration).
+- [x] `server/README.md` als Gerüst (Zweck, lokale Entwicklung, Konfiguration).
 
 ## 0.8 Abschluss
 

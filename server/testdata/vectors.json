@@ -1,0 +1,195 @@
+{
+  "version": 1,
+  "_format": "Raw bytes as lowercase hex (*Hex). Wire values (ids, wrapped, ciphertext, public keys) as base64url without padding. See docs/sync-plan/protocol.md.",
+  "keys": {
+    "dekHex": "26cd2a19799d5e9f82f0d86b349710422d95175813f28cfea9d2d6498487394e",
+    "idkInfo": "notenfeder/record-id/v1",
+    "idkHex": "7f2930cb4bd8556b4277dc0185f0f88147875be4a869192ad92a500865b7e3c7",
+    "prfSaltHex": "09d59f3cde43d18acc2f69b350f1624973c635cace9ce97e5f293b01a6064472",
+    "prfOutputHex": "51da300ea566b59f14d573de62737329bc5186cbe7b23c7ee31a71cbb0a6a6f6",
+    "passkeyKekHex": "4aafc46afb538fcee31c4841e4473b6bea765eb48037b41046301fa59b0bc924"
+  },
+  "recoveryKey": {
+    "cases": [
+      {
+        "bytesHex": "553e70fb93c8614ffa5ec6c7f8c6a42cb710d9fe",
+        "text": "AMZ7-1YWK-S1GM-ZYJY-RV3Z-HHN4-5JVH-1PFY-AS31",
+        "kekHex": "32737425ea619c76f3750c27e0c3de401d4e6b3419fffe8a6a163c0a8ff1ea04"
+      },
+      {
+        "bytesHex": "db25e817c1d1eff31fbbf76cd96407d914462108",
+        "text": "VCJY-G5Y1-T7QZ-67XV-YXPD-JS07-V4A4-C888-XXAT",
+        "kekHex": "2f2b393170a21cd20e0ec503ca6270efe76b5736e2a92fbfe2dab26a46215798"
+      },
+      {
+        "bytesHex": "b83b072d84b5fc94068c07d256d3ca72c38a9df3",
+        "text": "Q0XG-EBC4-PQY9-81MC-0Z95-DMYA-EB1R-N7FK-B82A",
+        "kekHex": "85629238356ea79c79a0f1de6e8b7b110bf38ebe0f6014e0cfacd534d95bae95"
+      },
+      {
+        "bytesHex": "0000000000000000000000000000000000000000",
+        "text": "0000-0000-0000-0000-0000-0000-0000-0000-DY7T",
+        "kekHex": "5b1d7d35c97712f416329057cf681cb2f8ff7cbb9b1323b09037c7ed711c0903"
+      }
+    ],
+    "normalization": [
+      {
+        "input": "AMZ7-1YWK-S1GM-ZYJY-RV3Z-HHN4-5JVH-1PFY-AS31",
+        "normalized": "AMZ71YWKS1GMZYJYRV3ZHHN45JVH1PFYAS31"
+      },
+      {
+        "input": "amz71ywks1gmzyjyrv3zhhn45jvh1pfyas31",
+        "normalized": "AMZ71YWKS1GMZYJYRV3ZHHN45JVH1PFYAS31"
+      },
+      {
+        "input": " AMZ71Y WKS1GM ZYJYRV 3ZHHN4 5JVH1P FYAS31 ",
+        "normalized": "AMZ71YWKS1GMZYJYRV3ZHHN45JVH1PFYAS31"
+      },
+      {
+        "input": "VCJYG5YIT7QZ67XVYXPDJSo7V4A4C888XXAT",
+        "normalized": "VCJYG5Y1T7QZ67XVYXPDJS07V4A4C888XXAT"
+      },
+      {
+        "input": "AMZ7lYWKSlGMZYJYRV3ZHHN45JVHlPFYAS3l",
+        "normalized": "AMZ71YWKS1GMZYJYRV3ZHHN45JVH1PFYAS31"
+      }
+    ],
+    "invalid": [
+      {
+        "input": "AMZ71AWKS1GMZYJYRV3ZHHN45JVH1PFYAS31",
+        "reason": "checksum"
+      },
+      {
+        "input": "AMZ71YWKS1GMZYJYRV3ZHHN45JVH1PFYAS3",
+        "reason": "length"
+      },
+      {
+        "input": "AMZU1YWKS1GMZYJYRV3ZHHN45JVH1PFYAS31",
+        "reason": "character"
+      },
+      {
+        "input": "AMZ71YW*S1GMZYJYRV3ZHHN45JVH1PFYAS31",
+        "reason": "character"
+      }
+    ]
+  },
+  "wraps": [
+    {
+      "kind": "passkey",
+      "userId": "3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+      "kekHex": "4aafc46afb538fcee31c4841e4473b6bea765eb48037b41046301fa59b0bc924",
+      "dekHex": "26cd2a19799d5e9f82f0d86b349710422d95175813f28cfea9d2d6498487394e",
+      "nonceHex": "36dcea6e3aabb8b3df7e09b7",
+      "aad": "notenfeder/wrap/v1/passkey/3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+      "wrapped": "NtzqbjqruLPffgm3h9Hx8OfM7eAEVPG9sYYiLAJQB-GF5PyeUKDUh0F4wcZRL17UjDDVh9pZo629YVxW"
+    },
+    {
+      "kind": "recovery",
+      "userId": "3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+      "kekHex": "32737425ea619c76f3750c27e0c3de401d4e6b3419fffe8a6a163c0a8ff1ea04",
+      "dekHex": "26cd2a19799d5e9f82f0d86b349710422d95175813f28cfea9d2d6498487394e",
+      "nonceHex": "e69ad8e7aacc4b21a0e544d6",
+      "aad": "notenfeder/wrap/v1/recovery/3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+      "wrapped": "5prY56rMSyGg5UTW9dE5C_e0cki_nM21bN_xahh4g-fbb0FnAMWbGvNi7vc8g1ckdinqQTFgxJHSEDDK"
+    }
+  ],
+  "recordIds": [
+    {
+      "table": "Classes",
+      "key": [
+        "8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b"
+      ],
+      "input": "Classes|8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
+      "id": "d02jwQC4mZ3yyog4b631uQ"
+    },
+    {
+      "table": "Classes2Students",
+      "key": [
+        "8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
+        "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+      ],
+      "input": "Classes2Students|8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b|0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+      "id": "-vTbt83VfXHPOcu_XRPHdg"
+    },
+    {
+      "table": "ReportGrades",
+      "key": [
+        "8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
+        "2026-01-30",
+        "half",
+        "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
+      ],
+      "input": "ReportGrades|8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b|2026-01-30|half|0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+      "id": "x_Zrh1Co-1XXzhUwL_xU7g"
+    },
+    {
+      "table": "SchoolYears",
+      "key": [
+        2026
+      ],
+      "input": "SchoolYears|2026",
+      "id": "_36Odx71Zow9Fuf_OQCmIA"
+    },
+    {
+      "table": "Settings",
+      "key": [
+        "seatLayout"
+      ],
+      "input": "Settings|seatLayout",
+      "id": "ILenPU_6iI4weXgzqJ6LCQ"
+    },
+    {
+      "table": "CancelledDays",
+      "key": [
+        "2026-12-24"
+      ],
+      "input": "CancelledDays|2026-12-24",
+      "id": "sxrxgTCJXSLsAxskTwZdzg"
+    }
+  ],
+  "records": [
+    {
+      "userId": "3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+      "id": "d02jwQC4mZ3yyog4b631uQ",
+      "nonceHex": "5aa53d07309946e7846468aa",
+      "aad": "notenfeder/record/v1/3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60/d02jwQC4mZ3yyog4b631uQ",
+      "plaintext": "{\"t\":\"Classes\",\"k\":[\"8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b\"],\"v\":23,\"row\":{\"id\":\"8c1f2a34-5b6d-4e7f-8a9b-0c1d2e3f4a5b\",\"name\":\"10b Mathe\",\"year\":2026}}",
+      "deleted": false,
+      "ciphertext": "WqU9BzCZRueEZGiqW6KcPX1uQU4xBxlYcchZMr7P1Rrk6acaJU6np0g1qsBX-WMU-ZZQ8vsDFU5ns9seCle2tCiYxIar_P1W_HLgtEkSq-ThnKJxMwRwNo1Kt4GH38QX2RNQrnxy5rswedN-pfmm-8Prnq0dQIoQfEXjbe64MZjiW9llDfdiCKJMJHfVNStLNlmYMOnzv93Y7z6imBHfcF-xxP6SwQtY1BC-Nn4a3ej2eQ"
+    },
+    {
+      "userId": "3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+      "id": "_36Odx71Zow9Fuf_OQCmIA",
+      "nonceHex": "25f53b35438c7b2917ed4ad8",
+      "aad": "notenfeder/record/v1/3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60/_36Odx71Zow9Fuf_OQCmIA",
+      "plaintext": "{\"t\":\"SchoolYears\",\"k\":[2026],\"v\":23,\"row\":null}",
+      "deleted": true,
+      "ciphertext": "JfU7NUOMeykX7UrYiquJbnUbgAbHCABSdKWTGaen-T6NZRTCx8xs-e31DoNVUWv8oFJR51LpiXEuxrsQpFkFoaxCOuf-e4yDbquL1Q"
+    }
+  ],
+  "blob": {
+    "userId": "3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+    "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg",
+    "sha256Hex": "0237445770c465ddfb774a71fb34631e6dc0d6947886fb319c8516f430ae4b31",
+    "blobId": "AUwKdO4r35T6JTZl2QEe9A",
+    "nonceHex": "eebc3c1b61ceab9e1394dd6d",
+    "aad": "notenfeder/blob/v1/3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60/AUwKdO4r35T6JTZl2QEe9A",
+    "ciphertext": "7rw8G2HOq54TlN1tVIO1_n3EhdI6qYAwfrDExK_B_BNhsjv7DZ0MyMvbQpHzgQiD2XmUOmhBff6XnXBuP0y3S5ktVkYmMIupBz72is8sIMgxCNL6f4sebH8xN6z-x2gJQXbRDfZlsEnDIMMxYk9SMeoYJhbN6MGqfyZWCvCKWHIdPCOqJGqdJyIqk8nRnf9f"
+  },
+  "link": {
+    "userId": "3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+    "newPrivateHex": "60e9394282bdd56a8c9de6657f94d4f3c28642a9f9cd213f0a5299aacde7e2c5",
+    "newPublic": "BFpb78M3JjCuINwRpOMZXfuZ-DD4grGzLSqZ6TEQvpABKqwoqLwsFVPrrzwIpPWJfbVu04oYwK9_bOTdc1OXz4U",
+    "oldPrivateHex": "6ef97a555cafbd8ff8292b03996f6222aafa48bb5e4bf508f13165c7f92f4be6",
+    "oldPublic": "BKx2maf1agUsNz62e87i34iM53mqnNoeMJPb5f_Rmyn6YJpN_BGjp-quESb9unV3sOop5uX4pPdTa5_ADHl3WUE",
+    "sharedSecretHex": "44ac5ded2e05433faadcf35195b784046f51306e67328c906e09b52ae3159736",
+    "kekHex": "8a65b7300048b4093d7b6b01a821b37f832120a0c2b5e8c34dcda1bb3fd69389",
+    "dekHex": "26cd2a19799d5e9f82f0d86b349710422d95175813f28cfea9d2d6498487394e",
+    "nonceHex": "93838a59d488dd3c3f4b3048",
+    "aad": "notenfeder/wrap/v1/link/3f1d7c2e-8b4a-4c6e-9f0a-1b2c3d4e5f60",
+    "wrapped": "k4OKWdSI3Tw_SzBI3d0kWCjU12Fd3_pKB9Ky_apMl1mYiG4FUQYRZtWDPgEOlQg2QgVlYmj2-T3OuV2A",
+    "checkCode": "093473",
+    "linkCodeBytesHex": "4adb7317ac",
+    "linkCode": "9BDQ65XC"
+  }
+}

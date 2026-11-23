@@ -13,6 +13,27 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 14:25 UTC · Stream 0 · sync/foundation
+- Erledigt: 0.5, 0.6, 0.7. protocol.md verbindlich, `server/testdata/vectors.json` mit
+  Generator `gen-vectors.mjs` (zusätzlich mit Python-Stdlib gegengeprüft: Base32, Prüfzeichen,
+  HKDF, HMAC-IDs, Prüfcode). Fassade `src/sync/` mit Demo-Modus, Hook `useSyncStatus`.
+  Go-Gerüst `server/` (Config, Health, CORS, Protokoll-Header, Shutdown, Vektor-Loader),
+  `.github/workflows/ci.yml`, `server/README.md`.
+- Entschieden (Protokoll, siehe dort „Änderungen“): Wiederherstellungsschlüssel mit
+  4 Prüfzeichen statt 1 (36 Zeichen = 9 Vierergruppen; 1 Zeichen passt nicht in Vierergruppen
+  und erkennt weniger Tippfehler). Kopplungs-Abfrage als `GET /link/by-code/{code}`, weil
+  `GET /link/{code}` und `GET /link/{linkId}` im Go-Router gleich wären. Bilddaten für
+  `blobId` = UTF-8 der Data-URL (Bildtyp bleibt erhalten). Löschungen tragen auch
+  Chiffretext (`row: null`), damit das Empfänger-Gerät den Schlüssel kennt.
+- Entschieden: Demo-Schalter `VITE_SYNC_DEMO=true` (Build-Zeit). Ohne ihn werfen die
+  Fassaden-Funktionen „not implemented“, der Status bleibt `off`. Für Stream C: mit
+  `VITE_SYNC_DEMO=true npm run dev` entwickeln.
+- Entschieden: `go 1.24` in `go.mod` (in der Cloud-Umgebung installiert). Stream A darf
+  anheben, wenn eine Abhängigkeit es verlangt.
+- Entschieden: OIDC-Variablen `OIDC_MICROSOFT_CLIENT_ID/_SECRET`, `OIDC_GOOGLE_CLIENT_ID/_SECRET`.
+- Ungetestet: CI-Workflow auf GitHub (läuft erst nach dem Push).
+- Nächster Schritt: 0.8 Merge nach `sync/integration`.
+
 ## 2026-11-23, 14:05 UTC · Stream 0 · sync/foundation
 - Erledigt: 0.4 komplett. Migration 23 mit `_sync_state`, `_outbox` und Triggern für alle
   14 synchronisierten Tabellen, Tests in `src/db/outbox.test.ts` (alle Operationen,
