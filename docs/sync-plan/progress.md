@@ -238,6 +238,10 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
   (`upgradeRequired`, `hasDataKey`, `hasPrfPasskey`, `addPasskey`) sind in `types.ts`,
   `index.ts` und `demo.ts` vorgebaut. Beim nächsten Merge von `sync/integration` die Fassung
   von Stream B übernehmen.
+- Erledigt: C7 Geräte umbenennen (Stift-Knopf, `ConfirmDialog` mit Namensfeld) und
+  Anmeldewege („Passkey hinzufügen“ bei vorhandenem Entsperr-Passkey, sonst im Angebot;
+  „Microsoft/Google verknüpfen“ nur für noch nicht verknüpfte). `renameDevice` und
+  `linkOidcIdentity` ebenfalls in Fassade und Demo vorgebaut.
 - Nicht geprüft: Ansichten im Browser (keine Browser-Tests).
-- Nächster Schritt: C7 Fortschritt, `hasLocalData`/`replaceLocalData`, `renameDevice`,
-  Verknüpfen; danach C6.
+- Nächster Schritt: C7 Fortschritt und `hasLocalData`/`replaceLocalData`, dann Vermerke
+  aufräumen, danach C6.

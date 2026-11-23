@@ -74,8 +74,8 @@ Braucht die Fassaden-Ergänzungen aus B7. Fehlen sie noch in `sync/integration`:
 - [ ] Fortschritt von Erst-Upload (C2) und Erst-Download (C3) aus `SyncStatus.progress`.
 - [ ] Vor dem Erst-Download `hasLocalData()`; wenn ja, fragen (ersetzen oder abbrechen), bei
       „ersetzen“ `replaceLocalData()`.
-- [ ] Geräte umbenennen: Stift-Knopf in `SyncDevices`, ruft `renameDevice(id, name)`.
-- [ ] Anmeldewege: „Passkey hinzufügen“ (`addPasskey()`), „Microsoft verknüpfen“ und „Google
+- [x] Geräte umbenennen: Stift-Knopf in `SyncDevices`, ruft `renameDevice(id, name)`.
+- [x] Anmeldewege: „Passkey hinzufügen“ (`addPasskey()`), „Microsoft verknüpfen“ und „Google
       verknüpfen“ (`linkOidcIdentity(provider)`).
 - [ ] Danach die Vermerke „siehe blockers.md“ in C1 bis C5 entfernen, die offenen Punkte dort
       abhaken und die Einträge in blockers.md auf „erledigt“ setzen.

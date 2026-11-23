@@ -446,8 +446,9 @@ the tab used last:
   then comparing the check code) and typing the recovery key (password managers can fill it).
   Without such a passkey the active view offers "Passkey hinzufügen".
   The active view has "Gerät koppeln" to enter that code on a device that already syncs.
-  "Geräte anzeigen" lists the devices of the account (last activity) and revokes another one
-  after a confirmation. Below: a new recovery key (same steps, the old one stops working),
+  "Geräte anzeigen" lists the devices of the account (last activity), renames them (pencil)
+  and revokes another one after a confirmation. Below the linked sign-in methods the card
+  offers "Passkey hinzufügen" and links a Microsoft or Google account not linked yet. Below: a new recovery key (same steps, the old one stops working),
   "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
   also delete the school data on this device).
   While sync is on, a badge next to the speed dial (`components/SyncBadge.tsx`, state from

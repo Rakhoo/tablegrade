@@ -107,6 +107,19 @@ export async function listDevices(): Promise<Device[]> {
   return DEMO ? demo.listDevices() : notImplemented();
 }
 
+/** Renames a device of the account. */
+export async function renameDevice(id: string, name: string): Promise<void> {
+  return DEMO ? demo.renameDevice(id, name) : notImplemented();
+}
+
+/**
+ * Links Microsoft or Google as another sign-in method of the signed-in account. Navigates
+ * away like `startOidcLogin`; the return links instead of signing in.
+ */
+export async function linkOidcIdentity(provider: OidcProvider): Promise<void> {
+  return DEMO ? demo.linkOidcIdentity(provider) : notImplemented();
+}
+
 /** Revokes another device; it keeps its local data but can no longer sync. */
 export async function revokeDevice(id: string): Promise<void> {
   return DEMO ? demo.revokeDevice(id) : notImplemented();

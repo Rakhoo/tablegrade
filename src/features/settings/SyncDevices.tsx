@@ -1,8 +1,14 @@
-import { Button } from "@mui/material";
+import { Button, IconButton, TextField } from "@mui/material";
 import { format } from "date-fns";
 import { useState } from "react";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { listDevices, revokeDevice, type Device } from "../../sync";
+import { PencilIcon } from "../../components/icons";
+import {
+  listDevices,
+  renameDevice,
+  revokeDevice,
+  type Device,
+} from "../../sync";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { useSyncAction } from "./useSyncAction";
 
@@ -17,12 +23,15 @@ function describeDevice({ current, lastSeenAt, revokedAt }: Device) {
 }
 
 /**
- * Devices of the account, loaded on request so opening the settings sends no request. Other
- * devices can be revoked; they keep their data but can no longer sync.
+ * Devices of the account, loaded on request so opening the settings sends no request. Active
+ * devices can be renamed; other devices can be revoked, they keep their data but can no
+ * longer sync.
  */
 export function SyncDevices() {
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [revoking, setRevoking] = useState<Device | null>(null);
+  const [renaming, setRenaming] = useState<Device | null>(null);
+  const [name, setName] = useState("");
   const { busy, error, run } = useSyncAction();
 
   /** Loads the list of devices. */
@@ -31,13 +40,19 @@ export function SyncDevices() {
     if (loaded) setDevices(loaded);
   };
 
-  /** Revokes the device and loads the list again. */
-  const revoke = async ({ id }: Device) => {
+  /** Runs a change on the server and loads the list again. */
+  const change = async (step: () => Promise<void>) => {
     const loaded = await run(async () => {
-      await revokeDevice(id);
+      await step();
       return listDevices();
     });
     if (loaded) setDevices(loaded);
+  };
+
+  /** Opens the rename dialog with the current name. */
+  const startRename = (device: Device) => {
+    setName(device.name);
+    setRenaming(device);
   };
 
   return (
@@ -55,6 +70,18 @@ export function SyncDevices() {
               <span className={device.revokedAt != null ? "line-through" : ""}>
                 {device.name}
               </span>
+              {device.revokedAt == null && (
+                <IconButton
+                  size="small"
+                  aria-label="Umbenennen"
+                  disabled={busy}
+                  onClick={() => startRename(device)}
+                  data-help="Gibt dem Gerät einen neuen Namen, z. B. „iPad Schule“."
+                  data-help-repeat
+                >
+                  <PencilIcon size={16} />
+                </IconButton>
+              )}
               <span className="opacity-70">{describeDevice(device)}</span>
               {!device.current && device.revokedAt == null && (
                 <Button
@@ -84,12 +111,35 @@ export function SyncDevices() {
         open={revoking != null}
         title={`„${revoking?.name}“ sperren?`}
         confirmLabel="Sperren"
-        onConfirm={() => revoking && void revoke(revoking)}
+        onConfirm={() =>
+          revoking && void change(() => revokeDevice(revoking.id))
+        }
         onClose={() => setRevoking(null)}
       >
         Das Gerät kann danach nicht mehr synchronisieren. Seine Daten bleiben
         auf dem Gerät. Zum erneuten Nutzen muss es neu angemeldet und gekoppelt
         werden.
+      </ConfirmDialog>
+      <ConfirmDialog
+        open={renaming != null}
+        title="Gerät umbenennen"
+        confirmLabel="Speichern"
+        confirmColor="primary"
+        confirmDisabled={!name.trim()}
+        onConfirm={() =>
+          renaming && void change(() => renameDevice(renaming.id, name.trim()))
+        }
+        onClose={() => setRenaming(null)}
+      >
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          margin="dense"
+          label="Name des Geräts"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
       </ConfirmDialog>
     </>
   );

@@ -131,6 +131,20 @@ export const demo = {
       d.id == id ? { ...d, revokedAt: Date.now() } : d,
     );
   },
+  renameDevice: async (id: string, name: string) => {
+    await wait();
+    devices = devices.map((d) => (d.id == id ? { ...d, name } : d));
+  },
+  linkOidcIdentity: async (provider: OidcProvider) => {
+    await wait();
+    const { account } = readStatus();
+    updateAccount({
+      identities: [
+        ...(account?.identities ?? []),
+        { provider, createdAt: Date.now() },
+      ],
+    });
+  },
   syncNow: async () => {
     updateStatus({ phase: "syncing" });
     await wait();
