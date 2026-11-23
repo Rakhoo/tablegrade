@@ -8,12 +8,14 @@ import { getSyncView, type SyncView } from "../../lib/syncView";
 import { SettingsSection } from "./SettingsSection";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIntro } from "./SyncIntro";
+import { SyncSignIn } from "./SyncSignIn";
 import { useSyncAction } from "./useSyncAction";
 
 /** Short line under the card title for each view. */
 const HINTS: Record<SyncView, string> = {
   off: "Aus. Alle Daten liegen nur auf diesem Gerät.",
-  setup: "Einrichtung: Anmeldeweg wählen.",
+  setup:
+    "Einrichtung: neues Konto anlegen oder mit einem bestehenden anmelden.",
   missingKey:
     "Angemeldet. Dieses Gerät braucht noch den Schlüssel zu den Daten.",
   active: "Aktiv. Die Daten werden verschlüsselt abgeglichen.",
@@ -29,14 +31,22 @@ export function SyncSettings() {
   const view = getSyncView(status);
   const content: Record<SyncView, ReactNode> = {
     off: <SyncIntro />,
-    setup: <CancelSetup />,
+    setup: (
+      <>
+        <SyncSignIn allowSignup />
+        <CancelSetup />
+      </>
+    ),
     missingKey: null,
     active: <SyncActive status={status} />,
     expired: (
-      <Alert severity="warning">
-        Die App arbeitet auf diesem Gerät normal weiter. Neu anmelden, um wieder
-        zu synchronisieren.
-      </Alert>
+      <>
+        <Alert severity="warning">
+          Die App arbeitet auf diesem Gerät normal weiter. Neu anmelden, um
+          wieder zu synchronisieren.
+        </Alert>
+        <SyncSignIn allowSignup={false} />
+      </>
     ),
   };
   return (

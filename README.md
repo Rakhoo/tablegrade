@@ -431,7 +431,8 @@ the tab used last:
   ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
 - **Konto & Sync** (in progress, see [docs/sync-plan](docs/sync-plan/README.md)): one card
   whose content follows the sync status (`lib/syncView.ts`): off (explanation and
-  "Einrichten"), setup, missing key on a new device, active (state, last sync, "Jetzt
+  "Einrichten"), setup (device name, new account with a passkey, sign-in with a passkey,
+  Microsoft or Google), missing key on a new device, active (state, last sync, "Jetzt
   synchronisieren") and an expired sign-in (the app keeps working locally).
 
 They are stored as JSON in the `Settings` table

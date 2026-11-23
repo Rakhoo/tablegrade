@@ -19,7 +19,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 
 ## C2 Einrichtung (neues Konto)
 
-- [ ] Anmeldeweg wählen: Passkey, Microsoft, Google.
+- [x] Anmeldeweg wählen: Passkey, Microsoft, Google.
 - [ ] Wiederherstellungsschlüssel anzeigen:
       - Formular mit Benutzername „Notenfeder-Wiederherstellung“ und Feld
         `autocomplete="new-password"`, damit der Browser das Speichern anbietet.

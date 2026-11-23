@@ -110,4 +110,8 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
   ist in dieser Version noch nicht verfügbar.“
 - Offen: „Update nötig“ fehlt in der Fassade (blockers.md).
 - Nicht geprüft: Darstellung im Browser (keine Browser-Tests).
-- Nächster Schritt: C2 Anmeldeweg wählen (Passkey, Microsoft, Google) in der Ansicht „Einrichtung“.
+- Erledigt: C2 Anmeldeweg (`SyncSignIn`: Gerätename, „Neues Konto mit Passkey“, „Mit Passkey
+  anmelden“, Microsoft, Google). Bei „gesperrt“ nur Anmelden, kein neues Konto.
+- Offen: Nach `startPasskeySignup` mit `isNewUser` zeigt die Karte noch „Schlüssel fehlt“
+  (Fassade setzt `locked`). Der Ablauf Wiederherstellungsschlüssel (C2) muss das abfangen.
+- Nächster Schritt: C2 Wiederherstellungsschlüssel anzeigen.
