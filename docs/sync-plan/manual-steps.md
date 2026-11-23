@@ -72,8 +72,10 @@ Die genaue Anleitung schreibt Stream A in `server/README.md`. Überblick:
 
 **Microsoft** (portal.azure.com → App-Registrierungen):
 - Kontotyp: nur persönliche Microsoft-Konten.
-- Plattform „Web“, Redirect-URIs: `<App-Origin>/?oidc=callback` für Produktion und
-  Dev-Vorschau (`https://dev.tablegrade.pages.dev/?oidc=callback`).
+- Plattform „Web“, Redirect-URIs: `<App-Origin>/?oidc=callback` für Produktion
+  (`https://tablegrade.pages.dev/?oidc=callback`) und Dev-Vorschau
+  (`https://dev.tablegrade.pages.dev/?oidc=callback`). Der Server akzeptiert genau diese
+  Adressen (aus `APP_ORIGINS`).
 - Client-Secret anlegen. Client-ID und Secret in die `.env` auf dem Pi.
 
 **Google** (console.cloud.google.com → APIs & Dienste → Anmeldedaten):
@@ -88,9 +90,12 @@ Passkeys. Ändert sich die Domain später, sind alle Passkeys ungültig. Darum v
 
 - Commits mit `[deploy dev]` landen auf `dev.tablegrade.pages.dev`, mit `[skip deploy]`
   nirgends. Gut für Tests der Sync-Funktion, bevor deine Frau sie bekommt.
-- Variable `VITE_SYNC_URL` = Tailscale-Adresse im Build von Cloudflare Pages
-  (GitHub-Actions-Variable in `deploy.yml` übergeben; das ist ein kleiner Schritt in Stream D
-  oder von dir).
+- Repository-Variable `VITE_SYNC_URL` anlegen (GitHub → Settings → Secrets and variables →
+  Actions → Variables), Wert = Tailscale-Adresse ohne `/` am Ende, z. B.
+  `https://<pi-name>.<tailnet>.ts.net`. `deploy.yml` gibt sie an den Build weiter (Stream D).
+  Ohne Variable baut die App ohne Sync.
+- Die App-Origins müssen in `APP_ORIGINS` der `.env` auf dem Pi stehen (Standard: Produktion
+  und Dev-Vorschau). Eine andere Domain dort und in `RP_ID` eintragen.
 
 ## 9. Tests auf echten Geräten (nur Mario)
 

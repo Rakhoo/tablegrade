@@ -41,19 +41,28 @@ Kommentieren, Anordnen), Übersichtstabelle pro Klasse und Halbjahr mit Noten, K
 Projekten, Nachklausuren/Projektverlängerungen, Teil- und Halbjahresnoten, Export (PDF/CSV),
 Klassen-Editor mit Schülerlisten (auch WebUntis-PDF), Namen lernen, Einstellungen mit Sicherung.
 
-**Datenschutz ist zentral:** Alle Daten bleiben auf dem Gerät (SQLite im Browser). Kein Backend,
-keine Accounts, keine Analytics, keine Daten an externe Dienste. Einzige Netzwerkabfrage: Ferien
-von mehr-schulferien.de (ohne personenbezogene Daten). Die App läuft nur installiert
-(im Browser-Tab nur Installationsanleitung; `npm run dev`/lokal läuft im Tab).
+**Datenschutz ist zentral:** Alle Daten liegen auf dem Gerät (SQLite im Browser). Keine
+Analytics, keine Daten an fremde Dienste. Ferien kommen von mehr-schulferien.de (ohne
+personenbezogene Daten). Optional (in den Einstellungen, standardmäßig aus): Konto und
+Synchronisierung über Marios eigenen Server mit **Ende-zu-Ende-Verschlüsselung** – der Server
+sieht nur Chiffretext, gewrappte Schlüssel, HMAC-IDs und Zeitstempel. Anmeldung per Passkey,
+Microsoft oder Google; außer diesen Anmeldungen keine fremden Dienste. Ohne Konto läuft die App
+wie bisher. Die App läuft nur installiert (im Browser-Tab nur Installationsanleitung;
+`npm run dev`/lokal läuft im Tab).
 
 ## Tech-Stack (fest)
 
 - React 19, TypeScript, Vite, **VitePWA**, **SQLocal** (OPFS, braucht COOP/COEP) + **Drizzle**,
   MUI (+ MUI X Date Pickers), Tailwind CSS 4, React Router (Hash-Routing), date-fns,
   pdfjs-dist (WebUntis-Import), jsPDF (Export).
-- Hosting: Cloudflare Pages über GitHub Actions; `public/_headers` setzt COOP/COEP.
-- Nicht: Backend, Server-Datenbank, Accounts, Tracking. Keine neuen Abhängigkeiten ohne
-  Rückfrage.
+- Krypto und Sync im Client nur mit Browser-APIs (WebCrypto, WebAuthn, IndexedDB, fetch,
+  WebSocket); Tests mit Vitest (`npm test`, Gesamttest gegen den Server `npm run test:e2e`).
+- Sync-Server: **Go** in `server/` (SQLite über `modernc.org/sqlite`, WebAuthn, OIDC,
+  WebSocket), läuft per Docker Compose auf einem Raspberry Pi, erreichbar über Tailscale Funnel.
+- Hosting: Cloudflare Pages über GitHub Actions; `public/_headers` setzt COOP/COEP. Server-Image
+  baut GitHub Actions nach GHCR, ein systemd-Timer auf dem Pi zieht es.
+- Nicht: Klartext-Daten auf dem Server, Tracking, fremde Cloud-Backends. Keine neuen
+  Abhängigkeiten ohne Rückfrage.
 - Die in VitePWA `includeAssets` und als apple-touch-icon genannten Dateien müssen existieren
   (Ausnahme: `mask-icon.svg`).
 - DB: `BASELINE` in `src/db/migrations.ts` ist das Schema des ersten Release (Version 20, wie die
@@ -109,10 +118,10 @@ von mehr-schulferien.de (ohne personenbezogene Daten). Die App läuft nur instal
   `oxlint-disable-next-line` mit kurzer Begründung darüber.
 - Prettier auf `src/` nach Änderungen ausführen.
 
-## Sync-Projekt (autonome Sessions)
+## Sync-Projekt (abgeschlossen)
 
-- Sessions, die `docs/sync-plan/` abarbeiten, folgen `docs/sync-plan/README.md` Abschnitt 4
-  und 5. Diese Regeln gehen dort den obigen Regeln vor.
-- Sie dürfen auf ihrem Stream-Branch committen und pushen, PRs nach `sync/integration`
-  öffnen und nach grünen Prüfungen selbst mergen.
-- **Nur Mario merged nach `main`.** Kein Push, PR oder Merge nach `main` durch Sessions.
+- Umgesetzt nach `docs/sync-plan/`; offene Fragen in `docs/sync-plan/blockers.md`, Schritte für
+  Mario in `docs/sync-plan/manual-steps.md`. Die Regeln für autonome Sessions dort gelten nicht
+  mehr; es gilt diese Datei.
+- Protokoll zwischen App und Server: `docs/sync-plan/protocol.md`. Änderungen daran immer in
+  Server, Client und Tests zugleich.

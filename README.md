@@ -211,7 +211,12 @@ Nobody but the user can read the data or reset the recovery key. Details:
 ## Stack
 
 React 19, TypeScript, Vite, VitePWA, SQLocal + Drizzle ORM, MUI (+ MUI X date pickers),
-Tailwind CSS 4, React Router (hash routing), date-fns.
+Tailwind CSS 4, React Router (hash routing), date-fns. Encryption and sync use only browser
+APIs (WebCrypto, WebAuthn, IndexedDB, fetch, WebSocket); tests run with Vitest.
+
+Sync server ([server/](server/README.md)): Go with SQLite (`modernc.org/sqlite`), passkeys
+(`go-webauthn`), Microsoft/Google sign-in (`go-oidc`) and WebSocket. It runs with Docker Compose
+on a Raspberry Pi and is reachable through Tailscale Funnel.
 
 ## Development
 
@@ -229,11 +234,34 @@ npm run dev
 | `npm run preview`             | serve the production build locally (temporary database)    |
 | `npm run lint`                | oxlint                                                     |
 | `npm test`                    | Vitest unit tests (`src/**/*.test.ts`, Node, no browser)   |
+| `npm run test:e2e`            | end-to-end test of sync against the real Go server (needs Go) |
 | `npm run generate-pwa-assets` | render `public/apple-touch-icon.png` from its SVG source   |
 
 SQLocal needs cross-origin isolation. The dev server gets the headers from the SQLocal Vite
 plugin; in production `public/_headers` sets `Cross-Origin-Embedder-Policy` and
 `Cross-Origin-Opener-Policy` for Cloudflare Pages.
+
+### Sync locally
+
+Without `VITE_SYNC_URL` the build has no sync: turning it on in the settings shows the message
+„Für diese Version gibt es keinen Sync-Server.“, the rest of the app works as before. Two ways to work on the sync UI:
+
+- `VITE_SYNC_DEMO=true npm run dev`: the facade (`src/sync/index.ts`) returns sample data, no
+  server needed. Normal builds drop the demo.
+- Real server (needs Go, see [server/README.md](server/README.md)):
+
+  ```bash
+  cd server
+  APP_ORIGINS=http://localhost:5173 RP_ID=localhost go run ./cmd/notenfeder-server
+  # second terminal, repo root
+  VITE_SYNC_URL=http://localhost:8080 npm run dev
+  ```
+
+`npm run test:e2e` ([src/sync/e2e.test.ts](src/sync/e2e.test.ts)) builds the server, starts
+it with `DEV_AUTH=1` and a temporary data folder, and syncs three simulated devices
+(`node:sqlite`) over real HTTP and WebSocket: first upload, recovery key, device link, last
+write wins, deletion, photo, offline phase, server restored from a backup, revoked device and
+account deletion. CI runs it in its own job.
 
 ## Deployment
 
@@ -245,6 +273,14 @@ The message of the newest commit of a push steers the deployment: `[skip deploy]
 nothing, `[deploy dev]` publishes a preview at `dev.tablegrade.pages.dev` instead of
 production (its own origin, so an installed dev app keeps its own data). GitHub's `[skip ci]`
 skips all workflows. Run manually, the workflow asks for the target (`production` or `dev`).
+The build reads the repository variable `VITE_SYNC_URL` (the server's Tailscale address);
+without it the app has no sync.
+
+The sync server deploys on its own: a push to `main` that changes `server/` runs
+[.github/workflows/server-image.yml](.github/workflows/server-image.yml), which builds the
+image for GHCR; a timer on the Raspberry Pi pulls it. Setup, configuration, backup and
+restore: [server/README.md](server/README.md) and
+[docs/sync-plan/manual-steps.md](docs/sync-plan/manual-steps.md).
 
 ## Project structure
 
@@ -286,7 +322,8 @@ src/
 │                                   `VITE_SYNC_DEMO=true`
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
-├── test/                           test helpers (in-memory `node:sqlite` with all migrations)
+├── test/                           test helpers (in-memory `node:sqlite` with all migrations,
+│                                   fake sync server, Go server start for `test:e2e`)
 └── lib/                            pure helpers: dates, school year, lessons and their mark
                                     rules, seating, grades and grading tools, reports,
                                     warnings, colors, formatters, paths, page memory

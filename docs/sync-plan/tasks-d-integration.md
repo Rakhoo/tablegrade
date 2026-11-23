@@ -21,12 +21,12 @@ Branch: `sync/final`. Start erst, wenn A, B und C in progress.md als fertig steh
 
 ## D3 Dokumentation
 
-- [ ] CLAUDE.md: Abschnitt „Datenschutz“ und „Tech-Stack“ an die neue Lage anpassen (Server
+- [x] CLAUDE.md: Abschnitt „Datenschutz“ und „Tech-Stack“ an die neue Lage anpassen (Server
       mit Ende-zu-Ende-Verschlüsselung, Go, Raspberry Pi), Ordnerstruktur um `src/crypto/`,
       `src/sync/`, `server/` ergänzen. Abschnitt „Sync-Projekt (autonome Sessions)“ auf
       „abgeschlossen“ setzen.
-- [ ] README: Datenschutz-Abschnitt, Stack, Entwicklung (Server lokal starten), Deployment.
-- [ ] manual-steps.md: prüfen, ob alle Werte (Umgebungsvariablen, Redirect-URIs) stimmen.
+- [x] README: Datenschutz-Abschnitt, Stack, Entwicklung (Server lokal starten), Deployment.
+- [x] manual-steps.md: prüfen, ob alle Werte (Umgebungsvariablen, Redirect-URIs) stimmen.
 
 ## D4 Übergabe
 
