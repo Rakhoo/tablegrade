@@ -146,6 +146,13 @@ KEK je Art:
 | `PUT /keys/{id}` | Wrap anlegen oder ersetzen (z. B. neuer Passkey, neuer Wiederherstellungsschlüssel). |
 | `DELETE /keys/{id}` | Wrap löschen. Der letzte `recovery`-Wrap lässt sich nicht löschen. |
 
+- `PUT` und `DELETE` antworten `204`. `{id}` ist eine kleingeschriebene UUID; eine `id` im Body
+  muss gleich sein (sie darf fehlen). `createdAt` setzt der Server.
+- `PUT` prüft: `kind` ist `passkey` oder `recovery` (`org` folgt später), `alg` ist `A256GCM`,
+  `wrapped` hat genau 60 Bytes. `passkey` braucht eine `credentialId` eines Passkeys dieses
+  Kontos, `recovery` keine. Sonst `bad_request`. Gehört die `id` einem anderen Konto: `conflict`.
+- `DELETE` des letzten `recovery`-Wraps: `conflict`. Unbekannte `id`: `not_found`.
+
 ## 4. Einträge
 
 ```
@@ -283,5 +290,6 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |

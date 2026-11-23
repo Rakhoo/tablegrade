@@ -45,7 +45,7 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A5 Schlüssel
 
-- [ ] `GET/PUT/DELETE /keys`. Der letzte `recovery`-Wrap ist nicht löschbar (Test).
+- [x] `GET/PUT/DELETE /keys`. Der letzte `recovery`-Wrap ist nicht löschbar (Test).
 
 ## A6 Einträge
 

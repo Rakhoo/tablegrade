@@ -13,6 +13,16 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 18:00 UTC · Stream A · sync/server
+- Erledigt: A5 Schlüssel (`internal/api/keys.go`): `GET/PUT/DELETE /keys`, letzter
+  `recovery`-Wrap nicht löschbar (Test), fremde IDs geschützt.
+- Entschieden: `PUT` prüft Format streng (UUID, `A256GCM`, 60 Bytes) und dass ein
+  `passkey`-Wrap zu einem Passkey des Kontos gehört. `org` lehnt der Server vorerst ab.
+- Entschieden: Zwei `recovery`-Wraps sind kurz erlaubt. Grund: Der Wechsel geht laut Protokoll
+  per `PUT` neu, dann `DELETE` alt.
+- Protokoll ergänzt (Schlüssel, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A6 Einträge.
+
 ## 2026-11-23, 17:40 UTC · Stream A · sync/server
 - Erledigt: A4 Microsoft und Google. Paket `internal/oidc` (Codetausch per `net/http`,
   ID-Token mit `go-oidc` geprüft, Issuer fest), Test-Anbieter `internal/oidc/oidctest`

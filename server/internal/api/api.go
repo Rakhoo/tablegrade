@@ -89,6 +89,10 @@ func (s *Server) Handler() http.Handler {
 		mux.Handle("POST /api/v1/auth/dev/login", s.withAuthLimit(s.handleDevLogin))
 	}
 
+	mux.Handle("GET /api/v1/keys", s.withSession(s.handleListKeys))
+	mux.Handle("PUT /api/v1/keys/{id}", s.withSession(s.handlePutKey))
+	mux.Handle("DELETE /api/v1/keys/{id}", s.withSession(s.handleDeleteKey))
+
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
 	mux.Handle("PATCH /api/v1/devices/{id}", s.withSession(s.handleRenameDevice))
