@@ -51,25 +51,25 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 
 ## B5 Sync-Engine
 
-- [ ] Einschalten: `_sync_state.enabled = '1'`, Erst-Upload aller Zeilen aller
+- [x] Einschalten: `_sync_state.enabled = '1'`, Erst-Upload aller Zeilen aller
       synchronisierten Tabellen in Stapeln mit Fortschritt.
-- [ ] Push: `_outbox` lesen, je Primärschlüssel die aktuelle Zeile lesen (fehlt sie:
+- [x] Push: `_outbox` lesen, je Primärschlüssel die aktuelle Zeile lesen (fehlt sie:
       Löschung), Klartext bauen, verschlüsseln, pushen, erledigte Outbox-Einträge bis zur
       gelesenen `seq` löschen. Änderungen während des Pushs gehen nicht verloren (Test).
-- [ ] Pull: ab letzter `seq`, entschlüsseln, `schema` neuer als lokal → in
+- [x] Pull: ab letzter `seq`, entschlüsseln, `schema` neuer als lokal → in
       `_sync_pending` zurückstellen und Status `upgrade_required`. Sonst in einer Transaktion
       mit `applying = '1'` und `PRAGMA defer_foreign_keys = ON` einfügen, ersetzen oder löschen.
       Danach Ereignis für `useRevalidator`.
-- [ ] `410` → kompletter Neuabgleich ohne Datenverlust lokaler, noch nicht gepushter Änderungen.
-- [ ] Fotos: beim Push Blob hochladen, wenn noch nicht auf dem Server; beim Pull Blob laden und
+- [x] `410` → kompletter Neuabgleich ohne Datenverlust lokaler, noch nicht gepushter Änderungen.
+- [x] Fotos: beim Push Blob hochladen, wenn noch nicht auf dem Server; beim Pull Blob laden und
       als Data-URL in `Students.image` schreiben.
-- [ ] WebSocket mit Ping und Backoff, `changed` → Pull, `revoked` → Status, `link` → Kopplung.
-- [ ] Ausschalten: `enabled = '0'`, WebSocket zu, lokale Daten bleiben.
-- [ ] Zurückgestellte Einträge nach einem App-Update anwenden.
-- [ ] Tests mit zwei simulierten Geräten (je eine `node:sqlite`-DB) und einem Fake-Server im
+- [x] WebSocket mit Ping und Backoff, `changed` → Pull, `revoked` → Status, `link` → Kopplung.
+- [x] Ausschalten: `enabled = '0'`, WebSocket zu, lokale Daten bleiben.
+- [x] Zurückgestellte Einträge nach einem App-Update anwenden.
+- [x] Tests mit zwei simulierten Geräten (je eine `node:sqlite`-DB) und einem Fake-Server im
       Speicher: Anlegen, Ändern, Löschen mit Kaskade, Foto, Offline-Phase, Last Write Wins,
       `410`, `revoked`, neuere Schema-Version.
-- [ ] **Merge-Punkt.**
+- [x] **Merge-Punkt.**
 
 ## B7 Fassaden-Ergänzungen für Stream C (Antworten Mario, blockers.md, 2026-11-23)
 

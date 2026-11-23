@@ -13,6 +13,29 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:45 UTC · Stream B · sync/client (Lauf 17:12)
+- Erledigt: B5 Sync-Engine. Migration 24 (`_sync_pending`, `_sync_blobs`),
+  `SCHEMA_VERSION` in `db/migrations.ts`. Module `tables.ts` (aktuelle Tabellenliste),
+  `push.ts`, `pull.ts`, `photos.ts`, `activation.ts` (`turnOn`/`turnOff`), `engine.ts`
+  (`runSync`, `createSyncEngine`), `socket.ts`. Tests mit zwei Geräten und Fake-Server
+  (`src/test/fakeSyncServer.ts`, `src/test/syncDevices.ts`): `pushPull.test.ts`,
+  `engine.test.ts`.
+- Entschieden: Pull holt alle Seiten und wendet sie in **einer** Transaktion an. Grund: Ein
+  Kind-Eintrag auf Seite 1 darf seinen Eltern-Eintrag von Seite 2 nicht verpassen.
+- Entschieden: Eingehende Einträge für Schlüssel mit Eintrag in `_outbox` werden übersprungen.
+  Grund: Die lokale Änderung wird danach gepusht und gewinnt per höherer `seq`.
+- Entschieden: Zwei Noten für dieselbe Stunde (`GradesUnique`): Die Zeile mit dem größeren
+  Schlüssel gewinnt auf allen Geräten, die andere wird gelöscht und die Löschung gepusht.
+- Entschieden: Waisen (z. B. Note zu hier gelöschtem Schüler) löscht der Pull per
+  `PRAGMA foreign_key_check`, sonst scheitert die ganze Transaktion.
+- Entschieden: Nach `410` werden lokale Zeilen, die der Server nicht mehr kennt, erneut
+  hochgeladen (kein Datenverlust).
+- Entschieden: Der Import-Guard nutzt jetzt `turnOff` (leert auch `_sync_pending`, `_sync_blobs`).
+- Offen für B6: Engine an Fassade, Device-Store und Status anbinden; `onApplied` →
+  Revalidierung (Hook); lokale Änderungen müssen `requestSync` auslösen (z. B. entprellt
+  nach Schreibzugriffen oder Intervall). README-Abschnitt kommt mit Stream D.
+- Nächster Schritt: B6 Kopplung und Konto, Fassade verdrahten.
+
 ## 2026-11-23, 17:21 UTC · Stream A · sync/server
 - Erledigt: A6 Einträge (`internal/api/records.go`): `POST /records/push`, `GET /records/pull`,
   Last Write Wins (auch doppelte ID im selben Push), Limits, `410 gone`. Täglicher Lauf

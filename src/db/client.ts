@@ -1,6 +1,11 @@
 import { drizzle } from "drizzle-orm/sqlite-proxy";
 import { SQLocalDrizzle } from "sqlocal/drizzle";
-import { BASELINE, BASELINE_VERSION, MIGRATIONS } from "./migrations";
+import {
+  BASELINE,
+  BASELINE_VERSION,
+  MIGRATIONS,
+  SCHEMA_VERSION,
+} from "./migrations";
 
 /**
  * Brings the database to the current schema: an empty one gets the first release's schema,
@@ -73,7 +78,7 @@ async function checkBackup(file: File) {
     throw new BackupError(
       "Die Sicherung stammt aus einer Vorabversion der App.",
     );
-  if (version > BASELINE_VERSION + MIGRATIONS.length)
+  if (version > SCHEMA_VERSION)
     throw new BackupError(
       "Die Sicherung stammt aus einer neueren Version der App.",
     );

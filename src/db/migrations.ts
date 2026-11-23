@@ -359,4 +359,18 @@ export const MIGRATIONS: string[][] = [
       outboxTriggers(table, pk),
     ),
   ],
+  // 24: sync engine. `_sync_pending` keeps pulled records of a newer schema until an app
+  // update; `_sync_blobs` lists photos known to be on the server, so they upload only once.
+  [
+    `CREATE TABLE _sync_pending (
+      id TEXT PRIMARY KEY,
+      seq INTEGER NOT NULL,
+      schema INTEGER NOT NULL,
+      record TEXT NOT NULL
+    )`,
+    "CREATE TABLE _sync_blobs (id TEXT PRIMARY KEY)",
+  ],
 ];
+
+/** Schema version of a fully migrated database; sent as `schema` with every sync record. */
+export const SCHEMA_VERSION = BASELINE_VERSION + MIGRATIONS.length;
