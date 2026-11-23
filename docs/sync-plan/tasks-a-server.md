@@ -15,14 +15,14 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A2 Grundlagen der API
 
-- [ ] Router, JSON-Helfer, Fehlerformat, `X-Protocol-Version`, CORS nur für `APP_ORIGINS`.
-- [ ] Sitzungen: Token erzeugen, nur Hash speichern, Middleware, Ablauf und Verlängerung,
+- [x] Router, JSON-Helfer, Fehlerformat, `X-Protocol-Version`, CORS nur für `APP_ORIGINS`.
+- [x] Sitzungen: Token erzeugen, nur Hash speichern, Middleware, Ablauf und Verlängerung,
       `session_revoked`.
-- [ ] Rate-Limits und Größenlimits laut protocol.md 8.
-- [ ] Test-Login `POST /api/v1/auth/dev/login`, nur aktiv mit `DEV_AUTH=1`. Er legt ein
+- [x] Rate-Limits und Größenlimits laut protocol.md 8.
+- [x] Test-Login `POST /api/v1/auth/dev/login`, nur aktiv mit `DEV_AUTH=1`. Er legt ein
       Konto und ein Gerät an. Standard ist aus; beim Start mit `DEV_AUTH=1` eine deutliche
       Warnung loggen. Für Tests von Stream B und D.
-- [ ] `GET /auth/session`, `POST /auth/logout`, Geräte-Endpunkte.
+- [x] `GET /auth/session`, `POST /auth/logout`, Geräte-Endpunkte.
 
 ## A3 Passkeys
 

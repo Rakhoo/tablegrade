@@ -21,7 +21,7 @@ Status: **verbindlich** (seit 2026-11-23, Stream 0)
 - Fehler: HTTP-Status plus `{ "error": "<code>", "message": "<deutsch, für die UI>" }`.
   Codes: `unauthorized`, `session_revoked`, `not_found`, `conflict`, `too_large`,
   `rate_limited`, `upgrade_required`, `bad_request`.
-- Weitere Codes: `gone` (410, siehe 4), `forbidden` (403).
+- Weitere Codes: `gone` (410, siehe 4), `forbidden` (403), `internal` (500, Serverfehler).
 - Status je Code: `bad_request` 400, `unauthorized` 401, `session_revoked` 401, `forbidden` 403,
   `not_found` 404, `conflict` 409, `gone` 410, `too_large` 413, `upgrade_required` 426,
   `rate_limited` 429 (mit Header `Retry-After` in Sekunden).
@@ -68,6 +68,7 @@ keyWraps    id, userId, kind ('passkey' | 'recovery' | 'org'), credentialId?, al
 | `POST /auth/logout` | Sitzung beenden. |
 | `GET  /devices` / `POST /devices/{id}/revoke` / `PATCH /devices/{id}` | Geräte auflisten, sperren, umbenennen. |
 | `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). |
+| `POST /auth/dev/login` | Nur mit `DEV_AUTH=1` (Tests). Body `{ deviceName, userId? }`. Ohne `userId` neues Konto, mit `userId` weiteres Gerät dieses Kontos. Antwort wie jede Anmeldung. |
 
 Antwort bei erfolgreicher Anmeldung:
 `{ "sessionToken", "userId", "deviceId", "isNewUser" }`. `sessionToken` ist Base64url.
@@ -86,6 +87,9 @@ Antwort bei erfolgreicher Anmeldung:
 - Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
   `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
   speichert der Server nicht.
+- `GET /auth/session`: `identities` = `[{ provider, createdAt }]` (ohne `subject`), `devices` wie bei
+  `GET /devices`. `POST /auth/logout`, `PATCH /devices/{id}` und `POST /devices/{id}/revoke`
+  antworten mit `204` ohne Body. Gerätenamen: 1–80 Zeichen, Leerzeichen am Rand werden entfernt.
 - `GET /devices` liefert `{ devices: [{ id, name, createdAt, lastSeenAt, revokedAt, current }] }`.
   `PATCH /devices/{id}` mit `{ name }`. Ein Gerät kann sich selbst nicht sperren (`conflict`),
   dafür gibt es `logout`.
@@ -262,3 +266,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | Datum | Stream | Änderung |
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
+| 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |

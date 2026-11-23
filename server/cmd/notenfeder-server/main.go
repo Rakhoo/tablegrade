@@ -9,12 +9,17 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
 	"github.com/Rakhoo/tablegrade/server/internal/api"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
+	"github.com/Rakhoo/tablegrade/server/internal/store/sqlite"
 )
+
+// dbFile is the name of the SQLite file in DATA_DIR.
+const dbFile = "notenfeder.sqlite3"
 
 // shutdownTimeout bounds how long running requests may take after a stop signal.
 const shutdownTimeout = 10 * time.Second
@@ -34,9 +39,14 @@ func run() error {
 	if err := os.MkdirAll(cfg.DataDir, 0o700); err != nil {
 		return err
 	}
+	db, err := sqlite.Open(filepath.Join(cfg.DataDir, dbFile))
+	if err != nil {
+		return err
+	}
+	defer db.Close()
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,
-		Handler:           api.NewHandler(cfg),
+		Handler:           api.New(cfg, db).Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

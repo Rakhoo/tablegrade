@@ -18,6 +18,13 @@ import (
 // Clock is a manual clock for tests.
 type Clock struct{ ms atomic.Int64 }
 
+// NewClock returns a clock at 2026-01-01 00:00 UTC.
+func NewClock() *Clock {
+	c := &Clock{}
+	c.ms.Store(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli())
+	return c
+}
+
 // Now returns the current test time.
 func (c *Clock) Now() time.Time { return time.UnixMilli(c.ms.Load()) }
 
@@ -44,8 +51,7 @@ func Run(t *testing.T, open OpenFunc) {
 	}
 	for name, fn := range tests {
 		t.Run(name, func(t *testing.T) {
-			clock := &Clock{}
-			clock.ms.Store(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli())
+			clock := NewClock()
 			s := open(t, clock)
 			t.Cleanup(func() { _ = s.Close() })
 			fn(t, s, clock)
