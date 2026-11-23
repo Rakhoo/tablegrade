@@ -16,6 +16,7 @@ import (
 
 	"github.com/Rakhoo/tablegrade/server/internal/auth"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
+	"github.com/Rakhoo/tablegrade/server/internal/oidc"
 	"github.com/Rakhoo/tablegrade/server/internal/ratelimit"
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
@@ -39,6 +40,8 @@ type Server struct {
 	authLimit  *ratelimit.Limiter
 	webauthn   *webauthn.WebAuthn
 	challenges *auth.Challenges[passkeyCeremony]
+	// oidc holds the enabled identity providers by name (store.ProviderMicrosoft, …).
+	oidc map[string]*oidc.Provider
 }
 
 // Option changes the behavior of New.
@@ -51,7 +54,7 @@ func WithClock(now func() time.Time) Option {
 
 // New returns the server with all routes. It fails if the WebAuthn settings are invalid.
 func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
-	s := &Server{cfg: cfg, store: st, now: time.Now}
+	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg)}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -78,6 +81,8 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/auth/passkey/register/finish", s.withAuthLimit(s.handlePasskeyRegisterFinish))
 	mux.Handle("POST /api/v1/auth/passkey/login/begin", s.withAuthLimit(s.handlePasskeyLoginBegin))
 	mux.Handle("POST /api/v1/auth/passkey/login/finish", s.withAuthLimit(s.handlePasskeyLoginFinish))
+	mux.Handle("GET /api/v1/auth/oidc/{provider}/config", s.withAuthLimit(s.handleOIDCConfig))
+	mux.Handle("POST /api/v1/auth/oidc/{provider}/exchange", s.withAuthLimit(s.handleOIDCExchange))
 	mux.Handle("GET /api/v1/auth/session", s.withSession(s.handleSession))
 	mux.Handle("POST /api/v1/auth/logout", s.withSession(s.handleLogout))
 	if s.cfg.DevAuth {

@@ -30,8 +30,8 @@ type testEnv struct {
 	store   *sqlite.DB
 }
 
-// newEnv starts a server with DEV_AUTH enabled.
-func newEnv(t *testing.T) *testEnv {
+// newEnv starts a server with DEV_AUTH enabled and the given options.
+func newEnv(t *testing.T, opts ...Option) *testEnv {
 	t.Helper()
 	clock := storetest.NewClock()
 	db, err := sqlite.Open(filepath.Join(t.TempDir(), "db.sqlite3"), sqlite.WithClock(clock.Now))
@@ -40,7 +40,7 @@ func newEnv(t *testing.T) *testEnv {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	cfg := config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID, DevAuth: true}
-	srv, err := New(cfg, db, WithClock(clock.Now))
+	srv, err := New(cfg, db, append([]Option{WithClock(clock.Now)}, opts...)...)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -93,6 +93,13 @@ Antwort bei erfolgreicher Anmeldung:
 - `GET /auth/oidc/{provider}/config` liefert
   `{ clientId, authorizeUrl, scopes: ["openid"], redirectUri }`. Der Browser nutzt PKCE
   (`S256`) und `state`; beides prüft nur der Browser.
+- `{provider}` ist `microsoft` oder `google`. Ein Anbieter ohne Client-ID ist aus: `404 not_found`.
+  `redirectUri` gehört zur App-Origin aus dem `Origin`-Header (sonst die erste aus
+  `APP_ORIGINS`). `exchange` nimmt nur diese Redirect-URIs an, sonst `bad_request`.
+- `exchange` mit Sitzung verknüpft die Identität mit dem Konto und antwortet `204` (auch, wenn
+  sie schon verknüpft ist). Gehört sie zu einem anderen Konto: `conflict`. Ohne Sitzung: Login
+  oder neues Konto, Antwort wie jede Anmeldung. Abgelehnter Code oder ungültiges ID-Token:
+  `401 unauthorized`. `deviceName` gilt wie bei Passkeys nur ohne Sitzung.
 - Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
   `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
   speichert der Server nicht.
@@ -276,4 +283,5 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |

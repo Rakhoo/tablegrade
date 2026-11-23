@@ -35,12 +35,12 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A4 Microsoft und Google
 
-- [ ] `GET /auth/oidc/{provider}/config`, `POST /auth/oidc/{provider}/exchange`.
-- [ ] Codetausch per `net/http` (Client-Secret aus der Umgebung), ID-Token mit `go-oidc`
+- [x] `GET /auth/oidc/{provider}/config`, `POST /auth/oidc/{provider}/exchange`.
+- [x] Codetausch per `net/http` (Client-Secret aus der Umgebung), ID-Token mit `go-oidc`
       prüfen. Microsoft: Mandant `consumers`, Issuer genau prüfen. Google: Issuer
       `https://accounts.google.com`, `email_verified` beachten.
-- [ ] Mit Sitzung: Identität mit dem Konto verknüpfen. Ohne Sitzung: Login oder neues Konto.
-- [ ] Tests mit einem eigenen Test-OIDC-Anbieter (`httptest`, eigenes JWKS, Signatur mit
+- [x] Mit Sitzung: Identität mit dem Konto verknüpfen. Ohne Sitzung: Login oder neues Konto.
+- [x] Tests mit einem eigenen Test-OIDC-Anbieter (`httptest`, eigenes JWKS, Signatur mit
       der indirekten Abhängigkeit `go-jose`).
 
 ## A5 Schlüssel

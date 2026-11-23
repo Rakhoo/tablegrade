@@ -37,8 +37,10 @@ func TestLoadOrigins(t *testing.T) {
 	}
 }
 
-func TestLoadGoogleNeedsSecret(t *testing.T) {
-	if _, err := Load(env(map[string]string{"OIDC_GOOGLE_CLIENT_ID": "id"})); err == nil {
-		t.Error("expected an error without client secret")
+func TestLoadOIDCNeedsSecret(t *testing.T) {
+	for _, key := range []string{"OIDC_GOOGLE_CLIENT_ID", "OIDC_MICROSOFT_CLIENT_ID"} {
+		if _, err := Load(env(map[string]string{key: "id"})); err == nil {
+			t.Errorf("%s: expected an error without client secret", key)
+		}
 	}
 }

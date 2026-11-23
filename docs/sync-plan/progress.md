@@ -13,6 +13,23 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:40 UTC · Stream A · sync/server
+- Erledigt: A4 Microsoft und Google. Paket `internal/oidc` (Codetausch per `net/http`,
+  ID-Token mit `go-oidc` geprüft, Issuer fest), Test-Anbieter `internal/oidc/oidctest`
+  (`httptest`, eigenes JWKS, Signatur mit `go-jose`). Endpunkte in `internal/api/oidc.go`.
+- Entschieden: `go-oidc` v3.17.0, weil neuere Versionen Go 1.25 verlangen.
+- Entschieden: Keine Discovery, sondern feste Endpunkte und JWKS-URL. Grund: Microsoft
+  `consumers` meldet in der Discovery einen Issuer mit Platzhalter; der echte Issuer ist der
+  feste Mandant `9188040d-…`. Der Server braucht so beim Start kein Netz.
+- Entschieden: `subject` = Claim `sub`. Der Mandant ist durch den Issuer festgelegt.
+- Entschieden: `email_verified: false` wird abgelehnt; fehlt der Claim (Scope nur `openid`),
+  ist das in Ordnung.
+- Entschieden: Microsoft braucht jetzt auch ein Client-Secret (wie in manual-steps.md,
+  Plattform „Web“). Grund: Der Server tauscht den Code als vertraulicher Client.
+- Protokoll ergänzt (OIDC, Abschnitt „Änderungen“). Betrifft Stream B und C.
+- Ungetestet: echte Anmeldung bei Microsoft und Google (erst mit Marios OAuth-Apps).
+- Nächster Schritt: A5 Schlüssel.
+
 ## 2026-11-23, 16:20 UTC · Stream A · sync/server
 - Erledigt: A3 Passkeys (`internal/api/passkey.go`): Registrierung (neues Konto oder weiterer
   Passkey mit Sitzung), Login mit discoverable credentials, PRF-Salt in den Optionen,
