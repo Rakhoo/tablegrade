@@ -105,8 +105,9 @@ Diese Regeln gehen der CLAUDE.md vor, **nur** für Sessions, die diesen Plan aba
 
 **Erlaubt:**
 - Commits auf dem eigenen Stream-Branch, Push dieses Branches.
-- PR vom Stream-Branch nach `sync/integration` öffnen und selbst mergen, wenn alle Prüfungen
-  grün sind.
+- Den Stream-Branch per `git merge --no-ff` in `sync/integration` mergen und
+  `sync/integration` pushen, wenn alle Prüfungen grün sind. (In der Cloud blockiert der
+  GitHub-Proxy `gh pr`, PRs gibt es darum nicht.)
 - `sync/integration` in den eigenen Branch mergen (nie rebasen, was schon gepusht ist).
 - Abhängigkeiten **nur** aus Abschnitt 5.
 
@@ -161,7 +162,9 @@ Jeder Lauf einer Cloud-Routine geht so vor:
    dann sauber beenden. Lieber kleine fertige Schritte als große halbe.
 6. Prüfungen aus Abschnitt 4 ausführen, committen, pushen.
 7. Ist ein in sich fertiges Teilstück erreicht (in der Liste mit **Merge-Punkt** markiert):
-   PR nach `sync/integration`, nach grünen Prüfungen selbst mergen.
+   `sync/integration` holen, den eigenen Branch hineinmergen, Prüfungen dort erneut
+   ausführen, `sync/integration` pushen. Schlägt der Push fehl (jemand war schneller):
+   neu holen und wiederholen.
 8. Sperre löschen, committen, pushen.
 9. Sind alle Aufgaben des Streams erledigt: Eintrag „Stream fertig“ in progress.md.
 
@@ -171,5 +174,5 @@ setzt dort fort.
 
 ## 7. Was nur Mario tun kann
 
-Siehe [manual-steps.md](manual-steps.md): Plan committen, Routinen anlegen, Pi einrichten,
+Siehe [manual-steps.md](manual-steps.md): Routinen pausieren, Pi einrichten,
 OAuth-Apps registrieren, Tests auf dem iPad.
