@@ -44,3 +44,10 @@ Vorschlag der Session: Stream B ergänzt `addPasskey(): Promise<void>`,
 (gesetzt während Erst-Upload/-Download) und für C3 `hasLocalData(): Promise<boolean>` plus
 `replaceLocalData(): Promise<void>` (Download erst danach). Stream C baut die UI darauf auf.
 Antwort Mario: …
+
+## 2026-11-23 · Stream C · offen
+Frage: C4 verlangt „Geräte umbenennen“. protocol.md hat `PATCH /devices/{id}`, die Fassade
+aber keine Funktion dafür.
+Vorschlag der Session: Stream B ergänzt `renameDevice(id, name)` in der Fassade. Stream C ergänzt dann einen Stift-Knopf in
+`SyncDevices`.
+Antwort Mario: …

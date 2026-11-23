@@ -12,6 +12,7 @@ import {
 import { getSyncView, type SyncView } from "../../lib/syncView";
 import { SettingsSection } from "./SettingsSection";
 import { SyncApproveLink } from "./SyncApproveLink";
+import { SyncDevices } from "./SyncDevices";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIntro } from "./SyncIntro";
 import { SyncRecoveryKey } from "./SyncRecoveryKey";
@@ -142,6 +143,7 @@ function SyncActive({ status }: SyncActiveProps) {
         </Button>
       </div>
       <SyncApproveLink />
+      <SyncDevices />
     </>
   );
 }

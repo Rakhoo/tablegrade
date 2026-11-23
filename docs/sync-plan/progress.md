@@ -159,3 +159,8 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Nächster Schritt: C3 „Gerät koppeln“ auf dem alten Gerät (`confirmDeviceLink`), dann C4.
 - Erledigt: C3 „Gerät koppeln“ auf dem alten Gerät (`SyncApproveLink` in der Ansicht „aktiv“:
   Code eingeben, Prüfcode vergleichen, „Stimmt überein“ sendet den Schlüssel).
+- Erledigt: C4 Geräte (`SyncDevices` in „aktiv“): Liste auf Knopfdruck, letzte Aktivität,
+  gesperrte Geräte durchgestrichen, „Sperren“ mit `ConfirmDialog`.
+- Entschieden: Liste lädt erst auf „Geräte anzeigen“. Grund: kein Netzaufruf beim bloßen
+  Öffnen der Einstellungen, kein Effect nötig.
+- Offen: Umbenennen fehlt in der Fassade (blockers.md).
