@@ -13,6 +13,7 @@ export type ApiErrorCode =
   | "not_found"
   | "conflict"
   | "gone"
+  | "server_restored"
   | "too_large"
   | "upgrade_required"
   | "rate_limited"
@@ -28,6 +29,8 @@ const MESSAGES: Record<ApiErrorCode, string> = {
   not_found: "Nicht gefunden.",
   conflict: "Das geht gerade nicht.",
   gone: "Die Daten müssen neu geladen werden.",
+  server_restored:
+    "Der Server wurde zurückgesetzt. Die Daten werden neu hochgeladen.",
   too_large: "Die Daten sind zu groß.",
   upgrade_required: "Bitte die App aktualisieren.",
   rate_limited: "Zu viele Versuche. Bitte später noch einmal.",

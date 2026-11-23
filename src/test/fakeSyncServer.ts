@@ -33,6 +33,7 @@ export function createFakeServer() {
 
   /** Records after `after`, ascending. */
   const pull = (after: number, limit = 500) => {
+    if (after > seq) throw new ApiError("server_restored", 410);
     if (after > 0 && after < goneBelow) throw new ApiError("gone", 410);
     const newer = [...records.values()]
       .filter((record) => record.seq > after)
@@ -50,6 +51,12 @@ export function createFakeServer() {
     prune: (id: string) => {
       records.delete(id);
       goneBelow = seq + 1;
+    },
+    /** Drops records after `toSeq`, like restoring an older server backup. */
+    restore: (toSeq: number) => {
+      for (const [id, record] of records)
+        if (record.seq > toSeq) records.delete(id);
+      seq = toSeq;
     },
     /** Number of blob uploads so far, including repeated ones. */
     blobUploads: () => blobUploads,

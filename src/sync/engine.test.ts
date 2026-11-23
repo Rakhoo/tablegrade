@@ -73,6 +73,27 @@ describe("activation and sync runs", () => {
       server.records.has(await recordId(a.ctx.key, "Students", [ANNA])),
     ).toBe(true);
   });
+
+  it("uploads everything again after the server was restored", async () => {
+    seed(a.raw);
+    await runSync(a.ctx);
+    await runSync(b.ctx);
+    const backupSeq = Math.max(
+      ...[...server.records.values()].map((r) => r.seq),
+    );
+    a.raw.exec("UPDATE Classes SET subject = 'Physik'");
+    await runSync(a.ctx);
+    await runSync(b.ctx);
+    server.restore(backupSeq);
+
+    await runSync(b.ctx);
+    expect(b.rows("SELECT * FROM _outbox")).toEqual([]);
+    const c = createDevice(server, a.ctx.key, "device-c");
+    await runSync(c.ctx);
+    expect(c.rows("SELECT subject FROM Classes")).toEqual([
+      { subject: "Physik" },
+    ]);
+  });
 });
 
 /** Fake WebSocket that the test drives by hand. */

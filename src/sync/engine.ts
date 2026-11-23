@@ -1,8 +1,10 @@
 /**
- * Sync runs (plan B5): applies waiting records, pushes, pulls, and recovers from `410 gone`.
+ * Sync runs (plan B5): applies waiting records, pushes, pulls, and recovers from `410 gone`
+ * and `410 server_restored`.
  * The engine runs one sync at a time and reacts to WebSocket messages.
  */
 import { recordId } from "../crypto/records";
+import { enqueueAllRows } from "./activation";
 import { ApiError } from "./api";
 import type { SyncContext } from "./context";
 import { applyPending, pullChanges } from "./pull";
@@ -57,6 +59,17 @@ async function resync(ctx: SyncContext, onProgress?: ProgressHandler) {
   return outcome;
 }
 
+/**
+ * Recovery after `410 server_restored`: the device wins. It uploads all its synced rows again,
+ * like on activation, and then fetches everything (protocol.md 4).
+ */
+async function reupload(ctx: SyncContext, onProgress?: ProgressHandler) {
+  await enqueueAllRows(ctx.db);
+  await pushChanges(ctx);
+  await writeSyncState(ctx.db, { lastSeq: "0" });
+  return pullChanges(ctx, onProgress);
+}
+
 /** One sync run: waiting records, push, pull. Throws `ApiError` on server problems. */
 export async function runSync(
   ctx: SyncContext,
@@ -69,8 +82,11 @@ export async function runSync(
   try {
     outcome = await pullChanges(ctx, onProgress);
   } catch (error) {
-    if (!(error instanceof ApiError && error.code == "gone")) throw error;
-    outcome = await resync(ctx, onProgress);
+    if (!(error instanceof ApiError)) throw error;
+    if (error.code == "gone") outcome = await resync(ctx, onProgress);
+    else if (error.code == "server_restored")
+      outcome = await reupload(ctx, onProgress);
+    else throw error;
   }
   return {
     applied: pendingApplied + outcome.applied,
