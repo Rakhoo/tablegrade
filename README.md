@@ -364,7 +364,8 @@ through the share sheet on phones and tablets and as a direct download on deskto
 PDF and CSV exports are always direct downloads. Importing asks for confirmation, checks the
 SQLite file signature and schema version, replaces the database, runs the migrations and
 reloads the app. This is
-also the way to move data to another device.
+also the way to move data to another device. With sync on, the import turns sync off (see
+"Konto & Sync").
 
 ## Domain rules
 
@@ -475,6 +476,9 @@ the tab used last:
   `getSyncBadge` in `lib/syncView.ts`) shows the state and opens this tab
   (`paths.settings("sync")`); an expired sign-in or a needed update also shows a closable
   notice on every other page (`components/SyncNoticeBanner.tsx`). There is no lock screen.
+  Importing a backup while sync is on turns sync off (`sync/importGuard.ts`), so the old data
+  cannot overwrite the other devices. The notice and the card then say so
+  (`components/SyncImportNotice.tsx`) until "Verstanden" hides it (`dismissImportNotice`).
   The explainable elements of the card, the badge and the notice have `data-help` texts, so *Hilfe*
   explains them. The card's views are small components in `features/settings/Sync*.tsx`;
   `useSyncAction` runs a facade call and shows its German error (`SyncErrorAlert`).
