@@ -7,31 +7,31 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A1 Speicher
 
-- [ ] Interface `store.Store` mit allen Operationen aus protocol.md (Konten, Identitäten,
+- [x] Interface `store.Store` mit allen Operationen aus protocol.md (Konten, Identitäten,
       Passkeys, Geräte, Sitzungen, Wraps, Einträge, Blob-Referenzen, Kopplungen).
-- [ ] SQLite-Umsetzung: WAL, `busy_timeout`, eine Schreib-Verbindung, eigene
+- [x] SQLite-Umsetzung: WAL, `busy_timeout`, eine Schreib-Verbindung, eigene
       Schema-Migrationen (nur anhängen). Postgres soll später ein zweites Paket sein können.
-- [ ] `seq` pro Konto streng steigend, auch bei parallelen Pushes (Test).
+- [x] `seq` pro Konto streng steigend, auch bei parallelen Pushes (Test).
 
 ## A2 Grundlagen der API
 
-- [ ] Router, JSON-Helfer, Fehlerformat, `X-Protocol-Version`, CORS nur für `APP_ORIGINS`.
-- [ ] Sitzungen: Token erzeugen, nur Hash speichern, Middleware, Ablauf und Verlängerung,
+- [x] Router, JSON-Helfer, Fehlerformat, `X-Protocol-Version`, CORS nur für `APP_ORIGINS`.
+- [x] Sitzungen: Token erzeugen, nur Hash speichern, Middleware, Ablauf und Verlängerung,
       `session_revoked`.
-- [ ] Rate-Limits und Größenlimits laut protocol.md 8.
-- [ ] Test-Login `POST /api/v1/auth/dev/login`, nur aktiv mit `DEV_AUTH=1`. Er legt ein
+- [x] Rate-Limits und Größenlimits laut protocol.md 8.
+- [x] Test-Login `POST /api/v1/auth/dev/login`, nur aktiv mit `DEV_AUTH=1`. Er legt ein
       Konto und ein Gerät an. Standard ist aus; beim Start mit `DEV_AUTH=1` eine deutliche
       Warnung loggen. Für Tests von Stream B und D.
-- [ ] `GET /auth/session`, `POST /auth/logout`, Geräte-Endpunkte.
+- [x] `GET /auth/session`, `POST /auth/logout`, Geräte-Endpunkte.
 
 ## A3 Passkeys
 
-- [ ] `go-webauthn`: Registrierung (neues Konto oder weiterer Passkey), Login mit
+- [x] `go-webauthn`: Registrierung (neues Konto oder weiterer Passkey), Login mit
       discoverable credentials. `RP_ID` und erlaubte Origins (`APP_ORIGINS`) aus der Konfiguration.
-- [ ] PRF-Erweiterung in den Optionen anfordern; ob der Passkey PRF kann, meldet der Client
+- [x] PRF-Erweiterung in den Optionen anfordern; ob der Passkey PRF kann, meldet der Client
       beim Abschluss, der Server speichert `prfCapable`.
-- [ ] Challenges mit Ablauf (5 Minuten) im Speicher oder in der DB.
-- [ ] **Merge-Punkt.**
+- [x] Challenges mit Ablauf (5 Minuten) im Speicher oder in der DB.
+- [x] **Merge-Punkt.**
 
 ## A4 Microsoft und Google
 

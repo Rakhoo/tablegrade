@@ -13,6 +13,41 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 16:20 UTC · Stream A · sync/server
+- Erledigt: A3 Passkeys (`internal/api/passkey.go`): Registrierung (neues Konto oder weiterer
+  Passkey mit Sitzung), Login mit discoverable credentials, PRF-Salt in den Optionen,
+  `prfCapable` aus `clientExtensionResults`, Challenges 5 Minuten und einmalig
+  (`auth.Challenges`, im Speicher). Tests mit Software-Authenticator (ES256, `none`).
+- Entschieden: `go-webauthn` v0.15.0, weil neuere Versionen Go 1.25+ verlangen. `go.mod` bleibt
+  bei `go 1.24.0`.
+- Entschieden: WebAuthn-User-ID = `userId`. Die ID wird bei `register/begin` gewählt, das Konto
+  erst bei `finish` angelegt (`store.CreateUserWithID`). Grund: Die Bibliothek prüft beim Login,
+  dass `userHandle` zur Kontokennung passt.
+- Entschieden: Challenges im Speicher statt in der DB. Ein Neustart bricht nur laufende
+  Anmeldungen ab.
+- Protokoll ergänzt (Abschnitt „Änderungen“, Passkeys): Body von `begin`, `204` bei weiterem
+  Passkey, PRF-Salt schon in den Optionen, Fehlercodes. Betrifft Stream B.
+- `api.New` gibt jetzt auch einen Fehler zurück (ungültige WebAuthn-Konfiguration).
+- Ungetestet: echte Authenticatoren (iPad, Windows Hello). Erst mit Stream D/Mario.
+- Nächster Schritt: A4 Microsoft und Google.
+
+## 2026-11-23, 15:45 UTC · Stream A · sync/server
+- Erledigt: A1 (Store-Interface, SQLite-Umsetzung `internal/store/sqlite`, gemeinsame Tests
+  `internal/store/storetest` inkl. parallelem Push), A2 (Server-Struktur `api.New`, Fehlerformat,
+  Sitzungen mit Token-Hash und 90-Tage-Verlängerung, `session_revoked`, Rate-Limit pro IP für
+  `auth`, Body-Limit 64 KB, Test-Login mit `DEV_AUTH=1`, `GET /auth/session`, `POST /auth/logout`,
+  Geräte-Endpunkte, max. 10 aktive Geräte).
+- Entschieden: `modernc.org/sqlite` v1.46.1, weil neuere Versionen Go 1.26 verlangen (lokal und
+  im Plan ist Go 1.24). Grund: `go.mod` bleibt bei `go 1.24.0`.
+- Entschieden: Eigene Seq-Spalte `users.latest_seq`; eine Schreib-Verbindung mit `BEGIN IMMEDIATE`
+  serialisiert Pushes. Blob-Referenzen in `record_blobs`, `blobs.orphaned_at` startet die 30 Tage.
+- Entschieden: Sitzung wird höchstens einmal pro Minute verlängert (spart Schreibzugriffe).
+- Entschieden: `TRUST_FORWARDED_FOR=1` hinter Tailscale Funnel, sonst zählen alle Anfragen als
+  127.0.0.1. Rate-Limit für `push` und Größenlimits für Push/Blobs folgen mit A6/A7.
+- Protokoll ergänzt (Abschnitt „Änderungen“): Code `internal`, Test-Login, Form von
+  `GET /auth/session`, `204`-Antworten, Gerätenamen 1–80 Zeichen. Betrifft Stream B.
+- Nächster Schritt: A3 Passkeys (`go-webauthn`).
+
 ## 2026-11-23, 15:20 UTC · Stream B · sync/client
 - Erledigt: B1 Krypto in `src/crypto/` (`encoding`, `primitives`, `keys`, `recoveryKey`,
   `records`, `link`), alle Testvektoren bestehen (`src/crypto/crypto.test.ts`).
