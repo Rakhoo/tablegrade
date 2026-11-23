@@ -264,6 +264,8 @@ src/
 │   └── queries/                    data access per entity
 ├── services/                       side effects: holiday API, backups, PWA, WebUntis PDF,
 │                                   overview export
+├── crypto/                         WebCrypto logic of sync: data key, wraps, recovery key,
+│                                   record and photo encryption, device link (no DOM, no DB)
 ├── sync/                           facade of account and sync (docs/sync-plan); sample
 │                                   values with `VITE_SYNC_DEMO=true` until the engine exists
 ├── hooks/                          shared state (undo history, display options, stored
