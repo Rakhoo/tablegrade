@@ -13,9 +13,17 @@ export type OidcProvider = Exclude<IdentityProvider, "passkey">;
  * - `syncing`: a push or pull runs.
  * - `offline`: the server is not reachable; changes wait in the outbox.
  * - `error`: the last attempt failed, see `SyncStatus.error`.
+ * - `upgradeRequired`: the server or the data needs a newer app version (HTTP 426).
  */
 export type SyncPhase =
-  "off" | "signedOut" | "locked" | "idle" | "syncing" | "offline" | "error";
+  | "off"
+  | "signedOut"
+  | "locked"
+  | "idle"
+  | "syncing"
+  | "offline"
+  | "error"
+  | "upgradeRequired";
 
 /** A sign-in method linked to the account. */
 export type Identity = {
@@ -33,6 +41,10 @@ export type AccountInfo = {
   deviceId: string;
   /** Linked sign-in methods. */
   identities: Identity[];
+  /** Whether the server already has a wrapped data key; `false` for a new account. */
+  hasDataKey: boolean;
+  /** Whether a passkey of the account can unlock the data key (PRF). */
+  hasPrfPasskey: boolean;
 };
 
 /** Snapshot of the sync state for the UI. Replaced as a whole on every change. */

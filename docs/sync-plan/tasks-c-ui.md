@@ -27,7 +27,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
       - Deutlicher Hinweis: Ohne diesen Schlüssel sind die Daten bei Verlust aller Geräte weg.
         Niemand kann ihn zurücksetzen.
 - [x] Bestätigung: zwei zufällige Vierergruppen eingeben.
-- [ ] Angebot „Passkey zum Entsperren hinzufügen“ (wenn noch keiner mit PRF vorhanden).
+- [x] Angebot „Passkey zum Entsperren hinzufügen“ (wenn noch keiner mit PRF vorhanden).
 - [ ] Erst-Upload mit Fortschritt, danach Zustand „aktiv“.
 
 ## C3 Neues Gerät
@@ -56,7 +56,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
       synchronisiert, läuft, offline, Fehler. Mit `data-help`.
 - [x] Hinweis bei „gesperrt“: Die App bleibt benutzbar, Text „Anmeldung abgelaufen, neu
       anmelden, um zu synchronisieren“ mit Knopf. Kein Sperrbildschirm.
-- [ ] Hinweis bei „Update nötig“.
+- [x] Hinweis bei „Update nötig“.
 - [ ] Hinweis beim Import einer Sicherung mit aktivem Sync (Logik von Stream B).
 
 ## C7 Nachträge aus blockers.md (Antworten vom 2026-11-23)
@@ -64,12 +64,12 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 Braucht die Fassaden-Ergänzungen aus B7. Fehlen sie noch in `sync/integration`: im Demo-Modus
 (`src/sync/demo.ts`) vorbauen ist erlaubt, sonst die nächste freie Aufgabe nehmen.
 
-- [ ] „Update nötig“: eigene Ansicht in `lib/syncView.ts` für `phase == "upgradeRequired"`,
+- [x] „Update nötig“: eigene Ansicht in `lib/syncView.ts` für `phase == "upgradeRequired"`,
       Hinweis in der Karte und in der App (C5) mit Knopf „Neu laden“ (`reloadApp`).
-- [ ] Neues Konto ohne Schlüssel: Bei `locked` und `account.hasDataKey == false` den Ablauf
+- [x] Neues Konto ohne Schlüssel: Bei `locked` und `account.hasDataKey == false` den Ablauf
       „Schlüssel erstellen“ (wie C2) statt der Entsperr-Wege zeigen. Gilt auch nach der
       Anmeldung mit Microsoft oder Google.
-- [ ] „Mit Passkey entsperren“ (C3) nur bei `account.hasPrfPasskey`. Angebot „Passkey zum
+- [x] „Mit Passkey entsperren“ (C3) nur bei `account.hasPrfPasskey`. Angebot „Passkey zum
       Entsperren hinzufügen“ (C2) nur ohne; es ruft `addPasskey()`.
 - [ ] Fortschritt von Erst-Upload (C2) und Erst-Download (C3) aus `SyncStatus.progress`.
 - [ ] Vor dem Erst-Download `hasLocalData()`; wenn ja, fragen (ersetzen oder abbrechen), bei

@@ -1,5 +1,6 @@
 import { Button, TextField } from "@mui/material";
 import { useState, type FormEvent } from "react";
+import { useSyncStatus } from "../../hooks/useSyncStatus";
 import { RECOVERY_KEY_USER_NAME } from "../../lib/recoveryKeyCheck";
 import { unlockWithPasskey, unlockWithRecoveryKey } from "../../sync";
 import { SyncDeviceLink } from "./SyncDeviceLink";
@@ -7,28 +8,33 @@ import { SyncErrorAlert } from "./SyncErrorAlert";
 import { useSyncAction } from "./useSyncAction";
 
 /**
- * Ways to get the data key onto a signed-in device: a passkey that can unlock, linking with
- * another device of the account, or the recovery key.
+ * Ways to get the data key onto a signed-in device: a passkey that can unlock (if the account
+ * has one), linking with another device of the account, or the recovery key.
  */
 export function SyncUnlock() {
   const { busy, error, run } = useSyncAction();
+  const withPasskey = useSyncStatus().account?.hasPrfPasskey == true;
   return (
     <>
       <p className="text-sm">
         Die Daten sind verschlüsselt. Dieses Gerät braucht den Schlüssel. Dafür
-        gibt es drei Wege:
+        gibt es {withPasskey ? "drei" : "zwei"} Wege:
       </p>
-      <SyncErrorAlert error={error} />
-      <div>
-        <Button
-          variant="contained"
-          disabled={busy}
-          onClick={() => run(unlockWithPasskey)}
-          data-help="Entsperrt mit einem Passkey, der beim Einrichten dafür hinzugefügt wurde (Face ID, Touch ID oder Gerätecode)."
-        >
-          Mit Passkey entsperren
-        </Button>
-      </div>
+      {withPasskey && (
+        <>
+          <SyncErrorAlert error={error} />
+          <div>
+            <Button
+              variant="contained"
+              disabled={busy}
+              onClick={() => run(unlockWithPasskey)}
+              data-help="Entsperrt mit einem Passkey, der beim Einrichten dafür hinzugefügt wurde (Face ID, Touch ID oder Gerätecode)."
+            >
+              Mit Passkey entsperren
+            </Button>
+          </div>
+        </>
+      )}
       <SyncDeviceLink />
       <RecoveryKeyEntry />
     </>

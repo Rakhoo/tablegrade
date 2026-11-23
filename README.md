@@ -436,11 +436,15 @@ the tab used last:
   "Einrichten"), setup (device name, new account with a passkey, sign-in with a passkey,
   Microsoft or Google), missing key on a new device, active (state, last sync, "Jetzt
   synchronisieren", linked sign-in methods) and an expired sign-in (the app keeps working
-  locally). After a new account the card shows the recovery key once (form that password managers offer to save,
+  locally). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
+  locked account without a data key on the server is new (`account.hasDataKey`), also after
+  a Microsoft or Google sign-up; then the card shows the recovery key once (form that password managers offer to save,
   "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
   two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. A signed-in device
-  without the key offers three ways to unlock: passkey, linking with another device (code,
+  without the key offers up to three ways to unlock: passkey (only if the account has one that
+  can unlock, `account.hasPrfPasskey`), linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).
+  Without such a passkey the active view offers "Passkey hinzufügen".
   The active view has "Gerät koppeln" to enter that code on a device that already syncs.
   "Geräte anzeigen" lists the devices of the account (last activity) and revokes another one
   after a confirmation. Below: a new recovery key (same steps, the old one stops working),
@@ -448,8 +452,8 @@ the tab used last:
   also delete the school data on this device).
   While sync is on, a badge next to the speed dial (`components/SyncBadge.tsx`, state from
   `getSyncBadge` in `lib/syncView.ts`) shows the state and opens this tab
-  (`paths.settings("sync")`); an expired sign-in also shows a closable notice on every other
-  page (`components/SyncSignInBanner.tsx`). There is no lock screen.
+  (`paths.settings("sync")`); an expired sign-in or a needed update also shows a closable
+  notice on every other page (`components/SyncNoticeBanner.tsx`). There is no lock screen.
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

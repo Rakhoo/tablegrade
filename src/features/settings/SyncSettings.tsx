@@ -3,15 +3,12 @@ import { format } from "date-fns";
 import { useState, type ReactNode } from "react";
 import { RefreshIcon } from "../../components/icons";
 import { useSyncStatus } from "../../hooks/useSyncStatus";
-import {
-  disableSync,
-  syncNow,
-  type SignInResult,
-  type SyncStatus,
-} from "../../sync";
+import { disableSync, syncNow, type SyncStatus } from "../../sync";
 import { getSyncView, type SyncView } from "../../lib/syncView";
+import { reloadApp } from "../../services/pwa";
 import { SettingsSection } from "./SettingsSection";
 import { SyncAccountActions } from "./SyncAccountActions";
+import { SyncAddPasskey } from "./SyncAddPasskey";
 import { SyncApproveLink } from "./SyncApproveLink";
 import { SyncDevices } from "./SyncDevices";
 import { SyncErrorAlert } from "./SyncErrorAlert";
@@ -27,37 +24,35 @@ const HINTS: Record<SyncView, string> = {
   off: "Aus. Alle Daten liegen nur auf diesem Gerät.",
   setup:
     "Einrichtung: neues Konto anlegen oder mit einem bestehenden anmelden.",
+  createKey: "Neues Konto: Wiederherstellungsschlüssel sichern.",
   missingKey:
     "Angemeldet. Dieses Gerät braucht noch den Schlüssel zu den Daten.",
   active: "Aktiv. Die Daten werden verschlüsselt abgeglichen.",
   expired: "Abgemeldet oder Anmeldung abgelaufen.",
+  upgrade: "Pausiert. Diese App-Version ist zu alt.",
 };
-
-/** Hint while a new account gets its recovery key. */
-const NEW_ACCOUNT_HINT = "Neues Konto: Wiederherstellungsschlüssel sichern.";
 
 /**
  * Account and sync settings. Shows the step that fits the sync status: the explanation while
- * it is off, the setup, unlocking a new device, the active sync and an expired sign-in.
+ * it is off, the setup, the key of a new account, unlocking a new device, the active sync, an
+ * expired sign-in and a needed update.
  */
 export function SyncSettings() {
   const status = useSyncStatus();
   const view = getSyncView(status);
-  // A new account has no data key yet; the key setup replaces the view until it is done
-  const [newAccount, setNewAccount] = useState(false);
-
-  /** Starts the key setup after a sign-up created a new account. */
-  const handleSignedIn = ({ isNewUser }: SignInResult) =>
-    setNewAccount(isNewUser);
+  // Creating the key ends the "createKey" view at once; keep the key on screen until it is checked
+  const [keySetup, setKeySetup] = useState(false);
+  if (view == "createKey" && !keySetup) setKeySetup(true);
 
   const content: Record<SyncView, ReactNode> = {
     off: <SyncIntro />,
     setup: (
       <>
-        <SyncSignIn allowSignup onSignedIn={handleSignedIn} />
+        <SyncSignIn allowSignup />
         <CancelSetup />
       </>
     ),
+    createKey: null,
     missingKey: <SyncUnlock />,
     active: <SyncActive status={status} />,
     expired: (
@@ -66,20 +61,21 @@ export function SyncSettings() {
           Die App arbeitet auf diesem Gerät normal weiter. Neu anmelden, um
           wieder zu synchronisieren.
         </Alert>
-        <SyncSignIn allowSignup={false} onSignedIn={handleSignedIn} />
+        <SyncSignIn allowSignup={false} />
       </>
     ),
+    upgrade: <SyncUpgrade />,
   };
   return (
     <SettingsSection
       title="Konto & Synchronisierung"
-      hint={newAccount ? NEW_ACCOUNT_HINT : HINTS[view]}
+      hint={HINTS[keySetup ? "createKey" : view]}
       help="Konto für den verschlüsselten Abgleich der Daten zwischen eigenen Geräten: einrichten, Gerät hinzufügen, Status."
     >
-      {newAccount ? (
+      {keySetup ? (
         <SyncRecoveryKey
           intro="Das Konto ist angelegt. Jetzt den Wiederherstellungsschlüssel erstellen und sicher aufbewahren."
-          onDone={() => setNewAccount(false)}
+          onDone={() => setKeySetup(false)}
         />
       ) : (
         content[view]
@@ -101,6 +97,28 @@ function CancelSetup() {
           data-help="Bricht die Einrichtung ab; die Daten bleiben nur auf diesem Gerät."
         >
           Einrichtung abbrechen
+        </Button>
+      </div>
+    </>
+  );
+}
+
+/** Sync pauses until the app is updated; the app keeps working locally meanwhile. */
+function SyncUpgrade() {
+  return (
+    <>
+      <Alert severity="warning">
+        Für den Abgleich braucht es eine neuere Version der App. Die App
+        arbeitet auf diesem Gerät normal weiter.
+      </Alert>
+      <div>
+        <Button
+          variant="contained"
+          startIcon={<RefreshIcon size={18} />}
+          onClick={reloadApp}
+          data-help="Lädt die App neu und holt dabei die neueste Version."
+        >
+          Neu laden
         </Button>
       </div>
     </>
@@ -144,7 +162,12 @@ function SyncActive({ status }: SyncActiveProps) {
           Jetzt synchronisieren
         </Button>
       </div>
-      {status.account && <SyncIdentities account={status.account} />}
+      {status.account && (
+        <>
+          <SyncAddPasskey account={status.account} />
+          <SyncIdentities account={status.account} />
+        </>
+      )}
       <SyncApproveLink />
       <SyncDevices />
       <SyncAccountActions />

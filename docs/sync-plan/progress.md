@@ -226,3 +226,18 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Offen: C5 Hinweis beim Sicherungs-Import wartet auf B2 (Logik „Sync ausschalten“ beim
   Import). C5 „Update nötig“ wartet auf die Fassade (blockers.md). C6 erst danach.
 - Kein Merge nach `sync/integration`: Der einzige Merge-Punkt von Stream C ist C6.
+
+### 2026-11-23 · Stream C
+- Erledigt: C7 „Update nötig“ (Ansicht `upgrade` in `lib/syncView.ts`, Karte mit „Neu laden“,
+  Hinweis auf allen Seiten; `SyncSignInBanner` heißt jetzt `SyncNoticeBanner`).
+- Erledigt: C7 neues Konto ohne Schlüssel (Ansicht `createKey` bei `hasDataKey == false`,
+  auch nach Microsoft/Google). `SyncSignIn.onSignedIn` entfällt, die Ansicht folgt dem Status.
+- Erledigt: C7/C2 Passkey: „Mit Passkey entsperren“ nur bei `hasPrfPasskey`, sonst Angebot
+  „Passkey hinzufügen“ in der aktiven Ansicht (`SyncAddPasskey`, ruft `addPasskey()`).
+- Entschieden: B7 ist noch nicht in `sync/integration`. Die Signaturen aus B7
+  (`upgradeRequired`, `hasDataKey`, `hasPrfPasskey`, `addPasskey`) sind in `types.ts`,
+  `index.ts` und `demo.ts` vorgebaut. Beim nächsten Merge von `sync/integration` die Fassung
+  von Stream B übernehmen.
+- Nicht geprüft: Ansichten im Browser (keine Browser-Tests).
+- Nächster Schritt: C7 Fortschritt, `hasLocalData`/`replaceLocalData`, `renameDevice`,
+  Verknüpfen; danach C6.

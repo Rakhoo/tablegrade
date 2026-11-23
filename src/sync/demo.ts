@@ -1,5 +1,6 @@
 import { OFF_STATUS, readStatus, updateStatus } from "./status";
 import type {
+  AccountInfo,
   Device,
   DeviceLinkApproval,
   OidcProvider,
@@ -51,9 +52,17 @@ async function signIn(
       userId: "a0000000-0000-4000-8000-000000000001",
       deviceId: devices[0].id,
       identities: [{ provider: "passkey", createdAt: now - 30 * 86_400_000 }],
+      hasDataKey: !isNewUser,
+      hasPrfPasskey: !isNewUser,
     },
   });
   return { isNewUser, needsUnlock: !isNewUser };
+}
+
+/** Merges `change` into the signed-in sample account. */
+function updateAccount(change: Partial<AccountInfo>) {
+  const { account } = readStatus();
+  if (account) updateStatus({ account: { ...account, ...change } });
 }
 
 /** Marks the device as unlocked and synced. */
@@ -91,7 +100,12 @@ export const demo = {
     await wait();
     if (readStatus().phase == "locked")
       updateStatus({ phase: "idle", lastSyncAt: Date.now() });
+    updateAccount({ hasDataKey: true });
     return RECOVERY_KEY;
+  },
+  addPasskey: async () => {
+    await wait();
+    updateAccount({ hasPrfPasskey: true });
   },
   startDeviceLink: async (): Promise<PendingDeviceLink> => {
     await wait();

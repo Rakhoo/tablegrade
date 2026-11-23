@@ -64,6 +64,11 @@ export async function startOidcLogin(
   return DEMO ? demo.startOidcLogin(provider, deviceName) : notImplemented();
 }
 
+/** Adds a passkey that can unlock the data key on other devices (PRF). */
+export async function addPasskey(): Promise<void> {
+  return DEMO ? demo.addPasskey() : notImplemented();
+}
+
 /** Unlocks the data key with a passkey that supports PRF. */
 export async function unlockWithPasskey(): Promise<void> {
   return DEMO ? demo.unlockWithPasskey() : notImplemented();
