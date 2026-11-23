@@ -13,6 +13,25 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:45 UTC · Stream B · sync/client
+- Erledigt: B4 (Logik). `webauthn.ts` (JSON-Optionen von Hand umgewandelt, PRF-Erweiterung,
+  deutsche Fehlermeldungen), `passkeyFlow.ts` (Registrierung, Login, weiterer Passkey,
+  Entsperren per Passkey), `oidc.ts` (PKCE `S256`, `state`, Rückkehr, URL ohne Query mit
+  Hash-Route), `keyring.ts` (nach Login entsperren, neues Konto mit neuer DEK,
+  Wiederherstellungsschlüssel ersetzen, Passkey-Wrap, Abmelden). Tests in `auth.test.ts`
+  (Keyring über drei Geräte, Tippfehler, falsches Konto, OIDC-Ablauf).
+- Entschieden: OIDC-Zwischenstand in `localStorage` (`notenfeder-oidc`), nicht
+  `sessionStorage`. Grund: In der installierten PWA auf dem iPad geht `sessionStorage` beim
+  Wechsel zum Anbieter verloren, wenn iOS den Web-View neu erzeugt.
+- Entschieden: Liefert ein Passkey bei der Registrierung nur `prf.enabled`, holt ein zweiter
+  Dialog die PRF-Ausgabe. Die PRF-Ausgabe geht nie an den Server.
+- Entschieden: Der Wiederherstellungsschlüssel wird beim Ersetzen erst hochgeladen, dann
+  werden alte gelöscht (nie ohne `recovery`-Wrap).
+- Offen: Aufruf von `finishOidcLogin` beim App-Start (`?oidc=callback`) kommt mit der
+  Fassade (B6); die Logik ist fertig. Passkey/PRF und OIDC-Rückkehr in der PWA sind nur auf
+  dem iPad prüfbar (keine Browser-Tests).
+- Nächster Schritt: B5 Sync-Engine (braucht Migration 24 für `_sync_pending`).
+
 ## 2026-11-23, 17:05 UTC · Stream B · sync/client
 - Erledigt: B3. `src/sync/api.ts` (alle Endpunkte, `ApiError` mit Code, Status, deutscher
   Meldung, `retryAfter`; Netzfehler = `offline`), `src/sync/session.ts` (`checkSession`,

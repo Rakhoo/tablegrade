@@ -39,14 +39,14 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 
 ## B4 Anmeldung (Logik)
 
-- [ ] Passkey-Registrierung und -Login mit `navigator.credentials`, PRF-Erweiterung
+- [x] Passkey-Registrierung und -Login mit `navigator.credentials`, PRF-Erweiterung
       (`eval` mit Salt aus protocol.md), Erkennen von `prfCapable`.
-- [ ] OIDC: PKCE und `state` erzeugen, zur Authorize-URL wechseln, nach Rückkehr
+- [x] OIDC: PKCE und `state` erzeugen, zur Authorize-URL wechseln, nach Rückkehr
       (`?oidc=callback`) Code an den Server senden, Query aus der URL entfernen. Das
       Hash-Routing darf nicht stören. Gilt für Microsoft und Google.
-- [ ] Nach dem Login: Wraps holen. DEK vorhanden? Dann entsperrt. Sonst Status „Schlüssel
+- [x] Nach dem Login: Wraps holen. DEK vorhanden? Dann entsperrt. Sonst Status „Schlüssel
       fehlt“ mit den Wegen Passkey-PRF, Kopplung, Wiederherstellungsschlüssel.
-- [ ] Weiteren Passkey hinzufügen (mit Wrap), Identität verknüpfen, neuen
+- [x] Weiteren Passkey hinzufügen (mit Wrap), Identität verknüpfen, neuen
       Wiederherstellungsschlüssel erzeugen (alten Wrap ersetzen), Abmelden.
 
 ## B5 Sync-Engine
