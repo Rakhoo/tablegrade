@@ -27,6 +27,10 @@
 - Nur lesen, was für die Aufgabe nötig ist: gezielt mit `grep`/Ausschnitten statt ganzer
   Dateien, keine langen Ausgaben, keine Wiederholung früherer Schritte.
 - Antworten kurz: was geändert wurde, was entschieden wurde, was offen/ungetestet ist.
+- Kommunikation mit mir größtenteils nach ASD-STE100 (Simplified Technical English), auf
+  Deutsch übertragen: kurze Sätze (Anweisungen max. 20 Wörter, Beschreibungen max. 25), eine
+  Anweisung pro Satz, Aktiv, einfache und einheitliche Begriffe, keine Füllwörter oder
+  Redewendungen, Schritte als Liste. Ausführlicher nur, wenn ich danach frage.
 - Dass Älteres aus dem Gespräch vergessen wird, ist kein Problem – maßgeblich sind der Code,
   die README und diese Datei.
 

@@ -1,12 +1,20 @@
 name: Deploy to Cloudflare Pages
 
 on:
-  # Runs on pushes targeting the default branch
+  # Runs on pushes targeting the default branch. The message of the newest commit of a push
+  # steers it: "[skip deploy]" deploys nothing, "[deploy dev]" deploys to the dev preview
+  # (dev.tablegrade.pages.dev) instead of production. GitHub's own "[skip ci]" skips all workflows.
   push:
     branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      target:
+        description: "Ziel des Deployments"
+        type: choice
+        options: [production, dev]
+        default: production
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -23,7 +31,11 @@ concurrency:
 jobs:
   # Build and deploy job
   build:
+    if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip deploy]')
     runs-on: ubuntu-latest
+    env:
+      # Cloudflare Pages treats every branch other than the production branch as a preview
+      DEPLOY_BRANCH: ${{ (inputs.target == 'dev' || contains(github.event.head_commit.message, '[deploy dev]')) && 'dev' || 'main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,5 +82,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy ./dist --project-name=tablegrade
+          command: pages deploy ./dist --project-name=tablegrade --branch=${{ env.DEPLOY_BRANCH }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}

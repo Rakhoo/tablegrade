@@ -228,6 +228,11 @@ Every push to `main` runs [.github/workflows/deploy.yml](.github/workflows/deplo
 builds the app and publishes `dist/` to the Cloudflare Pages project `tablegrade`. The
 repository needs the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
+The message of the newest commit of a push steers the deployment: `[skip deploy]` deploys
+nothing, `[deploy dev]` publishes a preview at `dev.tablegrade.pages.dev` instead of
+production (its own origin, so an installed dev app keeps its own data). GitHub's `[skip ci]`
+skips all workflows. Run manually, the workflow asks for the target (`production` or `dev`).
+
 ## Project structure
 
 ```
