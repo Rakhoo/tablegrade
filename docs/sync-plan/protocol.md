@@ -93,6 +93,13 @@ Antwort bei erfolgreicher Anmeldung:
 - `GET /auth/oidc/{provider}/config` liefert
   `{ clientId, authorizeUrl, scopes: ["openid"], redirectUri }`. Der Browser nutzt PKCE
   (`S256`) und `state`; beides prüft nur der Browser.
+- `{provider}` ist `microsoft` oder `google`. Ein Anbieter ohne Client-ID ist aus: `404 not_found`.
+  `redirectUri` gehört zur App-Origin aus dem `Origin`-Header (sonst die erste aus
+  `APP_ORIGINS`). `exchange` nimmt nur diese Redirect-URIs an, sonst `bad_request`.
+- `exchange` mit Sitzung verknüpft die Identität mit dem Konto und antwortet `204` (auch, wenn
+  sie schon verknüpft ist). Gehört sie zu einem anderen Konto: `conflict`. Ohne Sitzung: Login
+  oder neues Konto, Antwort wie jede Anmeldung. Abgelehnter Code oder ungültiges ID-Token:
+  `401 unauthorized`. `deviceName` gilt wie bei Passkeys nur ohne Sitzung.
 - Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
   `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
   speichert der Server nicht.
@@ -139,6 +146,13 @@ KEK je Art:
 | `PUT /keys/{id}` | Wrap anlegen oder ersetzen (z. B. neuer Passkey, neuer Wiederherstellungsschlüssel). |
 | `DELETE /keys/{id}` | Wrap löschen. Der letzte `recovery`-Wrap lässt sich nicht löschen. |
 
+- `PUT` und `DELETE` antworten `204`. `{id}` ist eine kleingeschriebene UUID; eine `id` im Body
+  muss gleich sein (sie darf fehlen). `createdAt` setzt der Server.
+- `PUT` prüft: `kind` ist `passkey` oder `recovery` (`org` folgt später), `alg` ist `A256GCM`,
+  `wrapped` hat genau 60 Bytes. `passkey` braucht eine `credentialId` eines Passkeys dieses
+  Kontos, `recovery` keine. Sonst `bad_request`. Gehört die `id` einem anderen Konto: `conflict`.
+- `DELETE` des letzten `recovery`-Wraps: `conflict`. Unbekannte `id`: `not_found`.
+
 ## 4. Einträge
 
 ```
@@ -166,6 +180,12 @@ records  userId, id, seq, updatedAt, deleted, schema, ciphertext, deviceId
 | `POST /records/push` | Body: `{ records: [{ id, deleted, schema, ciphertext, blobs }] }`, max. 500 Einträge bzw. 5 MB. Antwort: `{ results: [{ id, seq, updatedAt }] }` in derselben Reihenfolge. Last Write Wins: der neue Eintrag ersetzt immer den alten. Eine ID doppelt im selben Push: der letzte gewinnt. |
 | `GET /records/pull?after=<seq>&limit=<n>` | Einträge mit `seq > after`, aufsteigend, max. 1000 (Standard 500). Antwort `{ records: [{ id, seq, updatedAt, deleted, schema, ciphertext, deviceId }], more, latestSeq }`. |
 
+- Push: Die 5 MB gelten für den ganzen Request-Body (sonst `too_large`). 0 oder mehr als 500
+  Einträge, eine `id` oder Blob-ID, die nicht 16 Bytes Base64url ist, `schema` < 1, ein
+  `ciphertext` unter 28 Bytes oder mehr als 16 Blobs pro Eintrag: `bad_request`. Höchstens
+  60 Pushes pro Minute und Konto (`rate_limited`).
+- Pull: `after` und `limit` sind ganze Zahlen ≥ 0 bzw. ≥ 1, sonst `bad_request`. Ein `limit`
+  über 1000 zählt als 1000. `after=0` bekommt nie `gone`.
 - Auch Löschungen tragen einen `ciphertext` (Klartext mit `row: null`). So bleibt der Schlüssel
   `k` für das Gerät lesbar, das die Löschung anwendet.
 - Der Server sendet einem Gerät auch seine eigenen Einträge zurück. Der Client erkennt sie an
@@ -276,4 +296,7 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Einträge: Prüfregeln für Push und Pull, Push-Limit 60 pro Minute und Konto, `limit` über 1000 wird gekürzt. |
+| 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
+| 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |
