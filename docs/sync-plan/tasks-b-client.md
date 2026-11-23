@@ -71,10 +71,30 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
       `410`, `revoked`, neuere Schema-Version.
 - [ ] **Merge-Punkt.**
 
+## B7 Fassaden-Ergänzungen für Stream C (Antworten Mario, blockers.md, 2026-11-23)
+
+Signaturen sind mit Mario abgestimmt. Jede Ergänzung auch in `src/sync/demo.ts`, damit
+Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream C wartet darauf.
+
+- [ ] `SyncPhase` um `"upgradeRequired"` ergänzen. Setzen bei HTTP 426 und bei
+      zurückgestellten Einträgen mit neuerer `schema` (B5 Pull).
+- [ ] `AccountInfo.hasDataKey: boolean` (Server hat schon einen Wrap). Auch nach der
+      OIDC-Rückkehr gesetzt, damit die UI ein neues Konto von einem neuen Gerät unterscheidet.
+- [ ] `AccountInfo.hasPrfPasskey: boolean` und `addPasskey(): Promise<void>` (neuer Passkey
+      mit Wrap, B4-Logik).
+- [ ] `SyncStatus.progress: { done: number; total: number } | null`, gesetzt während
+      Erst-Upload und Erst-Download, sonst `null`.
+- [ ] `hasLocalData(): Promise<boolean>` und `replaceLocalData(): Promise<void>`; der
+      Erst-Download auf einem neuen Gerät startet erst danach.
+- [ ] `renameDevice(id: string, name: string): Promise<void>` (`PATCH /devices/{id}`).
+- [ ] `linkOidcIdentity(provider: OidcProvider): Promise<void>`: Redirect wie
+      `startOidcLogin`; die Rückkehr verknüpft die Identität mit dem angemeldeten Konto.
+- [ ] **Merge-Punkt.**
+
 ## B6 Kopplung und Konto (Logik)
 
 - [ ] Kopplung auf beiden Seiten laut protocol.md 6, mit Prüfcode-Bestätigung.
 - [ ] Konto löschen: Server-Aufruf, dann lokale Sync-Daten und Schlüssel entfernen, die
       lokale App-DB bleibt (Nutzerin entscheidet in der UI).
-- [ ] Fassade vollständig umgesetzt, Stubs entfernt.
+- [ ] Fassade vollständig umgesetzt (inklusive B7), Stubs entfernt.
 - [ ] **Merge-Punkt**, „Stream B fertig“ in progress.md.
