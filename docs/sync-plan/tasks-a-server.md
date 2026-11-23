@@ -7,11 +7,11 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A1 Speicher
 
-- [ ] Interface `store.Store` mit allen Operationen aus protocol.md (Konten, Identitäten,
+- [x] Interface `store.Store` mit allen Operationen aus protocol.md (Konten, Identitäten,
       Passkeys, Geräte, Sitzungen, Wraps, Einträge, Blob-Referenzen, Kopplungen).
-- [ ] SQLite-Umsetzung: WAL, `busy_timeout`, eine Schreib-Verbindung, eigene
+- [x] SQLite-Umsetzung: WAL, `busy_timeout`, eine Schreib-Verbindung, eigene
       Schema-Migrationen (nur anhängen). Postgres soll später ein zweites Paket sein können.
-- [ ] `seq` pro Konto streng steigend, auch bei parallelen Pushes (Test).
+- [x] `seq` pro Konto streng steigend, auch bei parallelen Pushes (Test).
 
 ## A2 Grundlagen der API
 

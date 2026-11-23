@@ -15,7 +15,9 @@ baut Stream A ([../docs/sync-plan/tasks-a-server.md](../docs/sync-plan/tasks-a-s
 | `internal/config/` | Konfiguration aus Umgebungsvariablen |
 | `internal/api/` | Routen unter `/api/v1`, CORS, Fehlerformat |
 | `internal/auth/` | Passkeys, OIDC (Microsoft, Google), Sitzungen |
-| `internal/store/` | Store-Interface und SQLite-Umsetzung |
+| `internal/store/` | Store-Interface (Datenmodell, Fehler) |
+| `internal/store/sqlite/` | SQLite-Umsetzung: WAL, eine Schreib-Verbindung, Migrationen nur anhängen |
+| `internal/store/storetest/` | Gemeinsame Tests für jede Store-Umsetzung (später auch Postgres) |
 | `internal/hub/` | WebSocket-Benachrichtigungen |
 | `internal/blob/` | Verschlüsselte Fotos als Dateien |
 | `internal/vectors/` | Lädt die Testvektoren für Tests |
