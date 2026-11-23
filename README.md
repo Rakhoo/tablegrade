@@ -438,7 +438,9 @@ the tab used last:
   synchronisieren") and an expired sign-in (the app keeps working locally). After a new
   account the card shows the recovery key once (form that password managers offer to save,
   "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
-  two random groups of it (`lib/recoveryKeyCheck.ts`) before going on.
+  two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. A signed-in device
+  without the key offers three ways to unlock: passkey, linking with another device (code,
+  then comparing the check code) and typing the recovery key (password managers can fill it).
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

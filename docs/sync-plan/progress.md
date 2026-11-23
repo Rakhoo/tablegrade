@@ -145,3 +145,15 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
   `type="text"`, damit der Schlüssel lesbar bleibt) und ob Drucken in der iPad-PWA geht.
   Test auf dem iPad nötig. Keine Browser-Tests.
 - Nächster Schritt: C2 „Passkey zum Entsperren hinzufügen“.
+- Erledigt: C3 Anmelden (über `SyncSignIn` im Zustand „Einrichtung“) und „Schlüssel fehlt“:
+  `SyncUnlock` mit „Mit Passkey entsperren“, `SyncDeviceLink` (Code anzeigen, Prüfcode
+  vergleichen, „Stimmt überein“/„Abbrechen“) und Eingabe des Wiederherstellungsschlüssels
+  (verstecktes Benutzername-Feld, `autocomplete="current-password"`).
+- Entschieden: „Mit Passkey entsperren“ steht immer da; die Fassade sagt nicht, ob ein
+  PRF-Passkey existiert (blockers.md). Ohne passenden Passkey zeigt der Knopf den Fehler.
+- Offen: Lehnt Stream B `checkCode` nach `cancel()` ab, zeigt die UI kurz einen Fehler.
+  Verlässt die Nutzerin die Seite während der Kopplung, läuft der Code erst serverseitig ab.
+- Nicht geprüft: Ob Passwortmanager das versteckte Benutzername-Feld nutzen (iPad-Test).
+- C2 „Passkey hinzufügen“ und „Erst-Upload mit Fortschritt“ sowie C3 „Download mit
+  Fortschritt“ sind blockiert (Fassade fehlt, blockers.md).
+- Nächster Schritt: C3 „Gerät koppeln“ auf dem alten Gerät (`confirmDeviceLink`), dann C4.

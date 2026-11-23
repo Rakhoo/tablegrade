@@ -15,6 +15,7 @@ import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIntro } from "./SyncIntro";
 import { SyncRecoveryKey } from "./SyncRecoveryKey";
 import { SyncSignIn } from "./SyncSignIn";
+import { SyncUnlock } from "./SyncUnlock";
 import { useSyncAction } from "./useSyncAction";
 
 /** Short line under the card title for each view. */
@@ -53,7 +54,7 @@ export function SyncSettings() {
         <CancelSetup />
       </>
     ),
-    missingKey: null,
+    missingKey: <SyncUnlock />,
     active: <SyncActive status={status} />,
     expired: (
       <>

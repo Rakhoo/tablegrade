@@ -32,8 +32,8 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 
 ## C3 Neues Gerät
 
-- [ ] Anmelden (Passkey, Microsoft, Google).
-- [ ] Zustand „Schlüssel fehlt“: drei Wege
+- [x] Anmelden (Passkey, Microsoft, Google).
+- [x] Zustand „Schlüssel fehlt“: drei Wege (Passkey-Knopf vorerst immer, siehe blockers.md)
       - „Mit Passkey entsperren“ (nur wenn ein PRF-Passkey vorhanden ist),
       - „Mit anderem Gerät koppeln“: Code anzeigen, danach Prüfcode vergleichen,
       - „Wiederherstellungsschlüssel eingeben“ (Einfügen aus dem Passwortmanager erlaubt).

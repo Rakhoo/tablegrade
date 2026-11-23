@@ -6,12 +6,10 @@ import {
   printRecoveryKey,
   saveRecoveryKey,
 } from "../../services/recoveryKeyExport";
+import { RECOVERY_KEY_USER_NAME } from "../../lib/recoveryKeyCheck";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncRecoveryKeyCheck } from "./SyncRecoveryKeyCheck";
 import { useSyncAction } from "./useSyncAction";
-
-/** User name stored with the key, so the password manager lists it under a clear name. */
-const KEY_USER_NAME = "Notenfeder-Wiederherstellung";
 
 type SyncRecoveryKeyProps = {
   /** Line above the button that creates the key, e.g. why a key is needed now. */
@@ -112,7 +110,7 @@ function RecoveryKeyDisplay({ recoveryKey, onNext }: RecoveryKeyDisplayProps) {
       <TextField
         size="small"
         label="Benutzername"
-        value={KEY_USER_NAME}
+        value={RECOVERY_KEY_USER_NAME}
         autoComplete="username"
         className="max-w-96"
         slotProps={{ htmlInput: { readOnly: true } }}

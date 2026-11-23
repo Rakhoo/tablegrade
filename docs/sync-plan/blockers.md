@@ -32,3 +32,15 @@ Vorschlag der Session: Stream B ergänzt `AccountInfo` um `hasDataKey: boolean` 
 ob schon ein Wrap existiert). Stream C zeigt bei `locked` und `hasDataKey == false` den
 Ablauf „Schlüssel erstellen“ statt der Entsperr-Wege.
 Antwort Mario: …
+
+## 2026-11-23 · Stream C · offen
+Frage: Für C2 und C3 fehlen Teile in der Fassade (`src/sync/index.ts`, `types.ts`):
+1. Passkey zum Entsperren hinzufügen (C2, C4 „Passkey hinzufügen“) und die Info, ob schon ein
+   PRF-Passkey existiert (C2-Angebot, C3 „Mit Passkey entsperren“ nur dann zeigen).
+2. Fortschritt von Erst-Upload und Erst-Download (C2, C3).
+3. Ob vor dem Erst-Download lokale Daten da sind und ob sie ersetzt werden sollen (C3).
+Vorschlag der Session: Stream B ergänzt `addPasskey(): Promise<void>`,
+`AccountInfo.hasPrfPasskey: boolean`, `SyncStatus.progress: { done: number; total: number } | null`
+(gesetzt während Erst-Upload/-Download) und für C3 `hasLocalData(): Promise<boolean>` plus
+`replaceLocalData(): Promise<void>` (Download erst danach). Stream C baut die UI darauf auf.
+Antwort Mario: …

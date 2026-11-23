@@ -1,5 +1,8 @@
 import { normalizeRecoveryKey } from "../crypto/recoveryKey";
 
+/** User name stored with the key, so the password manager lists it under a clear name. */
+export const RECOVERY_KEY_USER_NAME = "Notenfeder-Wiederherstellung";
+
 /** Number of groups the user types back to show that the key was saved. */
 const CHECK_COUNT = 2;
 
