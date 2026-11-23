@@ -96,11 +96,11 @@ Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream 
 
 ## B8 Import-Hinweis für Stream C (Antwort Mario, blockers.md, 2026-11-23)
 
-- [ ] `SyncStatus.importNotice: boolean`: `true`, solange `importNotice` im Gerätespeicher
+- [x] `SyncStatus.importNotice: boolean`: `true`, solange `importNotice` im Gerätespeicher
       steht (gesetzt von `checkImportedDatabase` bei `disabled`). Auch im Demo-Modus.
-- [ ] `dismissImportNotice(): Promise<void>`: löscht `importNotice`, setzt den Status neu.
-- [ ] Test in `importGuard.test.ts` oder eigenem Test.
-- [ ] **Merge-Punkt.**
+- [x] `dismissImportNotice(): Promise<void>`: löscht `importNotice`, setzt den Status neu.
+- [x] Test in `importGuard.test.ts` oder eigenem Test.
+- [x] **Merge-Punkt.**
 
 ## B6 Kopplung und Konto (Logik)
 

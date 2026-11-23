@@ -167,7 +167,7 @@ describe("sync service", () => {
     expect(a.device.rows("SELECT id FROM Classes")).toHaveLength(1);
   });
 
-  it("shows a hint once after a backup import turned sync off", async () => {
+  it("keeps the import hint after a backup import until dismissed", async () => {
     const account = fakeAccount();
     const { a } = await firstDevice(account);
     // An imported file carries no or another activation
@@ -175,7 +175,26 @@ describe("sync service", () => {
     await a.service.start();
     a.service.stop();
     expect(readStatus().phase).toBe("off");
-    expect(readStatus().error).toContain("Sicherung");
+    expect(readStatus().importNotice).toBe(true);
     expect(await a.store.get("wanted")).toBeUndefined();
+
+    // A restart still shows the hint; dismissing removes it for good
+    await a.service.start();
+    a.service.stop();
+    expect(readStatus().importNotice).toBe(true);
+    await a.service.dismissImportNotice();
+    expect(readStatus().importNotice).toBe(false);
+    expect(await a.store.get("importNotice")).toBeUndefined();
+  });
+
+  it("clears the import hint when sync is turned on again", async () => {
+    const account = fakeAccount();
+    const { a } = await firstDevice(account);
+    a.device.raw.exec("DELETE FROM _sync_state WHERE key = 'syncId'");
+    await a.service.start();
+    a.service.stop();
+    await a.service.enableSync();
+    expect(readStatus().importNotice).toBe(false);
+    expect(await a.store.get("importNotice")).toBeUndefined();
   });
 });

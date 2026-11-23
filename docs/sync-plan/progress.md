@@ -509,3 +509,12 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Entschieden: Stream C nach `sync/integration` gemergt, obwohl C5 noch offen ist. Grund: alle
   übrigen Aufgaben fertig, Prüfungen grün. „Stream C fertig“ erst nach C5.
 - Geprüft: tsc, lint, build, vitest (106 Tests), `go vet`, `go test`. Nicht geprüft: Browser.
+
+## 2026-11-23, 18:35 UTC · Stream B · sync/client
+- Erledigt: B8. `SyncStatus.importNotice` und `dismissImportNotice()` in Fassade, Service und
+  Demo. Der Hinweis bleibt im Gerätespeicher, bis die Nutzerin ihn schließt oder Sync wieder
+  einschaltet. Die alte Fehlermeldung (`status.error` mit „Sicherung“) entfällt.
+- Entschieden: `enableSync` und `disableSync` löschen den Hinweis ebenfalls. Der Demo-Modus
+  zeigt den Hinweis beim Start (`startSync`), damit Stream C die UI prüfen kann.
+- Geprüft: tsc, lint, build, vitest (117 Tests), `go vet`, `go test`. Nicht geprüft: Browser.
+- Nächster Schritt: Stream C setzt C8 um. Stream B hat keine offenen Aufgaben.
