@@ -16,10 +16,16 @@ as renaming them would break the deployment or lose stored data.
 
 ## Privacy
 
-All data stays on the device: SQLite in the browser (SQLocal on top of OPFS), no backend, no
-accounts, no analytics. Student data never leaves the device unless the user exports a backup.
-The only network request fetches school holidays from
+All data stays on the device: SQLite in the browser (SQLocal on top of OPFS), no analytics.
+Without an account there is no backend: student data never leaves the device unless the user
+exports a backup. The only network request then fetches school holidays from
 [mehr-schulferien.de](https://www.mehr-schulferien.de) (no personal data is sent).
+
+Sync between devices is optional and off by default (settings, "Konto & Sync"). With it, the
+app encrypts every record and photo on the device before upload. The own server
+([server/](server/README.md)) only sees ciphertext, wrapped keys, hashed IDs and time stamps.
+Nobody but the user can read the data or reset the recovery key. Details:
+[docs/sync-plan](docs/sync-plan/README.md) and [protocol.md](docs/sync-plan/protocol.md).
 
 ## Features
 
@@ -145,6 +151,12 @@ The only network request fetches school holidays from
     first one. Students sharing a given name get as much of the last name as needed ("Anna M.",
     "Anna Mü."), same names are numbered ("Anna 1", "Anna 2").
 
+- **Konto & Sync** (settings tab, off by default): an account with a passkey, Microsoft or
+  Google keeps several devices in sync, end-to-end encrypted. A recovery key, another device
+  or a passkey unlocks the data on a new device. A badge next to the speed dial shows the sync
+  state; an expired sign-in only shows a notice, the app keeps working offline. Details in
+  [Settings](#settings).
+
 ### Installed app (PWA)
 
 - SQLocal silently falls back to an in-memory database if OPFS fails, for example without
@@ -254,7 +266,8 @@ src/
 │   ├── classEdit/                  class editor page (new class and editing): fields, roster
 │                                   list and tools, student dialog
 │   ├── nameTrainer/                name cards page
-│   ├── settings/                   settings page, one component per topic
+│   ├── settings/                   settings page, one component per topic; `Sync*` views
+│                                   of the "Konto & Sync" card
 │   ├── install/                    install instructions in a browser tab
 │   └── errors/                     404, error page and storage error
 ├── db/
@@ -266,8 +279,11 @@ src/
 │                                   overview export
 ├── crypto/                         WebCrypto logic of sync: data key, wraps, recovery key,
 │                                   record and photo encryption, device link (no DOM, no DB)
-├── sync/                           facade of account and sync (docs/sync-plan); sample
-│                                   values with `VITE_SYNC_DEMO=true` until the engine exists
+├── sync/                           account and sync: facade (`index.ts`, the only entry
+│                                   for the UI), API client, sign-in, sync engine (outbox
+│                                   push, pull, photos, WebSocket), device store in
+│                                   IndexedDB, backup import guard; sample values with
+│                                   `VITE_SYNC_DEMO=true`
 ├── hooks/                          shared state (undo history, display options, stored
 │                                   preferences), long press, swipe, settings, going back
 ├── test/                           test helpers (in-memory `node:sqlite` with all migrations)
@@ -275,7 +291,8 @@ src/
                                     rules, seating, grades and grading tools, reports,
                                     warnings, colors, formatters, paths, page memory
 public/                             _headers and icons
-server/                             sync server (Go), see server/README.md
+server/                             sync server (Go, SQLite, Docker on a Raspberry Pi),
+                                    see server/README.md
 pwa-assets.config.ts                generator config for the PNG home screen icon
 ```
 
@@ -431,15 +448,15 @@ the tab used last:
   shirt colors), oral grades, absences, warnings, comments, exams with retakes, a project and
   a partial grade, traits and duties. Always the same data
   ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
-- **Konto & Sync** (in progress, see [docs/sync-plan](docs/sync-plan/README.md)): one card
+- **Konto & Sync** (plan and protocol in [docs/sync-plan](docs/sync-plan/README.md)): one card
   whose content follows the sync status (`lib/syncView.ts`): off (explanation and
   "Einrichten"), setup (device name, new account with a passkey, sign-in with a passkey,
   Microsoft or Google), missing key on a new device, active (state, last sync, "Jetzt
   synchronisieren", linked sign-in methods) and an expired sign-in (the app keeps working
   locally). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
   locked account without a data key on the server is new (`account.hasDataKey`), also after
-  a Microsoft or Google sign-up; then the card shows the recovery key once (form that password managers offer to save,
-  "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
+  a Microsoft or Google sign-up; then the card shows the recovery key once (form that
+  password managers offer to save, "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
   two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. The first upload or
   download shows a progress bar in the active view. A signed-in device
   without the key first asks before school data already on it is replaced by the account's
@@ -451,13 +468,16 @@ the tab used last:
   The active view has "Gerät koppeln" to enter that code on a device that already syncs.
   "Geräte anzeigen" lists the devices of the account (last activity), renames them (pencil)
   and revokes another one after a confirmation. Below the linked sign-in methods the card
-  offers "Passkey hinzufügen" and links a Microsoft or Google account not linked yet. Below: a new recovery key (same steps, the old one stops working),
-  "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
+  offers "Passkey hinzufügen" and links a Microsoft or Google account not linked yet. Below: a new
+  recovery key (same steps, the old one stops working), "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
   also delete the school data on this device).
   While sync is on, a badge next to the speed dial (`components/SyncBadge.tsx`, state from
   `getSyncBadge` in `lib/syncView.ts`) shows the state and opens this tab
   (`paths.settings("sync")`); an expired sign-in or a needed update also shows a closable
   notice on every other page (`components/SyncNoticeBanner.tsx`). There is no lock screen.
+  The explainable elements of the card, the badge and the notice have `data-help` texts, so *Hilfe*
+  explains them. The card's views are small components in `features/settings/Sync*.tsx`;
+  `useSyncAction` runs a facade call and shows its German error (`SyncErrorAlert`).
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays

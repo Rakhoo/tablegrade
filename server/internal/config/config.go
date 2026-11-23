@@ -76,8 +76,11 @@ func Load(getenv func(string) string) (Config, error) {
 	if len(cfg.AppOrigins) == 0 {
 		return Config{}, fmt.Errorf("APP_ORIGINS: no origin given")
 	}
-	if cfg.Google.ClientID != "" && cfg.Google.ClientSecret == "" {
-		return Config{}, fmt.Errorf("OIDC_GOOGLE_CLIENT_SECRET is required with OIDC_GOOGLE_CLIENT_ID")
+	// The server redeems the codes as confidential client, so both providers need a secret.
+	for name, p := range map[string]OIDCProvider{"MICROSOFT": cfg.Microsoft, "GOOGLE": cfg.Google} {
+		if p.ClientID != "" && p.ClientSecret == "" {
+			return Config{}, fmt.Errorf("OIDC_%s_CLIENT_SECRET is required with OIDC_%s_CLIENT_ID", name, name)
+		}
 	}
 	return cfg, nil
 }

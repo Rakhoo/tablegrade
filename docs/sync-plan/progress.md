@@ -13,6 +13,225 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: Blocker „Server-Sicherung zurückgespielt“ mit Mario geklärt (Option B, Gerät
+  gewinnt). Server antwortet bei `after` > `latestSeq` mit `410 server_restored` statt `gone`.
+  Protokoll und Test angepasst.
+- Nächster Schritt: Stream B setzt den Client-Teil um (neue Aufgabe in tasks-b-client.md).
+
+## 2026-11-23, 17:50 UTC · Stream A · sync/server
+- Erledigt: A12 Abschluss. Alle Endpunkte aus protocol.md sind vorhanden und haben Go-Tests
+  (Test-Datei in Klammern, alle in `server/internal/api/`):
+  - `GET /health` (`api_test.go`)
+  - `POST /auth/passkey/register/begin|finish`, `POST /auth/passkey/login/begin|finish`
+    (`passkey_test.go`)
+  - `GET /auth/oidc/{provider}/config`, `POST /auth/oidc/{provider}/exchange` (`oidc_test.go`)
+  - `GET /auth/session`, `POST /auth/logout`, `POST /auth/dev/login` (`api_test.go`)
+  - `GET /devices`, `PATCH /devices/{id}`, `POST /devices/{id}/revoke` (`api_test.go`,
+    `ws_test.go`)
+  - `GET /keys`, `PUT /keys/{id}`, `DELETE /keys/{id}` (`keys_test.go`)
+  - `POST /records/push`, `GET /records/pull` (`records_test.go`)
+  - `PUT /blobs/{id}`, `GET /blobs/{id}` (`blobs_test.go`)
+  - `GET /ws` (`ws_test.go`)
+  - `POST /link`, `GET /link/by-code/{code}`, `POST /link/{linkId}/complete`,
+    `GET /link/{linkId}` (`links_test.go`)
+  - `DELETE /account` (`account_test.go`)
+- Aufgeräumt: ungenutzte Funktion `auth.Sessions.End` entfernt.
+- Testabdeckung: `internal/api` 81 %, `store/sqlite` 88 %, `oidc` 88 %, `hub` 94 %.
+- Offen für Mario: blockers.md (Verhalten nach Zurückspielen einer Sicherung); echte Logins
+  (Microsoft, Google, Passkeys auf iPad/PC), Image-Build und Pi-Betrieb (siehe manual-steps.md).
+- Merge-Punkt A12 erreicht, `sync/server` in `sync/integration` gemergt.
+
+**Stream A fertig**
+
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: A11 Docker und Pi. `server/Dockerfile` (Cross-Compile, distroless static,
+  UID 65532, Healthcheck über `notenfeder-server healthcheck`), `server/deploy/compose.yaml`
+  (`server` nur auf 127.0.0.1, `backup` mit `rclone/rclone:1.75`), `.env.example`,
+  systemd-Timer `notenfeder-update.*`, Workflow `.github/workflows/server-image.yml`,
+  Pi-Anleitung in `server/README.md` (Einrichten, Update, Sicherung zurückspielen).
+- Entschieden: Kein Watchtower. `containrrr/watchtower` ist seit 17.12.2025 archiviert und
+  passt nicht zu Docker 29. Statt eines Forks ein systemd-Timer mit
+  `docker compose pull && up -d` alle 30 Minuten. Grund: kein fremdes Image mit Zugriff auf
+  den Docker-Socket, keine neue Abhängigkeit. manual-steps.md und Plan-Tabelle angepasst.
+- Entschieden: Daten als Bind-Mount `./data` statt Named Volume. Grund: Sicherung zurückspielen
+  und rclone-Zugriff sind so einfacher.
+- Entschieden: `GET /records/pull` gibt `410 gone` auch bei `after` > `latestSeq` (nach
+  Zurückspielen einer Sicherung). Folgefrage in blockers.md (betrifft Stream B).
+- Ungetestet: Image-Build und Compose (kein Docker-Daemon in der Cloud), Workflow (läuft erst
+  auf `main`). Healthcheck lokal mit dem Binary geprüft.
+- Nächster Schritt: A12 Abschluss.
+
+## 2026-11-23, 17:35 UTC · Stream A · sync/server
+- Erledigt: A10 Konto und Betrieb. `DELETE /account` (`internal/api/account.go`, löscht DB-Daten
+  und Blob-Ordner, `revoked` an alle Geräte), tägliche Sicherung (`internal/api/backup.go`,
+  `VACUUM INTO`, 7 Dateien), JSON-Logs und Access-Log ohne Query, IP und IDs
+  (`internal/api/accesslog.go`). Merge-Punkt A10 erreicht, `sync/server` in `sync/integration`
+  gemergt.
+- Entschieden: Access-Log nutzt das Route-Muster (`GET /api/v1/blobs/{id}`) statt des Pfads.
+  Grund: Der WebSocket-Token steht in der Query, IDs stehen im Pfad.
+- Entschieden: Sicherung läuft in `Server.Maintain` (Start und alle 24 h); ein Neustart am
+  selben Tag schreibt keine zweite Datei.
+- Entschieden: Schlägt das Löschen der Blob-Dateien nach `DELETE /account` fehl, wird das nur
+  geloggt. Grund: Das Konto ist schon weg, ein erneuter Versuch des Clients ginge nicht.
+- Nächster Schritt: A11 Docker und Pi.
+
+## 2026-11-23, 17:27 UTC · Stream A · sync/server
+- Erledigt: A9 Gerät koppeln (`internal/api/links.go`): `POST /link`, `GET /link/by-code/{code}`,
+  `POST /link/{linkId}/complete`, `GET /link/{linkId}`, 10 Minuten gültig, nur im selben Konto,
+  5 Fehlversuche, WebSocket-Nachricht `link`, Aufräumen abgelaufener Kopplungen in
+  `Server.Maintain`. Merge-Punkt A9 erreicht, `sync/server` in `sync/integration` gemergt.
+- Entschieden: `link` geht an alle Geräte des Kontos. Grund: Der Server speichert nicht,
+  welches Gerät die Kopplung begonnen hat; die `linkId` reicht dem neuen Gerät.
+- Entschieden: `GET /link/by-code` zählt zum IP-Rate-Limit der `auth`-Endpunkte (jede
+  Anfrage, nicht nur Fehlversuche). Grund: einfach und streng genug.
+- Protokoll ergänzt (Kopplung, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A10 Konto und Betrieb.
+
+## 2026-11-23, 17:25 UTC · Stream A · sync/server
+- Erledigt: A8 WebSocket. `hub.Hub` (Interface) mit `hub.Memory`, `GET /ws?token=`
+  (`internal/api/ws.go`, `coder/websocket` v1.8.15), `hello`, `changed` nach jedem Push,
+  `revoked` beim Sperren mit Schließen danach, Ping-Zeitlimit 90 s. Tests mit echtem
+  Testserver, auch mit `-race`.
+- Entschieden: Liegt eine Verbindung mehr als 16 Nachrichten zurück, schließt der Server sie
+  (`1013`). Grund: `Publish` blockiert nie; der Client holt per `hello` und `pull` auf.
+- Entschieden: Erst abonnieren, dann `latestSeq` lesen. Grund: Kein Push geht zwischen
+  `hello` und Abo verloren.
+- Protokoll ergänzt (WebSocket, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A9 Gerät koppeln.
+
+## 2026-11-23, 17:23 UTC · Stream A · sync/server
+- Erledigt: A7 Fotos. `blob.Store` mit Umsetzung `blob.FS` (`DATA_DIR/blobs/<user>/<id>`,
+  Schreiben über Temp-Datei und Umbenennen), `PUT/GET /blobs/{id}` (`internal/api/blobs.go`),
+  Aufräumen verwaister Blobs nach 30 Tagen in `Server.Maintain`.
+- Entschieden: `blob.Store` bewegt nur Bytes; Registrierung und Verweise bleiben in
+  `store.Store`. Grund: S3 später nur als zweite Umsetzung des kleinen Interfaces.
+- Entschieden: Beim Aufräumen zuerst die Datei, dann die Registrierung löschen. Grund: Ein
+  Fehler lässt nur einen Eintrag zurück, den der nächste Lauf erneut versucht.
+- Protokoll ergänzt (Fotos, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A8 WebSocket.
+## 2026-11-23, 17:45 UTC · Stream B · sync/client (Lauf 17:12)
+- Erledigt: B5 Sync-Engine. Migration 24 (`_sync_pending`, `_sync_blobs`),
+  `SCHEMA_VERSION` in `db/migrations.ts`. Module `tables.ts` (aktuelle Tabellenliste),
+  `push.ts`, `pull.ts`, `photos.ts`, `activation.ts` (`turnOn`/`turnOff`), `engine.ts`
+  (`runSync`, `createSyncEngine`), `socket.ts`. Tests mit zwei Geräten und Fake-Server
+  (`src/test/fakeSyncServer.ts`, `src/test/syncDevices.ts`): `pushPull.test.ts`,
+  `engine.test.ts`.
+- Entschieden: Pull holt alle Seiten und wendet sie in **einer** Transaktion an. Grund: Ein
+  Kind-Eintrag auf Seite 1 darf seinen Eltern-Eintrag von Seite 2 nicht verpassen.
+- Entschieden: Eingehende Einträge für Schlüssel mit Eintrag in `_outbox` werden übersprungen.
+  Grund: Die lokale Änderung wird danach gepusht und gewinnt per höherer `seq`.
+- Entschieden: Zwei Noten für dieselbe Stunde (`GradesUnique`): Die Zeile mit dem größeren
+  Schlüssel gewinnt auf allen Geräten, die andere wird gelöscht und die Löschung gepusht.
+- Entschieden: Waisen (z. B. Note zu hier gelöschtem Schüler) löscht der Pull per
+  `PRAGMA foreign_key_check`, sonst scheitert die ganze Transaktion.
+- Entschieden: Nach `410` werden lokale Zeilen, die der Server nicht mehr kennt, erneut
+  hochgeladen (kein Datenverlust).
+- Entschieden: Der Import-Guard nutzt jetzt `turnOff` (leert auch `_sync_pending`, `_sync_blobs`).
+- Offen für B6: Engine an Fassade, Device-Store und Status anbinden; `onApplied` →
+  Revalidierung (Hook); lokale Änderungen müssen `requestSync` auslösen (z. B. entprellt
+  nach Schreibzugriffen oder Intervall). README-Abschnitt kommt mit Stream D.
+- Nächster Schritt: B6 Kopplung und Konto, Fassade verdrahten.
+
+## 2026-11-23, 17:21 UTC · Stream A · sync/server
+- Erledigt: A6 Einträge (`internal/api/records.go`): `POST /records/push`, `GET /records/pull`,
+  Last Write Wins (auch doppelte ID im selben Push), Limits, `410 gone`. Täglicher Lauf
+  `Server.RunMaintenance` (`internal/api/maintenance.go`) löscht Tombstones nach 180 Tagen.
+  Merge-Punkt A6 erreicht, `sync/server` in `sync/integration` gemergt.
+- Entschieden: Push-Limit 60 pro Minute und Konto. Grund: Erst-Upload mit 500 Einträgen pro
+  Push bleibt schnell, eine Schleife im Client fällt trotzdem auf.
+- Entschieden: Die 5 MB gelten für den ganzen Body (Base64 eingerechnet). Grund: einfach zu
+  prüfen; der Client teilt nach Größe des JSON.
+- Entschieden: `RunMaintenance` ist der gemeinsame Ort für Aufräumarbeiten; A7 (Blobs) und
+  A10 (Backup) hängen sich dort an.
+- Protokoll ergänzt (Einträge, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A7 Fotos.
+
+## 2026-11-23, 17:18 UTC · Stream A · sync/server
+- Erledigt: A5 Schlüssel (`internal/api/keys.go`): `GET/PUT/DELETE /keys`, letzter
+  `recovery`-Wrap nicht löschbar (Test), fremde IDs geschützt.
+- Entschieden: `PUT` prüft Format streng (UUID, `A256GCM`, 60 Bytes) und dass ein
+  `passkey`-Wrap zu einem Passkey des Kontos gehört. `org` lehnt der Server vorerst ab.
+- Entschieden: Zwei `recovery`-Wraps sind kurz erlaubt. Grund: Der Wechsel geht laut Protokoll
+  per `PUT` neu, dann `DELETE` alt.
+- Protokoll ergänzt (Schlüssel, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A6 Einträge.
+
+## 2026-11-23, 17:15 UTC · Stream A · sync/server
+- Erledigt: A4 Microsoft und Google. Paket `internal/oidc` (Codetausch per `net/http`,
+  ID-Token mit `go-oidc` geprüft, Issuer fest), Test-Anbieter `internal/oidc/oidctest`
+  (`httptest`, eigenes JWKS, Signatur mit `go-jose`). Endpunkte in `internal/api/oidc.go`.
+- Entschieden: `go-oidc` v3.17.0, weil neuere Versionen Go 1.25 verlangen.
+- Entschieden: Keine Discovery, sondern feste Endpunkte und JWKS-URL. Grund: Microsoft
+  `consumers` meldet in der Discovery einen Issuer mit Platzhalter; der echte Issuer ist der
+  feste Mandant `9188040d-…`. Der Server braucht so beim Start kein Netz.
+- Entschieden: `subject` = Claim `sub`. Der Mandant ist durch den Issuer festgelegt.
+- Entschieden: `email_verified: false` wird abgelehnt; fehlt der Claim (Scope nur `openid`),
+  ist das in Ordnung.
+- Entschieden: Microsoft braucht jetzt auch ein Client-Secret (wie in manual-steps.md,
+  Plattform „Web“). Grund: Der Server tauscht den Code als vertraulicher Client.
+- Protokoll ergänzt (OIDC, Abschnitt „Änderungen“). Betrifft Stream B und C.
+- Ungetestet: echte Anmeldung bei Microsoft und Google (erst mit Marios OAuth-Apps).
+- Nächster Schritt: A5 Schlüssel.
+## 2026-11-23, 17:20 UTC · Stream B · sync/client
+- Erledigt: B7 (Signaturen und Demo). `SyncPhase` mit `upgradeRequired`,
+  `AccountInfo.hasDataKey`/`hasPrfPasskey`, `SyncStatus.progress`, Fassade mit `addPasskey`,
+  `linkOidcIdentity`, `renameDevice`, `hasLocalData`, `replaceLocalData`; alle in `demo.ts`.
+  `checkSession` holt zusätzlich `GET /keys` und setzt daraus `hasDataKey` und
+  `hasPrfPasskey` (`accountInfo` in `session.ts`); HTTP 426 → `upgradeRequired`.
+- Entschieden: `hasPrfPasskey` = es gibt einen `passkey`-Wrap. Grund: Wraps entstehen nur für
+  Passkeys mit PRF; `GET /auth/session` liefert keine Passkey-Liste.
+- Entschieden: Ohne Demo-Modus werfen die neuen Fassaden-Funktionen wie die alten noch
+  „not implemented“. Die echte Verdrahtung kommt gesammelt in B6 („Stubs entfernt“).
+- Nächster Schritt: B5 Sync-Engine (braucht Migration 24 für `_sync_pending`).
+
+## 2026-11-23, 17:45 UTC · Stream B · sync/client
+- Erledigt: B4 (Logik). `webauthn.ts` (JSON-Optionen von Hand umgewandelt, PRF-Erweiterung,
+  deutsche Fehlermeldungen), `passkeyFlow.ts` (Registrierung, Login, weiterer Passkey,
+  Entsperren per Passkey), `oidc.ts` (PKCE `S256`, `state`, Rückkehr, URL ohne Query mit
+  Hash-Route), `keyring.ts` (nach Login entsperren, neues Konto mit neuer DEK,
+  Wiederherstellungsschlüssel ersetzen, Passkey-Wrap, Abmelden). Tests in `auth.test.ts`
+  (Keyring über drei Geräte, Tippfehler, falsches Konto, OIDC-Ablauf).
+- Entschieden: OIDC-Zwischenstand in `localStorage` (`notenfeder-oidc`), nicht
+  `sessionStorage`. Grund: In der installierten PWA auf dem iPad geht `sessionStorage` beim
+  Wechsel zum Anbieter verloren, wenn iOS den Web-View neu erzeugt.
+- Entschieden: Liefert ein Passkey bei der Registrierung nur `prf.enabled`, holt ein zweiter
+  Dialog die PRF-Ausgabe. Die PRF-Ausgabe geht nie an den Server.
+- Entschieden: Der Wiederherstellungsschlüssel wird beim Ersetzen erst hochgeladen, dann
+  werden alte gelöscht (nie ohne `recovery`-Wrap).
+- Offen: Aufruf von `finishOidcLogin` beim App-Start (`?oidc=callback`) kommt mit der
+  Fassade (B6); die Logik ist fertig. Passkey/PRF und OIDC-Rückkehr in der PWA sind nur auf
+  dem iPad prüfbar (keine Browser-Tests).
+- Nächster Schritt: B5 Sync-Engine (braucht Migration 24 für `_sync_pending`).
+
+## 2026-11-23, 17:05 UTC · Stream B · sync/client
+- Erledigt: B3. `src/sync/api.ts` (alle Endpunkte, `ApiError` mit Code, Status, deutscher
+  Meldung, `retryAfter`; Netzfehler = `offline`), `src/sync/session.ts` (`checkSession`,
+  `sessionStatus`, `startSessionMonitor`: Start, 15 min, `online`, sichtbar), Tests in
+  `src/sync/api.test.ts`. `VITE_SYNC_URL` in `src/sync/config.ts`.
+- Entschieden: Gesperrte oder abgelaufene Sitzung → Phase `signedOut`, Grund in `error`
+  (kein neuer Phasen-Wert `revoked`, damit die Fassade gleich bleibt). Offline behält das Konto.
+- Entschieden: `import.meta.env` nur in `config.ts`, weil die Node-Tests es nicht kennen.
+- Nächster Schritt: B4 Anmeldung (Passkey, OIDC, Entsperren).
+
+## 2026-11-23, 16:40 UTC · Stream B · sync/client
+- Erledigt: B2. `src/sync/deviceStore.ts` (IndexedDB `notenfeder-sync`, Speicher im Speicher für
+  Tests), `syncState.ts` (`_sync_state`), `importGuard.ts` mit Tests, `SyncDb`-Interface
+  (`src/sync/syncDb.ts`) mit Adapter `src/db/queries/syncDb.ts` (SQLocal) und
+  `src/test/syncTestDb.ts` (`node:sqlite`).
+- Entschieden: DEK, Sitzung (`token`, `userId`, `deviceId`) und `syncId` in IndexedDB;
+  `lastSeq` in `_sync_state`. Grund: `lastSeq` muss in derselben Transaktion wie die gezogenen
+  Zeilen committen; es ist kein Geheimnis. `_sync_state` hat nur die Schlüssel `enabled`,
+  `applying`, `lastSeq`, `syncId` (Typ `SyncStateKey`).
+- Entschieden: Import-Erkennung über `syncId` (Zufalls-ID pro Einschalten, in DB und
+  IndexedDB). Weichen sie ab: Sync aus, `lastSeq`/`syncId` weg, `_outbox` leeren, Sitzung lokal
+  entfernen, DEK bleibt. War Sync hier aktiv: `importNotice` im Gerätespeicher für den Hinweis.
+- Für B5: Einschalten muss `syncId` in beiden Speichern setzen; Engine-Start ruft
+  `checkImportedDatabase` auf.
+- Für Stream C (Vorschlag, Fassaden-Erweiterung): `takeImportNotice(): Promise<boolean>`
+  liefert einmalig `true` nach einem Import über aktiven Sync. Kommt mit B5/B6.
+- Nächster Schritt: B3 API-Client.
+
 ## 2026-11-23, 16:20 UTC · Stream A · sync/server
 - Erledigt: A3 Passkeys (`internal/api/passkey.go`): Registrierung (neues Konto oder weiterer
   Passkey mit Sitzung), Login mit discoverable credentials, PRF-Salt in den Optionen,
@@ -251,3 +470,14 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Offen: C5 Hinweis beim Sicherungs-Import wartet auf B2.
 - Nächster Schritt: C6 (README, Merge-Punkt), sobald B7 in `sync/integration` ist und die
   vorgebauten Signaturen damit abgeglichen sind.
+
+## 2026-11-23, 18:40 UTC · Stream C · sync/ui
+- Erledigt: `sync/integration` gemergt (B2, B5, B7). Konflikte in `src/sync/types.ts`,
+  `index.ts`, `demo.ts`: Fassung von Stream B übernommen. Die UI kompiliert damit ohne Änderung.
+- Erledigt: C6 README (Datenschutz mit optionalem Sync, Feature „Konto & Sync“, Hilfe-Texte,
+  Projektstruktur `src/sync/`, `settings/Sync*`, `server/`). CLAUDE.md bleibt Stream D.
+- Blockiert: C5 Hinweis beim Sicherungs-Import. B2 speichert `importNotice` nur im
+  Gerätespeicher, die Fassade gibt ihn nicht heraus (blockers.md, Vorschlag für Stream B).
+- Entschieden: Stream C nach `sync/integration` gemergt, obwohl C5 noch offen ist. Grund: alle
+  übrigen Aufgaben fertig, Prüfungen grün. „Stream C fertig“ erst nach C5.
+- Geprüft: tsc, lint, build, vitest (106 Tests), `go vet`, `go test`. Nicht geprüft: Browser.

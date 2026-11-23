@@ -3,13 +3,16 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -25,6 +28,14 @@ const dbFile = "notenfeder.sqlite3"
 const shutdownTimeout = 10 * time.Second
 
 func main() {
+	// The runtime image has no shell or curl, so the container health check calls the binary.
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		if err := healthcheck(); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		slog.Error("server stopped", "err", err)
 		os.Exit(1)
@@ -32,6 +43,8 @@ func main() {
 }
 
 func run() error {
+	// JSON lines are easy to filter in `docker compose logs`.
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stderr, nil)))
 	cfg, err := config.FromEnv()
 	if err != nil {
 		return err
@@ -52,9 +65,12 @@ func run() error {
 		Addr:              cfg.ListenAddr,
 		Handler:           server.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
+		ErrorLog:          slog.NewLogLogger(slog.Default().Handler(), slog.LevelWarn),
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	go server.RunMaintenance(ctx)
 
 	errs := make(chan error, 1)
 	go func() {
@@ -74,6 +90,24 @@ func run() error {
 	}
 	if err := <-errs; !errors.Is(err, http.ErrServerClosed) {
 		return err
+	}
+	return nil
+}
+
+// healthcheck asks the local server for GET /api/v1/health.
+func healthcheck() error {
+	addr := os.Getenv("LISTEN_ADDR")
+	if addr == "" || strings.HasPrefix(addr, ":") {
+		addr = "127.0.0.1" + cmp.Or(addr, ":8080")
+	}
+	client := &http.Client{Timeout: 3 * time.Second}
+	res, err := client.Get("http://" + addr + "/api/v1/health")
+	if err != nil {
+		return err
+	}
+	_ = res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("health: status %d", res.StatusCode)
 	}
 	return nil
 }

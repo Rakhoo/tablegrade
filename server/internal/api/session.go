@@ -35,6 +35,11 @@ func (s *Server) authenticate(r *http.Request) (store.Session, error) {
 	if !ok {
 		return store.Session{}, errUnauthorized
 	}
+	return s.checkToken(r, token)
+}
+
+// checkToken validates a session token from the header or, for WebSockets, the query.
+func (s *Server) checkToken(r *http.Request, token string) (store.Session, error) {
 	sess, _, err := s.sessions.Authenticate(r.Context(), token)
 	switch {
 	case errors.Is(err, auth.ErrUnauthorized):

@@ -88,12 +88,3 @@ func (s Sessions) Authenticate(ctx context.Context, token string) (store.Session
 	}
 	return sess, dev, nil
 }
-
-// End deletes the session of a token.
-func (s Sessions) End(ctx context.Context, token string) error {
-	hash := HashToken(token)
-	if hash == nil {
-		return ErrUnauthorized
-	}
-	return s.Store.DeleteSession(ctx, hash)
-}

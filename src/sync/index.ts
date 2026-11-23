@@ -64,19 +64,17 @@ export async function startOidcLogin(
   return DEMO ? demo.startOidcLogin(provider, deviceName) : notImplemented();
 }
 
-/** Adds a passkey that can unlock the data key on other devices (PRF). */
+/**
+ * Links a Microsoft or Google account to the signed-in account. Navigates away like
+ * `startOidcLogin`; the return links the identity instead of signing in.
+ */
+export async function linkOidcIdentity(provider: OidcProvider): Promise<void> {
+  return DEMO ? demo.linkOidcIdentity(provider) : notImplemented();
+}
+
+/** Adds a passkey on this device and wraps the data key for it when it supports PRF. */
 export async function addPasskey(): Promise<void> {
   return DEMO ? demo.addPasskey() : notImplemented();
-}
-
-/** Whether this device has school data that the first download would replace. */
-export async function hasLocalData(): Promise<boolean> {
-  return DEMO ? demo.hasLocalData() : notImplemented();
-}
-
-/** Deletes the local school data, so the first download can fill the device. */
-export async function replaceLocalData(): Promise<void> {
-  return DEMO ? demo.replaceLocalData() : notImplemented();
 }
 
 /** Unlocks the data key with a passkey that supports PRF. */
@@ -117,22 +115,30 @@ export async function listDevices(): Promise<Device[]> {
   return DEMO ? demo.listDevices() : notImplemented();
 }
 
-/** Renames a device of the account. */
+/** Renames a device of the account, e.g. "iPad Schule". */
 export async function renameDevice(id: string, name: string): Promise<void> {
   return DEMO ? demo.renameDevice(id, name) : notImplemented();
-}
-
-/**
- * Links Microsoft or Google as another sign-in method of the signed-in account. Navigates
- * away like `startOidcLogin`; the return links instead of signing in.
- */
-export async function linkOidcIdentity(provider: OidcProvider): Promise<void> {
-  return DEMO ? demo.linkOidcIdentity(provider) : notImplemented();
 }
 
 /** Revokes another device; it keeps its local data but can no longer sync. */
 export async function revokeDevice(id: string): Promise<void> {
   return DEMO ? demo.revokeDevice(id) : notImplemented();
+}
+
+/**
+ * Whether this device has own data (classes, students, lessons). A new device asks before the
+ * first download replaces it.
+ */
+export async function hasLocalData(): Promise<boolean> {
+  return DEMO ? demo.hasLocalData() : notImplemented();
+}
+
+/**
+ * Confirms that the account data replaces the local data and starts the first download.
+ * Until then, a new device with local data does not download.
+ */
+export async function replaceLocalData(): Promise<void> {
+  return DEMO ? demo.replaceLocalData() : notImplemented();
 }
 
 /** Sends and receives changes now instead of waiting for the next trigger. */

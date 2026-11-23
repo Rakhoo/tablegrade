@@ -59,38 +59,26 @@ async function signIn(
   return { isNewUser, needsUnlock: !isNewUser };
 }
 
-/** Merges `change` into the signed-in sample account. */
+/** Changes the signed-in account, if any. */
 function updateAccount(change: Partial<AccountInfo>) {
   const { account } = readStatus();
   if (account) updateStatus({ account: { ...account, ...change } });
 }
 
-/** Sample size of the first upload or download. */
-const TOTAL_RECORDS = 400;
-
-/** Runs a first upload or download in steps, so the progress shows up. */
-async function transferAll() {
-  updateStatus({ phase: "syncing" });
-  for (let done = 0; done < TOTAL_RECORDS; done += 100) {
-    updateStatus({ progress: { done, total: TOTAL_RECORDS } });
+/** Counts `progress` up to `total` in steps, like a first upload or download. */
+async function runProgress(total: number) {
+  for (let done = 0; done < total; done += 25) {
+    updateStatus({ phase: "syncing", progress: { done, total } });
     await wait();
   }
-  updateStatus({
-    phase: "idle",
-    lastSyncAt: Date.now(),
-    error: null,
-    progress: null,
-  });
+  updateStatus({ phase: "idle", progress: null, lastSyncAt: Date.now() });
 }
 
-/** Marks the device as unlocked and downloads all data. */
+/** Marks the device as unlocked and synced. */
 async function unlock() {
   await wait();
-  void transferAll();
+  updateStatus({ phase: "idle", lastSyncAt: Date.now(), error: null });
 }
-
-/** Whether the sample device still has school data of its own. */
-let localData = true;
 
 /**
  * Fake implementation of the facade with fixed sample values, so the UI can be built before
@@ -111,14 +99,6 @@ export const demo = {
     console.info(`Demo: OIDC login with ${provider}`);
     await signIn(false, deviceName);
   },
-  hasLocalData: async () => {
-    await wait();
-    return localData;
-  },
-  replaceLocalData: async () => {
-    await wait();
-    localData = false;
-  },
   unlockWithPasskey: unlock,
   unlockWithRecoveryKey: async (text: string) => {
     if (text.replace(/[\s-]/g, "").length != 36)
@@ -128,13 +108,26 @@ export const demo = {
   createRecoveryKey: async () => {
     await wait();
     updateAccount({ hasDataKey: true });
-    if (readStatus().phase == "locked") void transferAll();
+    if (readStatus().phase == "locked") void runProgress(100);
     return RECOVERY_KEY;
   },
   addPasskey: async () => {
     await wait();
     updateAccount({ hasPrfPasskey: true });
   },
+  linkOidcIdentity: async (provider: OidcProvider) => {
+    await wait();
+    const { account } = readStatus();
+    if (!account) throw new Error("Nicht angemeldet");
+    updateAccount({
+      identities: [...account.identities, { provider, createdAt: Date.now() }],
+    });
+  },
+  hasLocalData: async () => {
+    await wait();
+    return true;
+  },
+  replaceLocalData: () => runProgress(100),
   startDeviceLink: async (): Promise<PendingDeviceLink> => {
     await wait();
     return {
@@ -153,25 +146,15 @@ export const demo = {
     await wait();
     return devices;
   },
+  renameDevice: async (id: string, name: string) => {
+    await wait();
+    devices = devices.map((d) => (d.id == id ? { ...d, name } : d));
+  },
   revokeDevice: async (id: string) => {
     await wait();
     devices = devices.map((d) =>
       d.id == id ? { ...d, revokedAt: Date.now() } : d,
     );
-  },
-  renameDevice: async (id: string, name: string) => {
-    await wait();
-    devices = devices.map((d) => (d.id == id ? { ...d, name } : d));
-  },
-  linkOidcIdentity: async (provider: OidcProvider) => {
-    await wait();
-    const { account } = readStatus();
-    updateAccount({
-      identities: [
-        ...(account?.identities ?? []),
-        { provider, createdAt: Date.now() },
-      ],
-    });
   },
   syncNow: async () => {
     updateStatus({ phase: "syncing" });
