@@ -5,6 +5,7 @@
 import type { DeviceStore } from "./deviceStore";
 import type { SyncDb } from "./syncDb";
 import { readSyncState, writeSyncState } from "./syncState";
+import { clearSyncTables } from "./tables";
 
 /**
  * Result of the check:
@@ -16,7 +17,7 @@ export type ImportCheck = "ok" | "reset" | "disabled";
 
 /**
  * Compares `_sync_state.syncId` with the device store. On a mismatch it turns sync off in
- * both places and clears the outbox. The data key stays, so turning sync on again for the
+ * both places and clears the sync tables. The data key stays, so turning sync on again for the
  * same account needs no unlock; the server session ends locally. Runs at engine start.
  */
 export async function checkImportedDatabase(
@@ -33,7 +34,7 @@ export async function checkImportedDatabase(
       lastSeq: null,
       syncId: null,
     });
-    await tx.run("DELETE FROM _outbox");
+    await clearSyncTables(tx);
   });
   if (deviceSyncId == null) return "reset";
   await store.delete("syncId");
