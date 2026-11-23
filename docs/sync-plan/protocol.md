@@ -237,6 +237,14 @@ Die interne Tabelle `_outbox` und Sync-Tabellen (`_sync_*`) werden nie synchroni
 | `PUT /blobs/{blobId}` | Hochladen (max. 2 MB). Gibt es den Blob schon: `200` ohne Änderung. |
 | `GET /blobs/{blobId}` | Herunterladen. |
 
+- `PUT` antwortet `201` bei neuem Blob, `200` bei vorhandenem (der Body wird dann ignoriert).
+  `blobId` muss 16 Bytes Base64url sein, der Body mindestens 28 Bytes (`bad_request`), höchstens
+  2 MB (`too_large`).
+- `GET` liefert die Bytes als `application/octet-stream` mit
+  `Cache-Control: private, max-age=31536000, immutable`. Fremde oder unbekannte IDs: `not_found`.
+- Ein hochgeladener Blob ohne Verweis zählt ab dem Upload als verwaist. Der Client pusht den
+  Eintrag darum innerhalb von 30 Tagen nach dem Upload.
+
 Der Server löscht Blobs, auf die 30 Tage lang kein Eintrag mehr verweist. Dafür meldet der
 Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Eintrag
 (der Server sieht nur die IDs).
@@ -269,6 +277,13 @@ Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Ei
 
 Nur Geräte desselben Kontos dürfen eine Kopplung abschließen.
 
+- Alle `/link`-Endpunkte brauchen eine Sitzung. Unbekannte, abgelaufene und fremde Kopplungen
+  geben gleich `not_found`. Der Server normalisiert den eingegebenen `code` (siehe 1).
+- `publicKey` muss ein gültiger P-256-Punkt sein, `wrapped` genau 60 Bytes, sonst
+  `bad_request`. `complete` antwortet `204`, ein zweites `complete`: `conflict`.
+- Die WebSocket-Nachricht `link` geht an alle Geräte des Kontos; das neue Gerät erkennt seine
+  `linkId`.
+
 ## 7. WebSocket
 
 `GET /ws?token=…`. Nachrichten vom Server, JSON mit Feld `type` und den Feldern daneben,
@@ -284,6 +299,12 @@ z. B. `{"type":"changed","latestSeq":42,"deviceId":"…"}`:
 Der Client sendet alle 30 Sekunden `{"type":"ping"}`. Ohne Ping 90 Sekunden lang schließt der
 Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 
+- Ungültiges Token: normale Fehlerantwort (`401`) statt Upgrade. Fremde Origin: `403`.
+- `changed` geht an alle Geräte des Kontos, auch an das Gerät, das gepusht hat (`deviceId`
+  zeigt es). `latestSeq` ist die `seq` des letzten Eintrags im Push.
+- Jede Client-Nachricht zählt als Ping (max. 1 KB). Close-Codes: `1008` nach `revoked`, `1013`,
+  wenn das Gerät mehr als 16 Nachrichten zurückliegt (neu verbinden, dann `pull`).
+
 ## 8. Schutz
 
 - Rate-Limits pro IP für alle `auth`-Endpunkte (z. B. 10 pro Minute), pro Konto für `push`.
@@ -296,6 +317,9 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Kopplung: Sitzung nötig, einheitlich `not_found`, Prüfung von Schlüssel und Wrap, `204`/`conflict` bei `complete`, `link` an alle Geräte des Kontos. |
+| 2026-11-23 | A | WebSocket: Fehler vor dem Upgrade, `changed` auch an das pushende Gerät, Close-Codes. |
+| 2026-11-23 | A | Fotos: `201`/`200` bei `PUT`, Prüfregeln, Cache-Header bei `GET`, Verwaist-Zeit ab Upload. |
 | 2026-11-23 | A | Einträge: Prüfregeln für Push und Pull, Push-Limit 60 pro Minute und Konto, `limit` über 1000 wird gekürzt. |
 | 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |

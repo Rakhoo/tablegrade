@@ -13,6 +13,40 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:27 UTC · Stream A · sync/server
+- Erledigt: A9 Gerät koppeln (`internal/api/links.go`): `POST /link`, `GET /link/by-code/{code}`,
+  `POST /link/{linkId}/complete`, `GET /link/{linkId}`, 10 Minuten gültig, nur im selben Konto,
+  5 Fehlversuche, WebSocket-Nachricht `link`, Aufräumen abgelaufener Kopplungen in
+  `Server.Maintain`. Merge-Punkt A9 erreicht, `sync/server` in `sync/integration` gemergt.
+- Entschieden: `link` geht an alle Geräte des Kontos. Grund: Der Server speichert nicht,
+  welches Gerät die Kopplung begonnen hat; die `linkId` reicht dem neuen Gerät.
+- Entschieden: `GET /link/by-code` zählt zum IP-Rate-Limit der `auth`-Endpunkte (jede
+  Anfrage, nicht nur Fehlversuche). Grund: einfach und streng genug.
+- Protokoll ergänzt (Kopplung, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A10 Konto und Betrieb.
+
+## 2026-11-23, 17:25 UTC · Stream A · sync/server
+- Erledigt: A8 WebSocket. `hub.Hub` (Interface) mit `hub.Memory`, `GET /ws?token=`
+  (`internal/api/ws.go`, `coder/websocket` v1.8.15), `hello`, `changed` nach jedem Push,
+  `revoked` beim Sperren mit Schließen danach, Ping-Zeitlimit 90 s. Tests mit echtem
+  Testserver, auch mit `-race`.
+- Entschieden: Liegt eine Verbindung mehr als 16 Nachrichten zurück, schließt der Server sie
+  (`1013`). Grund: `Publish` blockiert nie; der Client holt per `hello` und `pull` auf.
+- Entschieden: Erst abonnieren, dann `latestSeq` lesen. Grund: Kein Push geht zwischen
+  `hello` und Abo verloren.
+- Protokoll ergänzt (WebSocket, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A9 Gerät koppeln.
+
+## 2026-11-23, 17:23 UTC · Stream A · sync/server
+- Erledigt: A7 Fotos. `blob.Store` mit Umsetzung `blob.FS` (`DATA_DIR/blobs/<user>/<id>`,
+  Schreiben über Temp-Datei und Umbenennen), `PUT/GET /blobs/{id}` (`internal/api/blobs.go`),
+  Aufräumen verwaister Blobs nach 30 Tagen in `Server.Maintain`.
+- Entschieden: `blob.Store` bewegt nur Bytes; Registrierung und Verweise bleiben in
+  `store.Store`. Grund: S3 später nur als zweite Umsetzung des kleinen Interfaces.
+- Entschieden: Beim Aufräumen zuerst die Datei, dann die Registrierung löschen. Grund: Ein
+  Fehler lässt nur einen Eintrag zurück, den der nächste Lauf erneut versucht.
+- Protokoll ergänzt (Fotos, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A8 WebSocket.
 ## 2026-11-23, 17:45 UTC · Stream B · sync/client (Lauf 17:12)
 - Erledigt: B5 Sync-Engine. Migration 24 (`_sync_pending`, `_sync_blobs`),
   `SCHEMA_VERSION` in `db/migrations.ts`. Module `tables.ts` (aktuelle Tabellenliste),

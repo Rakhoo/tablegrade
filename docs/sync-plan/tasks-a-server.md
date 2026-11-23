@@ -55,23 +55,23 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A7 Fotos
 
-- [ ] Interface `blob.Store`, Umsetzung im Dateisystem (`DATA_DIR/blobs/<user>/<id>`),
+- [x] Interface `blob.Store`, Umsetzung im Dateisystem (`DATA_DIR/blobs/<user>/<id>`),
       später S3-fähig.
-- [ ] `PUT/GET /blobs/{id}`, 2 MB Limit, Referenzen aus dem Push, Aufräumen nach 30 Tagen
+- [x] `PUT/GET /blobs/{id}`, 2 MB Limit, Referenzen aus dem Push, Aufräumen nach 30 Tagen
       ohne Referenz.
 
 ## A8 WebSocket
 
-- [ ] `coder/websocket`, Hub pro Konto, Nachrichten laut protocol.md 7, Ping-Zeitlimit.
-- [ ] `changed` nach jedem Push, `revoked` beim Sperren eines Geräts (Verbindung danach
+- [x] `coder/websocket`, Hub pro Konto, Nachrichten laut protocol.md 7, Ping-Zeitlimit.
+- [x] `changed` nach jedem Push, `revoked` beim Sperren eines Geräts (Verbindung danach
       schließen).
-- [ ] Hub hinter einem Interface (später mehrere Server-Instanzen möglich).
+- [x] Hub hinter einem Interface (später mehrere Server-Instanzen möglich).
 
 ## A9 Gerät koppeln
 
-- [ ] `POST /link`, `GET /link/{code}`, `POST /link/{linkId}/complete`, `GET /link/{linkId}`,
+- [x] `POST /link`, `GET /link/{code}`, `POST /link/{linkId}/complete`, `GET /link/{linkId}`,
       Ablauf nach 10 Minuten, nur innerhalb desselben Kontos, WebSocket-Nachricht `link`.
-- [ ] **Merge-Punkt.**
+- [x] **Merge-Punkt.**
 
 ## A10 Konto und Betrieb
 

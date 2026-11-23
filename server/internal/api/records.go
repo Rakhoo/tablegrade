@@ -91,6 +91,7 @@ func (s *Server) handlePush(w http.ResponseWriter, r *http.Request, sess store.S
 		writeError(w, err)
 		return
 	}
+	s.notifyChanged(sess, res)
 	results := make([]pushResultJSON, len(res))
 	for i, p := range res {
 		results[i] = pushResultJSON{ID: p.ID, Seq: p.Seq, UpdatedAt: p.UpdatedAt}
