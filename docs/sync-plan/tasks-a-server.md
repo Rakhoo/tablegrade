@@ -105,5 +105,5 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A12 Abschluss
 
-- [ ] Alle Endpunkte aus protocol.md vorhanden und getestet. Liste in progress.md.
-- [ ] **Merge-Punkt**, „Stream A fertig“ in progress.md.
+- [x] Alle Endpunkte aus protocol.md vorhanden und getestet. Liste in progress.md.
+- [x] **Merge-Punkt**, „Stream A fertig“ in progress.md.
