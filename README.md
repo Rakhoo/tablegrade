@@ -318,6 +318,9 @@ The SQL table names are kept for compatibility; the TypeScript names differ (e.g
 Classes, students, grades, traits and duties have text UUIDs as `id` (since schema version
 22), created with `crypto.randomUUID()` on insert, so several devices can add rows without
 conflicts. Only `Holidays` keeps integer ids (a cache, never synced).
+The internal tables `_sync_state` and `_outbox` (schema version 23) record changed rows for
+the coming sync; their triggers only write while sync is enabled (see
+[docs/sync-plan/protocol.md](docs/sync-plan/protocol.md)).
 
 ### Migrations
 

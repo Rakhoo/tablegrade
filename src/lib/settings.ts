@@ -127,6 +127,20 @@ export const DEFAULT_SETTINGS = {
 
 export type AppSettings = typeof DEFAULT_SETTINGS;
 
+/**
+ * Settings that belong to one device and are never synced: the holiday cache (the holidays
+ * themselves stay local), backup and PIN state, and display choices that depend on the screen.
+ * Migration 23 copies this list into its outbox triggers; a change needs a new migration.
+ */
+export const DEVICE_SETTING_KEYS: readonly (keyof AppSettings)[] = [
+  "holidayCache",
+  "lastBackup",
+  "pinHash",
+  "colorMode",
+  "compactTable",
+  "compactTimetable",
+];
+
 /** The grades offered while grading, from best to worst. */
 export const getVisibleGrades = (settings: AppSettings) =>
   GRADE_VALUES.filter((value) => settings.gradeSymbols[value].visible);

@@ -118,8 +118,23 @@ die älteste aufbewahrte Löschung), bekommt `410` und lädt dann alles neu.
 Alle Tabellen aus `src/db/schema.ts` außer:
 
 - `Holidays` (Cache der Ferien-API, jedes Gerät lädt selbst),
-- Einträge in `Settings`, die nur das Gerät betreffen. Stream 0 legt die Liste fest
-  (z. B. zuletzt geöffneter Einstellungs-Tab, Entwickler-Optionen).
+- Einträge in `Settings`, die nur das Gerät betreffen (`DEVICE_SETTING_KEYS` in
+  `src/lib/settings.ts`): `holidayCache`, `lastBackup`, `pinHash`, `colorMode`,
+  `compactTable`, `compactTimetable`. Der Einstellungs-Tab und die Anzeige-Optionen liegen im
+  `localStorage` und sind ohnehin nicht in der DB.
+
+Primärschlüssel je Tabelle (Reihenfolge gilt für `pk` und `k`): `Classes`, `Students`,
+`Grades`, `Traits`, `Duties`: `id`; `Classes2Students`: `classId, studentId`;
+`Students2Traits`: `studentId, traitId`; `CancelledDays`: `date`; `CancelledLessons`:
+`classId, date`; `LessonTypes`: `classId, date, type`; `Reports`: `classId, date, kind`;
+`ReportGrades`: `classId, date, kind, studentId`; `SchoolYears`: `year`; `Settings`: `key`.
+
+Lokale Erfassung (Migration 23): Trigger schreiben bei INSERT, UPDATE und DELETE
+`(tbl, pk = JSON-Array des Schlüssels, changedAt in ms)` nach `_outbox`, wenn
+`_sync_state.enabled = '1'` und `_sync_state.applying != '1'`. Ändert ein UPDATE den
+Schlüssel, wird auch der alte Schlüssel erfasst (wird als gelöscht gesendet). Kaskaden über
+Fremdschlüssel lösen die Trigger ebenfalls aus. Die Sync-Engine liest beim Senden die
+aktuelle Zeile zum Schlüssel; fehlt sie, sendet sie eine Löschung.
 
 Die interne Tabelle `_outbox` und Sync-Tabellen (`_sync_*`) werden nie synchronisiert.
 

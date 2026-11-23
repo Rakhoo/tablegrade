@@ -112,6 +112,68 @@ const UUID_V4 = `lower(
 )`;
 
 /**
+ * Primary key columns of every synced table, as of migration 23. Frozen like the migrations;
+ * a new synced table gets its triggers in a later migration.
+ */
+const SYNCED_TABLES_V23: Record<string, string[]> = {
+  Classes: ["id"],
+  Students: ["id"],
+  Classes2Students: ["classId", "studentId"],
+  Grades: ["id"],
+  CancelledDays: ["date"],
+  CancelledLessons: ["classId", "date"],
+  LessonTypes: ["classId", "date", "type"],
+  Traits: ["id"],
+  Students2Traits: ["studentId", "traitId"],
+  Settings: ["key"],
+  SchoolYears: ["year"],
+  Reports: ["classId", "date", "kind"],
+  ReportGrades: ["classId", "date", "kind", "studentId"],
+  Duties: ["id"],
+};
+
+/** Device settings left out of sync as of migration 23, see `DEVICE_SETTING_KEYS`. */
+const DEVICE_SETTINGS_V23 =
+  "'holidayCache', 'lastBackup', 'pinHash', 'colorMode', 'compactTable', 'compactTimetable'";
+
+/** Milliseconds since 1970 in SQL, without `unixepoch('subsec')` (SQLite 3.42+). */
+const NOW_MS = "CAST((julianday('now') - 2440587.5) * 86400000 AS INTEGER)";
+
+/** Condition under which a change is recorded: sync on, and not written by the sync engine. */
+const RECORDING = `(SELECT value FROM _sync_state WHERE key = 'enabled') = '1'
+  AND IFNULL((SELECT value FROM _sync_state WHERE key = 'applying'), '') != '1'`;
+
+/**
+ * Outbox triggers of one table: every insert, update and delete records the primary key.
+ * An update that changes the key records the old key as well, so it is synced as deleted.
+ */
+function outboxTriggers(table: string, pk: string[]) {
+  const key = (row: string) =>
+    `json_array(${pk.map((column) => `${row}.${column}`).join(", ")})`;
+  const record = (row: string) =>
+    `INSERT INTO _outbox (tbl, pk, changedAt) VALUES ('${table}', ${key(row)}, ${NOW_MS});`;
+  const device = (row: string) =>
+    table == "Settings"
+      ? ` AND ${row}.key NOT IN (${DEVICE_SETTINGS_V23})`
+      : "";
+  return [
+    `CREATE TRIGGER _outbox_${table}_insert AFTER INSERT ON ${table}
+      WHEN ${RECORDING}${device("NEW")}
+      BEGIN ${record("NEW")} END`,
+    `CREATE TRIGGER _outbox_${table}_update AFTER UPDATE ON ${table}
+      WHEN ${RECORDING}${device("NEW")}
+      BEGIN
+        ${record("NEW")}
+        INSERT INTO _outbox (tbl, pk, changedAt)
+          SELECT '${table}', ${key("OLD")}, ${NOW_MS} WHERE ${key("OLD")} != ${key("NEW")};
+      END`,
+    `CREATE TRIGGER _outbox_${table}_delete AFTER DELETE ON ${table}
+      WHEN ${RECORDING}${device("OLD")}
+      BEGIN ${record("OLD")} END`,
+  ];
+}
+
+/**
  * Migrations after the first release, applied in order: entry `i` brings the database to
  * version `BASELINE_VERSION + i + 1`. Never change an existing entry, always append a new one.
  */
@@ -281,6 +343,20 @@ export const MIGRATIONS: string[][] = [
     "CREATE UNIQUE INDEX GradesUnique ON Grades (classId, studentId, date)",
     ...["Classes", "Students", "Grades", "Traits", "Duties"].map(
       (table) => `DROP TABLE _ids_${table}`,
+    ),
+  ],
+  // 23: change capture for sync. Triggers write the key of every changed row to `_outbox`
+  // while sync is enabled; `applying` is set while the sync engine writes incoming rows.
+  [
+    "CREATE TABLE _sync_state (key TEXT PRIMARY KEY, value TEXT)",
+    `CREATE TABLE _outbox (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT,
+      tbl TEXT NOT NULL,
+      pk TEXT NOT NULL,
+      changedAt INTEGER NOT NULL
+    )`,
+    ...Object.entries(SYNCED_TABLES_V23).flatMap(([table, pk]) =>
+      outboxTriggers(table, pk),
     ),
   ],
 ];

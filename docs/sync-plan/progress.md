@@ -13,6 +13,19 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 14:05 UTC · Stream 0 · sync/foundation
+- Erledigt: 0.4 komplett. Migration 23 mit `_sync_state`, `_outbox` und Triggern für alle
+  14 synchronisierten Tabellen, Tests in `src/db/outbox.test.ts` (alle Operationen,
+  Kaskaden, `ON DELETE SET NULL`, Schlüsseländerung, Geräte-Settings, `enabled`/`applying`).
+- Entschieden: Geräte-Settings = `holidayCache` (gehört zur lokalen Tabelle `Holidays`),
+  `lastBackup`, `pinHash`, `colorMode`, `compactTable`, `compactTimetable` (Bildschirm).
+  Liste als `DEVICE_SETTING_KEYS` in `src/lib/settings.ts`, in Migration 23 eingefroren;
+  ein Test prüft, dass beide übereinstimmen.
+- Entschieden: Ein UPDATE, das den Schlüssel ändert, erfasst auch den alten Schlüssel.
+- Hinweis für Stream B: Eine exportierte Sicherung enthält `_sync_state` und `_outbox`.
+  Beim Import muss die Sync-Engine den Zustand prüfen bzw. zurücksetzen.
+- Nächster Schritt: 0.5 protocol.md verbindlich machen, Testvektoren.
+
 ## 2026-11-23, 13:50 UTC · Stream 0 · sync/foundation
 - Erledigt: 0.3 komplett. Drizzle-Schema mit `text`-IDs und `$defaultFn(crypto.randomUUID)`,
   Typen `number` → `string` in Queries, Loadern, `paths`, lib, Komponenten. Test für Import

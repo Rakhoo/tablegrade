@@ -50,14 +50,14 @@ alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `Le
 
 ## 0.4 Änderungen erfassen
 
-- [ ] Neue Migration: Tabellen `_sync_state (key TEXT PRIMARY KEY, value TEXT)` und
+- [x] Neue Migration: Tabellen `_sync_state (key TEXT PRIMARY KEY, value TEXT)` und
       `_outbox (seq INTEGER PRIMARY KEY AUTOINCREMENT, tbl TEXT, pk TEXT, changedAt INTEGER)`.
       `pk` ist JSON des Primärschlüssels.
-- [ ] Trigger für INSERT, UPDATE, DELETE auf allen synchronisierten Tabellen (Liste in
+- [x] Trigger für INSERT, UPDATE, DELETE auf allen synchronisierten Tabellen (Liste in
       protocol.md 4). Bedingung: `_sync_state.enabled = '1'` und `_sync_state.applying != '1'`.
       Gerätespezifische `Settings`-Schlüssel ausnehmen.
-- [ ] Gerätespezifische `Settings`-Schlüssel festlegen und in protocol.md eintragen.
-- [ ] Tests: Trigger feuern bei allen Operationen, auch bei Kaskaden-Löschungen über
+- [x] Gerätespezifische `Settings`-Schlüssel festlegen und in protocol.md eintragen.
+- [x] Tests: Trigger feuern bei allen Operationen, auch bei Kaskaden-Löschungen über
       Fremdschlüssel. Feuern **nicht** bei `applying = '1'` und nicht bei `enabled != '1'`.
 
 ## 0.5 Protokoll verbindlich machen
