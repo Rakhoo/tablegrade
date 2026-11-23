@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 
+	"github.com/Rakhoo/tablegrade/server/internal/hub"
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
@@ -55,6 +56,7 @@ func (s *Server) handleRevokeDevice(w http.ResponseWriter, r *http.Request, sess
 		writeError(w, err)
 		return
 	}
+	s.hub.Publish(sess.UserID, id, hub.Revoked())
 	w.WriteHeader(http.StatusNoContent)
 }
 

@@ -13,6 +13,103 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: Blocker „Server-Sicherung zurückgespielt“ mit Mario geklärt (Option B, Gerät
+  gewinnt). Server antwortet bei `after` > `latestSeq` mit `410 server_restored` statt `gone`.
+  Protokoll und Test angepasst.
+- Nächster Schritt: Stream B setzt den Client-Teil um (neue Aufgabe in tasks-b-client.md).
+
+## 2026-11-23, 17:50 UTC · Stream A · sync/server
+- Erledigt: A12 Abschluss. Alle Endpunkte aus protocol.md sind vorhanden und haben Go-Tests
+  (Test-Datei in Klammern, alle in `server/internal/api/`):
+  - `GET /health` (`api_test.go`)
+  - `POST /auth/passkey/register/begin|finish`, `POST /auth/passkey/login/begin|finish`
+    (`passkey_test.go`)
+  - `GET /auth/oidc/{provider}/config`, `POST /auth/oidc/{provider}/exchange` (`oidc_test.go`)
+  - `GET /auth/session`, `POST /auth/logout`, `POST /auth/dev/login` (`api_test.go`)
+  - `GET /devices`, `PATCH /devices/{id}`, `POST /devices/{id}/revoke` (`api_test.go`,
+    `ws_test.go`)
+  - `GET /keys`, `PUT /keys/{id}`, `DELETE /keys/{id}` (`keys_test.go`)
+  - `POST /records/push`, `GET /records/pull` (`records_test.go`)
+  - `PUT /blobs/{id}`, `GET /blobs/{id}` (`blobs_test.go`)
+  - `GET /ws` (`ws_test.go`)
+  - `POST /link`, `GET /link/by-code/{code}`, `POST /link/{linkId}/complete`,
+    `GET /link/{linkId}` (`links_test.go`)
+  - `DELETE /account` (`account_test.go`)
+- Aufgeräumt: ungenutzte Funktion `auth.Sessions.End` entfernt.
+- Testabdeckung: `internal/api` 81 %, `store/sqlite` 88 %, `oidc` 88 %, `hub` 94 %.
+- Offen für Mario: blockers.md (Verhalten nach Zurückspielen einer Sicherung); echte Logins
+  (Microsoft, Google, Passkeys auf iPad/PC), Image-Build und Pi-Betrieb (siehe manual-steps.md).
+- Merge-Punkt A12 erreicht, `sync/server` in `sync/integration` gemergt.
+
+**Stream A fertig**
+
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: A11 Docker und Pi. `server/Dockerfile` (Cross-Compile, distroless static,
+  UID 65532, Healthcheck über `notenfeder-server healthcheck`), `server/deploy/compose.yaml`
+  (`server` nur auf 127.0.0.1, `backup` mit `rclone/rclone:1.75`), `.env.example`,
+  systemd-Timer `notenfeder-update.*`, Workflow `.github/workflows/server-image.yml`,
+  Pi-Anleitung in `server/README.md` (Einrichten, Update, Sicherung zurückspielen).
+- Entschieden: Kein Watchtower. `containrrr/watchtower` ist seit 17.12.2025 archiviert und
+  passt nicht zu Docker 29. Statt eines Forks ein systemd-Timer mit
+  `docker compose pull && up -d` alle 30 Minuten. Grund: kein fremdes Image mit Zugriff auf
+  den Docker-Socket, keine neue Abhängigkeit. manual-steps.md und Plan-Tabelle angepasst.
+- Entschieden: Daten als Bind-Mount `./data` statt Named Volume. Grund: Sicherung zurückspielen
+  und rclone-Zugriff sind so einfacher.
+- Entschieden: `GET /records/pull` gibt `410 gone` auch bei `after` > `latestSeq` (nach
+  Zurückspielen einer Sicherung). Folgefrage in blockers.md (betrifft Stream B).
+- Ungetestet: Image-Build und Compose (kein Docker-Daemon in der Cloud), Workflow (läuft erst
+  auf `main`). Healthcheck lokal mit dem Binary geprüft.
+- Nächster Schritt: A12 Abschluss.
+
+## 2026-11-23, 17:35 UTC · Stream A · sync/server
+- Erledigt: A10 Konto und Betrieb. `DELETE /account` (`internal/api/account.go`, löscht DB-Daten
+  und Blob-Ordner, `revoked` an alle Geräte), tägliche Sicherung (`internal/api/backup.go`,
+  `VACUUM INTO`, 7 Dateien), JSON-Logs und Access-Log ohne Query, IP und IDs
+  (`internal/api/accesslog.go`). Merge-Punkt A10 erreicht, `sync/server` in `sync/integration`
+  gemergt.
+- Entschieden: Access-Log nutzt das Route-Muster (`GET /api/v1/blobs/{id}`) statt des Pfads.
+  Grund: Der WebSocket-Token steht in der Query, IDs stehen im Pfad.
+- Entschieden: Sicherung läuft in `Server.Maintain` (Start und alle 24 h); ein Neustart am
+  selben Tag schreibt keine zweite Datei.
+- Entschieden: Schlägt das Löschen der Blob-Dateien nach `DELETE /account` fehl, wird das nur
+  geloggt. Grund: Das Konto ist schon weg, ein erneuter Versuch des Clients ginge nicht.
+- Nächster Schritt: A11 Docker und Pi.
+
+## 2026-11-23, 17:27 UTC · Stream A · sync/server
+- Erledigt: A9 Gerät koppeln (`internal/api/links.go`): `POST /link`, `GET /link/by-code/{code}`,
+  `POST /link/{linkId}/complete`, `GET /link/{linkId}`, 10 Minuten gültig, nur im selben Konto,
+  5 Fehlversuche, WebSocket-Nachricht `link`, Aufräumen abgelaufener Kopplungen in
+  `Server.Maintain`. Merge-Punkt A9 erreicht, `sync/server` in `sync/integration` gemergt.
+- Entschieden: `link` geht an alle Geräte des Kontos. Grund: Der Server speichert nicht,
+  welches Gerät die Kopplung begonnen hat; die `linkId` reicht dem neuen Gerät.
+- Entschieden: `GET /link/by-code` zählt zum IP-Rate-Limit der `auth`-Endpunkte (jede
+  Anfrage, nicht nur Fehlversuche). Grund: einfach und streng genug.
+- Protokoll ergänzt (Kopplung, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A10 Konto und Betrieb.
+
+## 2026-11-23, 17:25 UTC · Stream A · sync/server
+- Erledigt: A8 WebSocket. `hub.Hub` (Interface) mit `hub.Memory`, `GET /ws?token=`
+  (`internal/api/ws.go`, `coder/websocket` v1.8.15), `hello`, `changed` nach jedem Push,
+  `revoked` beim Sperren mit Schließen danach, Ping-Zeitlimit 90 s. Tests mit echtem
+  Testserver, auch mit `-race`.
+- Entschieden: Liegt eine Verbindung mehr als 16 Nachrichten zurück, schließt der Server sie
+  (`1013`). Grund: `Publish` blockiert nie; der Client holt per `hello` und `pull` auf.
+- Entschieden: Erst abonnieren, dann `latestSeq` lesen. Grund: Kein Push geht zwischen
+  `hello` und Abo verloren.
+- Protokoll ergänzt (WebSocket, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A9 Gerät koppeln.
+
+## 2026-11-23, 17:23 UTC · Stream A · sync/server
+- Erledigt: A7 Fotos. `blob.Store` mit Umsetzung `blob.FS` (`DATA_DIR/blobs/<user>/<id>`,
+  Schreiben über Temp-Datei und Umbenennen), `PUT/GET /blobs/{id}` (`internal/api/blobs.go`),
+  Aufräumen verwaister Blobs nach 30 Tagen in `Server.Maintain`.
+- Entschieden: `blob.Store` bewegt nur Bytes; Registrierung und Verweise bleiben in
+  `store.Store`. Grund: S3 später nur als zweite Umsetzung des kleinen Interfaces.
+- Entschieden: Beim Aufräumen zuerst die Datei, dann die Registrierung löschen. Grund: Ein
+  Fehler lässt nur einen Eintrag zurück, den der nächste Lauf erneut versucht.
+- Protokoll ergänzt (Fotos, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A8 WebSocket.
 ## 2026-11-23, 17:45 UTC · Stream B · sync/client (Lauf 17:12)
 - Erledigt: B5 Sync-Engine. Migration 24 (`_sync_pending`, `_sync_blobs`),
   `SCHEMA_VERSION` in `db/migrations.ts`. Module `tables.ts` (aktuelle Tabellenliste),

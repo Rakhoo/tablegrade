@@ -21,9 +21,9 @@ Status: **verbindlich** (seit 2026-11-23, Stream 0)
 - Fehler: HTTP-Status plus `{ "error": "<code>", "message": "<deutsch, für die UI>" }`.
   Codes: `unauthorized`, `session_revoked`, `not_found`, `conflict`, `too_large`,
   `rate_limited`, `upgrade_required`, `bad_request`.
-- Weitere Codes: `gone` (410, siehe 4), `forbidden` (403), `internal` (500, Serverfehler).
+- Weitere Codes: `gone` (410, siehe 4), `server_restored` (410, siehe 4), `forbidden` (403), `internal` (500, Serverfehler).
 - Status je Code: `bad_request` 400, `unauthorized` 401, `session_revoked` 401, `forbidden` 403,
-  `not_found` 404, `conflict` 409, `gone` 410, `too_large` 413, `upgrade_required` 426,
+  `not_found` 404, `conflict` 409, `gone` 410, `server_restored` 410, `too_large` 413, `upgrade_required` 426,
   `rate_limited` 429 (mit Header `Retry-After` in Sekunden).
 - Jede Antwort trägt `X-Protocol-Version: 1`. Der Client sendet denselben Header. Sendet der
   Client eine höhere Hauptversion als der Server kennt: `upgrade_required`.
@@ -67,7 +67,7 @@ keyWraps    id, userId, kind ('passkey' | 'recovery' | 'org'), credentialId?, al
 | `GET  /auth/session` | Prüfung der Sitzung: `{ userId, deviceId, identities[], devices[] }`. |
 | `POST /auth/logout` | Sitzung beenden. |
 | `GET  /devices` / `POST /devices/{id}/revoke` / `PATCH /devices/{id}` | Geräte auflisten, sperren, umbenennen. |
-| `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). |
+| `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). Antwort `204`; verbundene Geräte bekommen per WebSocket `revoked`, ihre Sitzungen gelten danach als ungültig (`unauthorized`). |
 | `POST /auth/dev/login` | Nur mit `DEV_AUTH=1` (Tests). Body `{ deviceName, userId? }`. Ohne `userId` neues Konto, mit `userId` weiteres Gerät dieses Kontos. Antwort wie jede Anmeldung. |
 
 Antwort bei erfolgreicher Anmeldung:
@@ -186,6 +186,10 @@ records  userId, id, seq, updatedAt, deleted, schema, ciphertext, deviceId
   60 Pushes pro Minute und Konto (`rate_limited`).
 - Pull: `after` und `limit` sind ganze Zahlen ≥ 0 bzw. ≥ 1, sonst `bad_request`. Ein `limit`
   über 1000 zählt als 1000. `after=0` bekommt nie `gone`.
+- Ist `after` größer als `latestSeq`, wurde eine Server-Sicherung zurückgespielt. Antwort:
+  `410` mit Code `server_restored`. Das Gerät gewinnt: Es lädt **alle** lokalen synchronisierten
+  Zeilen erneut hoch (wie beim ersten Einschalten) und holt danach alles ab `after=0`. Haben
+  zwei Geräte verschiedene Stände, gewinnt das zuletzt synchronisierende (bewusst akzeptiert).
 - Auch Löschungen tragen einen `ciphertext` (Klartext mit `row: null`). So bleibt der Schlüssel
   `k` für das Gerät lesbar, das die Löschung anwendet.
 - Der Server sendet einem Gerät auch seine eigenen Einträge zurück. Der Client erkennt sie an
@@ -237,6 +241,14 @@ Die interne Tabelle `_outbox` und Sync-Tabellen (`_sync_*`) werden nie synchroni
 | `PUT /blobs/{blobId}` | Hochladen (max. 2 MB). Gibt es den Blob schon: `200` ohne Änderung. |
 | `GET /blobs/{blobId}` | Herunterladen. |
 
+- `PUT` antwortet `201` bei neuem Blob, `200` bei vorhandenem (der Body wird dann ignoriert).
+  `blobId` muss 16 Bytes Base64url sein, der Body mindestens 28 Bytes (`bad_request`), höchstens
+  2 MB (`too_large`).
+- `GET` liefert die Bytes als `application/octet-stream` mit
+  `Cache-Control: private, max-age=31536000, immutable`. Fremde oder unbekannte IDs: `not_found`.
+- Ein hochgeladener Blob ohne Verweis zählt ab dem Upload als verwaist. Der Client pusht den
+  Eintrag darum innerhalb von 30 Tagen nach dem Upload.
+
 Der Server löscht Blobs, auf die 30 Tage lang kein Eintrag mehr verweist. Dafür meldet der
 Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Eintrag
 (der Server sieht nur die IDs).
@@ -269,6 +281,13 @@ Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Ei
 
 Nur Geräte desselben Kontos dürfen eine Kopplung abschließen.
 
+- Alle `/link`-Endpunkte brauchen eine Sitzung. Unbekannte, abgelaufene und fremde Kopplungen
+  geben gleich `not_found`. Der Server normalisiert den eingegebenen `code` (siehe 1).
+- `publicKey` muss ein gültiger P-256-Punkt sein, `wrapped` genau 60 Bytes, sonst
+  `bad_request`. `complete` antwortet `204`, ein zweites `complete`: `conflict`.
+- Die WebSocket-Nachricht `link` geht an alle Geräte des Kontos; das neue Gerät erkennt seine
+  `linkId`.
+
 ## 7. WebSocket
 
 `GET /ws?token=…`. Nachrichten vom Server, JSON mit Feld `type` und den Feldern daneben,
@@ -284,6 +303,12 @@ z. B. `{"type":"changed","latestSeq":42,"deviceId":"…"}`:
 Der Client sendet alle 30 Sekunden `{"type":"ping"}`. Ohne Ping 90 Sekunden lang schließt der
 Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 
+- Ungültiges Token: normale Fehlerantwort (`401`) statt Upgrade. Fremde Origin: `403`.
+- `changed` geht an alle Geräte des Kontos, auch an das Gerät, das gepusht hat (`deviceId`
+  zeigt es). `latestSeq` ist die `seq` des letzten Eintrags im Push.
+- Jede Client-Nachricht zählt als Ping (max. 1 KB). Close-Codes: `1008` nach `revoked`, `1013`,
+  wenn das Gerät mehr als 16 Nachrichten zurückliegt (neu verbinden, dann `pull`).
+
 ## 8. Schutz
 
 - Rate-Limits pro IP für alle `auth`-Endpunkte (z. B. 10 pro Minute), pro Konto für `push`.
@@ -296,6 +321,12 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Pull: `gone` auch bei `after` > `latestSeq` (Server-Sicherung zurückgespielt). |
+| 2026-11-23 | A | Statt `gone` bei `after` > `latestSeq` neuer Code `server_restored` (410): Gerät lädt alles hoch (Entscheidung Mario, blockers.md). Betrifft Stream B. |
+| 2026-11-23 | A | `DELETE /account`: `204`, `revoked` an alle Geräte. |
+| 2026-11-23 | A | Kopplung: Sitzung nötig, einheitlich `not_found`, Prüfung von Schlüssel und Wrap, `204`/`conflict` bei `complete`, `link` an alle Geräte des Kontos. |
+| 2026-11-23 | A | WebSocket: Fehler vor dem Upgrade, `changed` auch an das pushende Gerät, Close-Codes. |
+| 2026-11-23 | A | Fotos: `201`/`200` bei `PUT`, Prüfregeln, Cache-Header bei `GET`, Verwaist-Zeit ab Upload. |
 | 2026-11-23 | A | Einträge: Prüfregeln für Push und Pull, Push-Limit 60 pro Minute und Konto, `limit` über 1000 wird gekürzt. |
 | 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -15,7 +16,9 @@ import (
 	"github.com/go-webauthn/webauthn/webauthn"
 
 	"github.com/Rakhoo/tablegrade/server/internal/auth"
+	"github.com/Rakhoo/tablegrade/server/internal/blob"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
+	"github.com/Rakhoo/tablegrade/server/internal/hub"
 	"github.com/Rakhoo/tablegrade/server/internal/oidc"
 	"github.com/Rakhoo/tablegrade/server/internal/ratelimit"
 	"github.com/Rakhoo/tablegrade/server/internal/store"
@@ -42,6 +45,10 @@ type Server struct {
 	pushLimit  *ratelimit.Limiter
 	webauthn   *webauthn.WebAuthn
 	challenges *auth.Challenges[passkeyCeremony]
+	blobs      blob.Store
+	hub        hub.Hub
+	// pingTimeout closes silent WebSockets; tests shorten it.
+	pingTimeout time.Duration
 	// oidc holds the enabled identity providers by name (store.ProviderMicrosoft, …).
 	oidc map[string]*oidc.Provider
 }
@@ -56,7 +63,9 @@ func WithClock(now func() time.Time) Option {
 
 // New returns the server with all routes. It fails if the WebAuthn settings are invalid.
 func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
-	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg)}
+	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg),
+		blobs: blob.NewFS(filepath.Join(cfg.DataDir, "blobs")), hub: hub.NewMemory(),
+		pingTimeout: defaultPingTimeout}
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -99,6 +108,17 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("POST /api/v1/records/push", s.withSession(s.handlePush))
 	mux.Handle("GET /api/v1/records/pull", s.withSession(s.handlePull))
 
+	mux.Handle("PUT /api/v1/blobs/{id}", s.withSession(s.handlePutBlob))
+	mux.Handle("GET /api/v1/blobs/{id}", s.withSession(s.handleGetBlob))
+
+	mux.HandleFunc("GET /api/v1/ws", s.handleWS)
+
+	mux.Handle("POST /api/v1/link", s.withSession(s.handleCreateLink))
+	mux.Handle("GET /api/v1/link/by-code/{code}", s.withAuthLimit(s.withSession(s.handleLinkByCode).ServeHTTP))
+	mux.Handle("POST /api/v1/link/{linkId}/complete", s.withSession(s.handleCompleteLink))
+	mux.Handle("GET /api/v1/link/{linkId}", s.withSession(s.handleGetLink))
+
+	mux.Handle("DELETE /api/v1/account", s.withSession(s.handleDeleteAccount))
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
 	mux.Handle("PATCH /api/v1/devices/{id}", s.withSession(s.handleRenameDevice))
@@ -106,7 +126,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, _ *http.Request) {
 		writeError(w, errNotFound)
 	})
-	return withProtocol(withCORS(s.cfg.AppOrigins, mux))
+	return withAccessLog(withProtocol(withCORS(s.cfg.AppOrigins, mux)))
 }
 
 func handleHealth(w http.ResponseWriter, _ *http.Request) {

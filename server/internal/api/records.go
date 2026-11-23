@@ -24,6 +24,11 @@ const (
 // errGone tells a device that was offline too long to download everything again.
 var errGone = newError(http.StatusGone, "gone", "Dieses Gerät war zu lange offline. Alle Daten werden neu geladen.")
 
+// errServerRestored tells a device that the server went back to a backup. The device's data is
+// newer, so it uploads everything again (decision in blockers.md).
+var errServerRestored = newError(http.StatusGone, "server_restored",
+	"Der Server wurde aus einer Sicherung wiederhergestellt. Die Daten dieses Geräts werden erneut hochgeladen.")
+
 // validShortID reports whether id is base64url of 16 bytes, the form of record and blob ids.
 func validShortID(id string) bool {
 	b, err := base64.RawURLEncoding.DecodeString(id)
@@ -91,6 +96,7 @@ func (s *Server) handlePush(w http.ResponseWriter, r *http.Request, sess store.S
 		writeError(w, err)
 		return
 	}
+	s.notifyChanged(sess, res)
 	results := make([]pushResultJSON, len(res))
 	for i, p := range res {
 		results[i] = pushResultJSON{ID: p.ID, Seq: p.Seq, UpdatedAt: p.UpdatedAt}
@@ -119,8 +125,9 @@ func queryInt(r *http.Request, name string, fallback int64) (int64, bool) {
 	return n, err == nil && n >= 0
 }
 
-// handlePull returns records after a seq. A device whose seq lies before purged tombstones
-// gets gone, because it would miss deletions.
+// handlePull returns records after a seq. A device whose seq lies before purged tombstones gets
+// gone, one whose seq lies after the latest seq gets server_restored; otherwise it would miss
+// deletions or new records.
 func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess store.Session) {
 	after, okAfter := queryInt(r, "after", 0)
 	limit, okLimit := queryInt(r, "limit", defaultPullLimit)
@@ -143,6 +150,12 @@ func (s *Server) handlePull(w http.ResponseWriter, r *http.Request, sess store.S
 	pull, err := s.store.PullRecords(r.Context(), sess.UserID, after, int(limit))
 	if err != nil {
 		writeError(w, err)
+		return
+	}
+	// A seq beyond the server's means the database was restored from a backup; the device must
+	// start over, or it would skip records that get these seq numbers again.
+	if after > pull.LatestSeq {
+		writeError(w, errServerRestored)
 		return
 	}
 	records := make([]recordJSON, len(pull.Records))
