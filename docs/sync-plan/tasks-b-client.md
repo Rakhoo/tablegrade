@@ -32,9 +32,9 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 
 ## B3 API-Client
 
-- [ ] `src/sync/api.ts`: typisierte Aufrufe aller Endpunkte, Fehler in deutsche Meldungen,
+- [x] `src/sync/api.ts`: typisierte Aufrufe aller Endpunkte, Fehler in deutsche Meldungen,
       Basis-URL aus `import.meta.env.VITE_SYNC_URL`.
-- [ ] Sitzungsprüfung: beim Start, alle 15 Minuten, bei `online` und beim Sichtbarwerden.
+- [x] Sitzungsprüfung: beim Start, alle 15 Minuten, bei `online` und beim Sichtbarwerden.
       `session_revoked` → Status `revoked` (nur Hinweis, lokale Arbeit geht weiter, Sync stoppt).
 
 ## B4 Anmeldung (Logik)

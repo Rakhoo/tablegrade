@@ -13,6 +13,16 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:05 UTC · Stream B · sync/client
+- Erledigt: B3. `src/sync/api.ts` (alle Endpunkte, `ApiError` mit Code, Status, deutscher
+  Meldung, `retryAfter`; Netzfehler = `offline`), `src/sync/session.ts` (`checkSession`,
+  `sessionStatus`, `startSessionMonitor`: Start, 15 min, `online`, sichtbar), Tests in
+  `src/sync/api.test.ts`. `VITE_SYNC_URL` in `src/sync/config.ts`.
+- Entschieden: Gesperrte oder abgelaufene Sitzung → Phase `signedOut`, Grund in `error`
+  (kein neuer Phasen-Wert `revoked`, damit die Fassade gleich bleibt). Offline behält das Konto.
+- Entschieden: `import.meta.env` nur in `config.ts`, weil die Node-Tests es nicht kennen.
+- Nächster Schritt: B4 Anmeldung (Passkey, OIDC, Entsperren).
+
 ## 2026-11-23, 16:40 UTC · Stream B · sync/client
 - Erledigt: B2. `src/sync/deviceStore.ts` (IndexedDB `notenfeder-sync`, Speicher im Speicher für
   Tests), `syncState.ts` (`_sync_state`), `importGuard.ts` mit Tests, `SyncDb`-Interface
