@@ -13,6 +13,12 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:45 UTC · Stream A · sync/server
+- Erledigt: Blocker „Server-Sicherung zurückgespielt“ mit Mario geklärt (Option B, Gerät
+  gewinnt). Server antwortet bei `after` > `latestSeq` mit `410 server_restored` statt `gone`.
+  Protokoll und Test angepasst.
+- Nächster Schritt: Stream B setzt den Client-Teil um (neue Aufgabe in tasks-b-client.md).
+
 ## 2026-11-23, 17:50 UTC · Stream A · sync/server
 - Erledigt: A12 Abschluss. Alle Endpunkte aus protocol.md sind vorhanden und haben Go-Tests
   (Test-Datei in Klammern, alle in `server/internal/api/`):
