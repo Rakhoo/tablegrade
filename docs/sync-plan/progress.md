@@ -13,6 +13,13 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 14:30 UTC · Stream 0 · sync/foundation
+- Erledigt: 0.8. `sync/foundation` per `git merge --no-ff` in `sync/integration` gemergt
+  (kein PR, siehe README 4), Prüfungen auf `sync/integration` grün.
+- Nächster Schritt: Streams A, B und C starten von `sync/integration`.
+
+**Stream 0 fertig**
+
 ## 2026-11-23, 14:25 UTC · Stream 0 · sync/foundation
 - Erledigt: 0.5, 0.6, 0.7. protocol.md verbindlich, `server/testdata/vectors.json` mit
   Generator `gen-vectors.mjs` (zusätzlich mit Python-Stdlib gegengeprüft: Base32, Prüfzeichen,

@@ -97,5 +97,5 @@ alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `Le
 
 ## 0.8 Abschluss
 
-- [ ] **Merge-Punkt:** PR `sync/foundation` → `sync/integration`, grün, selbst mergen.
-- [ ] In progress.md: „Stream 0 fertig“. Damit starten A, B und C.
+- [x] **Merge-Punkt:** PR `sync/foundation` → `sync/integration`, grün, selbst mergen.
+- [x] In progress.md: „Stream 0 fertig“. Damit starten A, B und C.
