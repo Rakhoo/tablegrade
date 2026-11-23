@@ -85,9 +85,11 @@ async function unlock() {
  * the real engine exists. Enabled with `VITE_SYNC_DEMO=true` at build time.
  */
 export const demo = {
+  /** Shows the import hint at app start, so the UI for it can be checked. */
+  start: () => updateStatus({ importNotice: true }),
   enableSync: async () => {
     await wait();
-    updateStatus({ phase: "signedOut" });
+    updateStatus({ phase: "signedOut", importNotice: false });
   },
   disableSync: async () => {
     await wait();
@@ -155,6 +157,9 @@ export const demo = {
     devices = devices.map((d) =>
       d.id == id ? { ...d, revokedAt: Date.now() } : d,
     );
+  },
+  dismissImportNotice: async () => {
+    updateStatus({ importNotice: false });
   },
   syncNow: async () => {
     updateStatus({ phase: "syncing" });

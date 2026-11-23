@@ -15,6 +15,7 @@ import { StorageErrorPage } from "./features/errors/StorageErrorPage";
 import { SyncNoticeBanner } from "./components/SyncNoticeBanner";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { useAppTheme } from "./hooks/useAppTheme";
+import { useSyncEngine } from "./hooks/useSyncEngine";
 import { PIN_LOCK_ENABLED } from "./lib/pin";
 import type { RootLoaderData } from "./rootLoader";
 import "./App.css";
@@ -28,6 +29,7 @@ export function App() {
   const navigation = useNavigation();
   const theme = useAppTheme(settings.theme, settings.colorMode);
   const [unlocked, setUnlocked] = useState(false);
+  useSyncEngine();
 
   useEffect(() => {
     let hiddenSince = 0;
