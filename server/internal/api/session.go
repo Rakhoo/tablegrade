@@ -20,23 +20,29 @@ type authed func(w http.ResponseWriter, r *http.Request, sess store.Session)
 // withSession checks the bearer token and passes the session to next.
 func (s *Server) withSession(next authed) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
-		if !ok {
-			writeError(w, errUnauthorized)
+		sess, err := s.authenticate(r)
+		if err != nil {
+			writeError(w, err)
 			return
 		}
-		sess, _, err := s.sessions.Authenticate(r.Context(), token)
-		switch {
-		case errors.Is(err, auth.ErrUnauthorized):
-			writeError(w, errUnauthorized)
-		case errors.Is(err, auth.ErrRevoked):
-			writeError(w, errSessionRevoked)
-		case err != nil:
-			writeError(w, err)
-		default:
-			next(w, r, sess)
-		}
+		next(w, r, sess)
 	})
+}
+
+// authenticate checks the bearer token of a request and maps failures to API errors.
+func (s *Server) authenticate(r *http.Request) (store.Session, error) {
+	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
+	if !ok {
+		return store.Session{}, errUnauthorized
+	}
+	sess, _, err := s.sessions.Authenticate(r.Context(), token)
+	switch {
+	case errors.Is(err, auth.ErrUnauthorized):
+		return sess, errUnauthorized
+	case errors.Is(err, auth.ErrRevoked):
+		return sess, errSessionRevoked
+	}
+	return sess, err
 }
 
 // withAuthLimit applies the per-IP rate limit of the auth endpoints.

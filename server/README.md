@@ -4,7 +4,7 @@ Sync-Server für Notenfeder. Er speichert Konten, Geräte, gewrappte Schlüssel 
 verschlüsselte Einträge und Fotos. Klartext sieht er nie. Protokoll:
 [../docs/sync-plan/protocol.md](../docs/sync-plan/protocol.md).
 
-Stand: Speicher (SQLite), Sitzungen, Geräte, Test-Login, Rate-Limits. Die übrigen Endpunkte
+Stand: Speicher (SQLite), Sitzungen, Geräte, Test-Login, Rate-Limits, Passkeys. Die übrigen Endpunkte
 baut Stream A ([../docs/sync-plan/tasks-a-server.md](../docs/sync-plan/tasks-a-server.md)).
 
 ## Aufbau

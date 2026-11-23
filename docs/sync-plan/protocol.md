@@ -79,7 +79,16 @@ Antwort bei erfolgreicher Anmeldung:
   `{ challengeId, credential, deviceName }`, `credential` per `toJSON()`. Eine Challenge
   gilt 5 Minuten und nur einmal.
 - `register/finish` speichert `prfCapable = true`, wenn der Client
-  `clientExtensionResults.prf.enabled = true` meldet.
+  `clientExtensionResults.prf.enabled = true` meldet (oder dort schon `prf.results` liefert).
+- `begin` bekommt den Body `{}`. Mit `Authorization`-Header gilt `register/*` für einen
+  weiteren Passkey des Kontos; ein ungültiges Token gibt `unauthorized` (nie ein neues Konto).
+  `register/finish` mit Sitzung antwortet `204`, `deviceName` ist dann nur die Bezeichnung des
+  Passkeys. Mehr als 20 Passkeys: `conflict`.
+- Die WebAuthn-User-ID (`user.id`) ist die UTF-8-Kodierung der `userId`.
+- Die Optionen beider `begin` enthalten schon `extensions.prf.eval.first` = Base64url des
+  PRF-Salts (siehe 3). Optionen verlangen `residentKey: required`.
+- Jede fehlgeschlagene Passkey-Prüfung gibt `401 unauthorized`; eine abgelaufene oder schon
+  benutzte Challenge gibt `400 bad_request`.
 - Gerät: Jede neue Sitzung ohne bestehende Sitzung legt ein neues Gerät mit `deviceName` an.
 - `GET /auth/oidc/{provider}/config` liefert
   `{ clientId, authorizeUrl, scopes: ["openid"], redirectUri }`. Der Browser nutzt PKCE
@@ -266,4 +275,5 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | Datum | Stream | Änderung |
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
+| 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |

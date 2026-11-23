@@ -44,9 +44,13 @@ func run() error {
 		return err
 	}
 	defer db.Close()
+	server, err := api.New(cfg, db)
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr:              cfg.ListenAddr,
-		Handler:           api.New(cfg, db).Handler(),
+		Handler:           server.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

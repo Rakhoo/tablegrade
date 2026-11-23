@@ -161,6 +161,9 @@ func (l Link) Done() bool { return l.Wrapped != nil }
 type Store interface {
 	// CreateUser adds an account with a new random id.
 	CreateUser(ctx context.Context) (User, error)
+	// CreateUserWithID adds an account with a given id, e.g. the WebAuthn user handle chosen
+	// before the passkey exists; ErrConflict if the id is taken.
+	CreateUserWithID(ctx context.Context, userID string) (User, error)
 	// GetUser returns an account.
 	GetUser(ctx context.Context, userID string) (User, error)
 	// DeleteUser removes an account and everything that belongs to it.

@@ -157,7 +157,12 @@ func boolInt(b bool) int {
 
 // CreateUser implements store.Store.
 func (db *DB) CreateUser(ctx context.Context) (store.User, error) {
-	u := store.User{ID: store.NewID(), CreatedAt: db.ms()}
+	return db.CreateUserWithID(ctx, store.NewID())
+}
+
+// CreateUserWithID implements store.Store.
+func (db *DB) CreateUserWithID(ctx context.Context, userID string) (store.User, error) {
+	u := store.User{ID: userID, CreatedAt: db.ms()}
 	_, err := db.write.ExecContext(ctx, `INSERT INTO users (id, created_at) VALUES (?, ?)`, u.ID, u.CreatedAt)
 	return u, mapErr(err)
 }

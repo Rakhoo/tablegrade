@@ -102,6 +102,12 @@ func testUsers(t *testing.T, s store.Store, clock *Clock) {
 	_, err := s.GetUser(ctx, "missing")
 	wantErr(t, err, store.ErrNotFound)
 	wantErr(t, s.DeleteUser(ctx, "missing"), store.ErrNotFound)
+	id := store.NewID()
+	if got := must(s.CreateUserWithID(ctx, id)); got.ID != id {
+		t.Errorf("CreateUserWithID id = %s", got.ID)
+	}
+	_, err = s.CreateUserWithID(ctx, id)
+	wantErr(t, err, store.ErrConflict)
 }
 
 func testIdentities(t *testing.T, s store.Store, _ *Clock) {

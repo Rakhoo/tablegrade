@@ -4,12 +4,15 @@
 package api
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-webauthn/webauthn/webauthn"
 
 	"github.com/Rakhoo/tablegrade/server/internal/auth"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
@@ -33,7 +36,9 @@ type Server struct {
 	sessions auth.Sessions
 	now      func() time.Time
 	// authLimit counts auth requests per client IP.
-	authLimit *ratelimit.Limiter
+	authLimit  *ratelimit.Limiter
+	webauthn   *webauthn.WebAuthn
+	challenges *auth.Challenges[passkeyCeremony]
 }
 
 // Option changes the behavior of New.
@@ -44,18 +49,24 @@ func WithClock(now func() time.Time) Option {
 	return func(s *Server) { s.now = now }
 }
 
-// New returns the server with all routes.
-func New(cfg config.Config, st store.Store, opts ...Option) *Server {
+// New returns the server with all routes. It fails if the WebAuthn settings are invalid.
+func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
 	s := &Server{cfg: cfg, store: st, now: time.Now}
 	for _, opt := range opts {
 		opt(s)
 	}
+	wa, err := newWebAuthn(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("webauthn: %w", err)
+	}
+	s.webauthn = wa
 	s.sessions = auth.Sessions{Store: st, Now: s.now}
 	s.authLimit = ratelimit.New(authPerMinute, time.Minute, s.now)
+	s.challenges = auth.NewChallenges[passkeyCeremony](s.now)
 	if cfg.DevAuth {
 		slog.Warn("DEV_AUTH=1: POST /api/v1/auth/dev/login creates accounts without sign-in. Never use this in production.")
 	}
-	return s
+	return s, nil
 }
 
 // Handler returns the root handler.
@@ -63,6 +74,10 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/v1/health", handleHealth)
 
+	mux.Handle("POST /api/v1/auth/passkey/register/begin", s.withAuthLimit(s.handlePasskeyRegisterBegin))
+	mux.Handle("POST /api/v1/auth/passkey/register/finish", s.withAuthLimit(s.handlePasskeyRegisterFinish))
+	mux.Handle("POST /api/v1/auth/passkey/login/begin", s.withAuthLimit(s.handlePasskeyLoginBegin))
+	mux.Handle("POST /api/v1/auth/passkey/login/finish", s.withAuthLimit(s.handlePasskeyLoginFinish))
 	mux.Handle("GET /api/v1/auth/session", s.withSession(s.handleSession))
 	mux.Handle("POST /api/v1/auth/logout", s.withSession(s.handleLogout))
 	if s.cfg.DevAuth {

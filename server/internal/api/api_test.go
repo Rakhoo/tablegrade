@@ -16,11 +16,18 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store/storetest"
 )
 
+// Origin and RP ID of the test app.
+const (
+	testOrigin = "https://app.example"
+	testRPID   = "app.example"
+)
+
 // testEnv is a server with a temporary database and a manual clock.
 type testEnv struct {
 	t       *testing.T
 	handler http.Handler
 	clock   *storetest.Clock
+	store   *sqlite.DB
 }
 
 // newEnv starts a server with DEV_AUTH enabled.
@@ -32,8 +39,12 @@ func newEnv(t *testing.T) *testEnv {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	cfg := config.Config{AppOrigins: []string{"https://app.example"}, DevAuth: true}
-	return &testEnv{t: t, handler: New(cfg, db, WithClock(clock.Now)).Handler(), clock: clock}
+	cfg := config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID, DevAuth: true}
+	srv, err := New(cfg, db, WithClock(clock.Now))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &testEnv{t: t, handler: srv.Handler(), clock: clock, store: db}
 }
 
 // do sends a request with an optional token and JSON body and decodes the JSON answer into out.
@@ -120,7 +131,11 @@ func TestDevLoginDisabledByDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer db.Close()
-	h := New(config.Config{AppOrigins: []string{"https://app.example"}}, db).Handler()
+	srv, err := New(config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID}, db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h := srv.Handler()
 	rec := httptest.NewRecorder()
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/api/v1/auth/dev/login", strings.NewReader(`{"deviceName":"x"}`)))
 	if rec.Code != http.StatusNotFound {

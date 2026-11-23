@@ -26,12 +26,12 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A3 Passkeys
 
-- [ ] `go-webauthn`: Registrierung (neues Konto oder weiterer Passkey), Login mit
+- [x] `go-webauthn`: Registrierung (neues Konto oder weiterer Passkey), Login mit
       discoverable credentials. `RP_ID` und erlaubte Origins (`APP_ORIGINS`) aus der Konfiguration.
-- [ ] PRF-Erweiterung in den Optionen anfordern; ob der Passkey PRF kann, meldet der Client
+- [x] PRF-Erweiterung in den Optionen anfordern; ob der Passkey PRF kann, meldet der Client
       beim Abschluss, der Server speichert `prfCapable`.
-- [ ] Challenges mit Ablauf (5 Minuten) im Speicher oder in der DB.
-- [ ] **Merge-Punkt.**
+- [x] Challenges mit Ablauf (5 Minuten) im Speicher oder in der DB.
+- [x] **Merge-Punkt.**
 
 ## A4 Microsoft und Google
 
