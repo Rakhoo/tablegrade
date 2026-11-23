@@ -13,6 +13,34 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 18:25 UTC · Stream B · sync/client (Lauf 18:13)
+- Erledigt: B5 `410 server_restored` (`engine.ts` `reupload`, Code in `api.ts`, Test mit
+  `restore` im Fake-Server). B6: Kopplung (`deviceLink.ts`, beide Seiten, Polling plus
+  WebSocket-`link`), Konto löschen (`account.ts`), Aktivierung (`activationFlow.ts`,
+  `joinAccount` in `activation.ts`), Dienst `service.ts` hinter der Fassade, Fassade ohne
+  Stubs, Start in `App.tsx` über `hooks/useSyncEngine.ts`. Tests: `deviceLink.test.ts`,
+  `service.test.ts`.
+- Fassade ergänzt (nur Zusätze, keine Signatur geändert): `startSync()` (App-Start: Import-Prüfung,
+  OIDC-Rückkehr, Sitzungsprüfung, Engine) und `subscribeSyncApplied(listener)` (Revalidierung).
+  Builds ohne `VITE_SYNC_URL`: `startSync` tut nichts, andere Aufrufe werfen mit deutscher Meldung.
+- Entschieden: Sync startet erst, wenn das Konto einen `recovery`-Wrap hat. Grund: Bei einem
+  neuen Konto soll der Erst-Upload erst nach dem Wiederherstellungsschlüssel laufen (C2).
+- Entschieden: Server ohne Einträge → lokale Daten hochladen. Server mit Einträgen → lokale
+  synchronisierte Zeilen ersetzen (`joinAccount`). Hat das Gerät eigene Daten (Klassen oder
+  Schüler), wartet es auf `replaceLocalData()`. In dieser Wartezeit ist `phase = "idle"` und
+  `lastSyncAt = null`; die UI fragt nach dem Entsperren `hasLocalData()`.
+- Entschieden: Der Wunsch „Sync an“ liegt im Gerätespeicher (`wanted`), nicht in
+  `_sync_state`. Grund: Vor der Anmeldung sollen keine Outbox-Einträge entstehen. Die
+  Aktivierung merkt sich das Konto (`syncUserId`); ein anderes Konto beginnt neu.
+- Entschieden: Hinweis nach Import einer Sicherung kommt als `status.error` bei `phase = "off"`
+  (keine neue Fassaden-Funktion). Betrifft Stream C (C5).
+- Entschieden: Lokale Änderungen sendet ein Intervall (5 s), wenn die Outbox nicht leer ist.
+  Grund: Die Trigger schreiben ohne Rückmeldung an JS; die Abfrage ist billig.
+- Nicht geprüft (nur auf echtem Gerät): Passkey/PRF, OIDC-Weiterleitung, IndexedDB, WebSocket
+  gegen den echten Server. Kopplung nur gegen Fake-API getestet.
+- **Stream B fertig**
+- Nächster Schritt: Stream D (Gesamttest, README).
+
 ## 2026-11-23, 17:45 UTC · Stream A · sync/server
 - Erledigt: Blocker „Server-Sicherung zurückgespielt“ mit Mario geklärt (Option B, Gerät
   gewinnt). Server antwortet bei `after` > `latestSeq` mit `410 server_restored` statt `gone`.

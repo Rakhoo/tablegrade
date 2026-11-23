@@ -13,6 +13,7 @@ export type ApiErrorCode =
   | "not_found"
   | "conflict"
   | "gone"
+  | "server_restored"
   | "too_large"
   | "upgrade_required"
   | "rate_limited"
@@ -28,6 +29,8 @@ const MESSAGES: Record<ApiErrorCode, string> = {
   not_found: "Nicht gefunden.",
   conflict: "Das geht gerade nicht.",
   gone: "Die Daten müssen neu geladen werden.",
+  server_restored:
+    "Der Server wurde zurückgesetzt. Die Daten werden neu hochgeladen.",
   too_large: "Die Daten sind zu groß.",
   upgrade_required: "Bitte die App aktualisieren.",
   rate_limited: "Zu viele Versuche. Bitte später noch einmal.",
@@ -241,7 +244,11 @@ export function createApi({ baseUrl, getToken, fetch: doFetch }: ApiOptions) {
         redirectUri: string;
         deviceName: string;
       },
-    ) => call<SessionGrant>(`/auth/oidc/${provider}/exchange`, { body }),
+    ) =>
+      // With a session the server links the identity and answers 204 without a body
+      call<SessionGrant | undefined>(`/auth/oidc/${provider}/exchange`, {
+        body,
+      }),
     session: () => call<SessionInfo>("/auth/session"),
     logout: () => call<void>("/auth/logout", { method: "POST" }),
     listDevices: () =>

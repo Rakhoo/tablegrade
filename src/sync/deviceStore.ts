@@ -29,8 +29,12 @@ export type DeviceValues = {
   dataKey: StoredDataKey;
   /** Session; missing while signed out. */
   session: StoredSession;
+  /** Set while the user wants sync on this device, from `enableSync` until `disableSync`. */
+  wanted: true;
   /** Random id of the current sync activation; must match `_sync_state.syncId`. */
   syncId: string;
+  /** Account the current activation belongs to; another account starts from scratch. */
+  syncUserId: string;
   /** Set when an imported backup turned sync off; the UI shows a hint once. */
   importNotice: true;
 };

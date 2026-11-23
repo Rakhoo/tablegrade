@@ -61,7 +61,7 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
       mit `applying = '1'` und `PRAGMA defer_foreign_keys = ON` einfügen, ersetzen oder löschen.
       Danach Ereignis für `useRevalidator`.
 - [x] `410` → kompletter Neuabgleich ohne Datenverlust lokaler, noch nicht gepushter Änderungen.
-- [ ] `410 server_restored` (Entscheidung in blockers.md): **alle** lokalen synchronisierten
+- [x] `410 server_restored` (Entscheidung in blockers.md): **alle** lokalen synchronisierten
       Zeilen in `_outbox` stellen, pushen, dann alles ab `after=0` holen. Das Gerät gewinnt.
       Test dazu. Code und Meldung in `src/sync/api.ts` ergänzen.
 - [x] Fotos: beim Push Blob hochladen, wenn noch nicht auf dem Server; beim Pull Blob laden und
@@ -96,8 +96,8 @@ Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream 
 
 ## B6 Kopplung und Konto (Logik)
 
-- [ ] Kopplung auf beiden Seiten laut protocol.md 6, mit Prüfcode-Bestätigung.
-- [ ] Konto löschen: Server-Aufruf, dann lokale Sync-Daten und Schlüssel entfernen, die
+- [x] Kopplung auf beiden Seiten laut protocol.md 6, mit Prüfcode-Bestätigung.
+- [x] Konto löschen: Server-Aufruf, dann lokale Sync-Daten und Schlüssel entfernen, die
       lokale App-DB bleibt (Nutzerin entscheidet in der UI).
-- [ ] Fassade vollständig umgesetzt (inklusive B7), Stubs entfernt.
-- [ ] **Merge-Punkt**, „Stream B fertig“ in progress.md.
+- [x] Fassade vollständig umgesetzt (inklusive B7), Stubs entfernt.
+- [x] **Merge-Punkt**, „Stream B fertig“ in progress.md.

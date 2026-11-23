@@ -26,7 +26,7 @@ export type KeyringContext = { api: Api; store: DeviceStore };
 export type PrfResult = { credentialId: string; prfOutput: Bytes };
 
 /** Signed-in user; throws if there is no session. */
-async function sessionUser(store: DeviceStore): Promise<string> {
+export async function sessionUser(store: DeviceStore): Promise<string> {
   const session = await store.get("session");
   if (!session) throw new Error("Bitte zuerst anmelden.");
   return session.userId;
@@ -42,7 +42,7 @@ async function ownDataKey(
 }
 
 /** Stores the data key for `userId`. */
-function keepDataKey(store: DeviceStore, userId: string, key: DataKey) {
+export function keepDataKey(store: DeviceStore, userId: string, key: DataKey) {
   return store.set("dataKey", { userId, key });
 }
 
@@ -158,7 +158,7 @@ export async function unlockWithRecovery(
 }
 
 /** The unlocked data key of the signed-in account; throws while locked. */
-async function unlockedKey(store: DeviceStore) {
+export async function unlockedKey(store: DeviceStore) {
   const userId = await sessionUser(store);
   const key = await ownDataKey(store, userId);
   if (!key) throw new Error("Die Daten sind auf diesem Gerät noch gesperrt.");
