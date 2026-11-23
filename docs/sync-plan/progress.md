@@ -13,6 +13,20 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 18:25 UTC · Stream A · sync/server
+- Erledigt: A6 Einträge (`internal/api/records.go`): `POST /records/push`, `GET /records/pull`,
+  Last Write Wins (auch doppelte ID im selben Push), Limits, `410 gone`. Täglicher Lauf
+  `Server.RunMaintenance` (`internal/api/maintenance.go`) löscht Tombstones nach 180 Tagen.
+  Merge-Punkt A6 erreicht, `sync/server` in `sync/integration` gemergt.
+- Entschieden: Push-Limit 60 pro Minute und Konto. Grund: Erst-Upload mit 500 Einträgen pro
+  Push bleibt schnell, eine Schleife im Client fällt trotzdem auf.
+- Entschieden: Die 5 MB gelten für den ganzen Body (Base64 eingerechnet). Grund: einfach zu
+  prüfen; der Client teilt nach Größe des JSON.
+- Entschieden: `RunMaintenance` ist der gemeinsame Ort für Aufräumarbeiten; A7 (Blobs) und
+  A10 (Backup) hängen sich dort an.
+- Protokoll ergänzt (Einträge, Abschnitt „Änderungen“). Betrifft Stream B.
+- Nächster Schritt: A7 Fotos.
+
 ## 2026-11-23, 18:00 UTC · Stream A · sync/server
 - Erledigt: A5 Schlüssel (`internal/api/keys.go`): `GET/PUT/DELETE /keys`, letzter
   `recovery`-Wrap nicht löschbar (Test), fremde IDs geschützt.

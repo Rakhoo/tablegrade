@@ -30,6 +30,11 @@ type testEnv struct {
 	store   *sqlite.DB
 }
 
+// cfg is the configuration of every test server.
+func (e *testEnv) cfg() config.Config {
+	return config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID, DevAuth: true}
+}
+
 // newEnv starts a server with DEV_AUTH enabled and the given options.
 func newEnv(t *testing.T, opts ...Option) *testEnv {
 	t.Helper()
@@ -39,12 +44,13 @@ func newEnv(t *testing.T, opts ...Option) *testEnv {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	cfg := config.Config{AppOrigins: []string{testOrigin}, RPID: testRPID, DevAuth: true}
-	srv, err := New(cfg, db, append([]Option{WithClock(clock.Now)}, opts...)...)
+	e := &testEnv{t: t, clock: clock, store: db}
+	srv, err := New(e.cfg(), db, append([]Option{WithClock(clock.Now)}, opts...)...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &testEnv{t: t, handler: srv.Handler(), clock: clock, store: db}
+	e.handler = srv.Handler()
+	return e
 }
 
 // do sends a request with an optional token and JSON body and decodes the JSON answer into out.

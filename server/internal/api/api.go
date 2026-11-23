@@ -37,7 +37,9 @@ type Server struct {
 	sessions auth.Sessions
 	now      func() time.Time
 	// authLimit counts auth requests per client IP.
-	authLimit  *ratelimit.Limiter
+	authLimit *ratelimit.Limiter
+	// pushLimit counts pushes per account.
+	pushLimit  *ratelimit.Limiter
 	webauthn   *webauthn.WebAuthn
 	challenges *auth.Challenges[passkeyCeremony]
 	// oidc holds the enabled identity providers by name (store.ProviderMicrosoft, …).
@@ -65,6 +67,7 @@ func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
 	s.webauthn = wa
 	s.sessions = auth.Sessions{Store: st, Now: s.now}
 	s.authLimit = ratelimit.New(authPerMinute, time.Minute, s.now)
+	s.pushLimit = ratelimit.New(pushPerMinute, time.Minute, s.now)
 	s.challenges = auth.NewChallenges[passkeyCeremony](s.now)
 	if cfg.DevAuth {
 		slog.Warn("DEV_AUTH=1: POST /api/v1/auth/dev/login creates accounts without sign-in. Never use this in production.")
@@ -92,6 +95,9 @@ func (s *Server) Handler() http.Handler {
 	mux.Handle("GET /api/v1/keys", s.withSession(s.handleListKeys))
 	mux.Handle("PUT /api/v1/keys/{id}", s.withSession(s.handlePutKey))
 	mux.Handle("DELETE /api/v1/keys/{id}", s.withSession(s.handleDeleteKey))
+
+	mux.Handle("POST /api/v1/records/push", s.withSession(s.handlePush))
+	mux.Handle("GET /api/v1/records/pull", s.withSession(s.handlePull))
 
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))

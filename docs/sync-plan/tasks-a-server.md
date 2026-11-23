@@ -49,9 +49,9 @@ Speicher bzw. temporärem Ordner). Keine Tests, die Internet brauchen.
 
 ## A6 Einträge
 
-- [ ] `POST /records/push`, `GET /records/pull` mit Last Write Wins und Limits.
-- [ ] Tombstones mindestens 180 Tage, danach Aufräumen; `410` bei zu altem `after`.
-- [ ] **Merge-Punkt.**
+- [x] `POST /records/push`, `GET /records/pull` mit Last Write Wins und Limits.
+- [x] Tombstones mindestens 180 Tage, danach Aufräumen; `410` bei zu altem `after`.
+- [x] **Merge-Punkt.**
 
 ## A7 Fotos
 

@@ -180,6 +180,12 @@ records  userId, id, seq, updatedAt, deleted, schema, ciphertext, deviceId
 | `POST /records/push` | Body: `{ records: [{ id, deleted, schema, ciphertext, blobs }] }`, max. 500 Einträge bzw. 5 MB. Antwort: `{ results: [{ id, seq, updatedAt }] }` in derselben Reihenfolge. Last Write Wins: der neue Eintrag ersetzt immer den alten. Eine ID doppelt im selben Push: der letzte gewinnt. |
 | `GET /records/pull?after=<seq>&limit=<n>` | Einträge mit `seq > after`, aufsteigend, max. 1000 (Standard 500). Antwort `{ records: [{ id, seq, updatedAt, deleted, schema, ciphertext, deviceId }], more, latestSeq }`. |
 
+- Push: Die 5 MB gelten für den ganzen Request-Body (sonst `too_large`). 0 oder mehr als 500
+  Einträge, eine `id` oder Blob-ID, die nicht 16 Bytes Base64url ist, `schema` < 1, ein
+  `ciphertext` unter 28 Bytes oder mehr als 16 Blobs pro Eintrag: `bad_request`. Höchstens
+  60 Pushes pro Minute und Konto (`rate_limited`).
+- Pull: `after` und `limit` sind ganze Zahlen ≥ 0 bzw. ≥ 1, sonst `bad_request`. Ein `limit`
+  über 1000 zählt als 1000. `after=0` bekommt nie `gone`.
 - Auch Löschungen tragen einen `ciphertext` (Klartext mit `row: null`). So bleibt der Schlüssel
   `k` für das Gerät lesbar, das die Löschung anwendet.
 - Der Server sendet einem Gerät auch seine eigenen Einträge zurück. Der Client erkennt sie an
@@ -290,6 +296,7 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 |---|---|---|
 | 2026-11-23 | 0 | Entwurf verbindlich gemacht: Codierungen (Base32, HKDF-Salt, GCM-Format), Fehler-Status, Wrap- und Geräte-JSON, Pull-Felder, Blob-Eingabe, Prüfcode-Formel ergänzt. Code-Abfrage der Kopplung als `GET /link/by-code/{code}`, damit sie sich vom Pfad mit `linkId` unterscheidet. Wiederherstellungsschlüssel mit 4 statt 1 Prüfzeichen (36 Zeichen = 9 Vierergruppen, 20 Bit Fehlererkennung). |
 | 2026-11-23 | A | Passkeys: Body von `begin`, `204` bei weiterem Passkey, User-ID = `userId`, PRF-Salt schon in den Optionen, Fehlercodes, max. 20 Passkeys. |
+| 2026-11-23 | A | Einträge: Prüfregeln für Push und Pull, Push-Limit 60 pro Minute und Konto, `limit` über 1000 wird gekürzt. |
 | 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |
