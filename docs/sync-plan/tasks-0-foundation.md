@@ -28,16 +28,16 @@ Betroffen: `Classes`, `Students`, `Grades`, `Traits`, `Duties` (Integer-Primärs
 alle Tabellen mit Fremdschlüsseln darauf: `ClassStudents`, `StudentTraits`, `LessonTypes`,
 `Reports`, `ReportGrades`, `CancelledLessons`, dazu `ClassStudents.dutyId`.
 
-- [ ] **Audit vorher:** Wo stehen IDs außerhalb dieser Spalten? Zu prüfen sind
+- [x] **Audit vorher:** Wo stehen IDs außerhalb dieser Spalten? Zu prüfen sind
       `Settings`-Werte (JSON), `localStorage` (z. B. `useDisplayOption`, Rückweg in
       `lib/returnPage.ts`), `lessonKey` in `lib/lessons.ts`, URLs (`lib/paths.ts`,
       `router.tsx`, Loader mit `Number(params…)`), Backup-Import, `devData.ts`.
       Ergebnis als Liste in progress.md.
-- [ ] Neue Migration (nur anhängen): Tabellen mit `TEXT`-Schlüsseln neu bauen, alte Integer
+- [x] Neue Migration (nur anhängen): Tabellen mit `TEXT`-Schlüsseln neu bauen, alte Integer
       über Zuordnungstabellen in UUID v4 umsetzen (in SQL aus `randomblob(16)` gebildet),
       Daten und Beziehungen vollständig übernehmen, `PRAGMA foreign_keys` beachten,
       `PRAGMA foreign_key_check` am Ende leer. Gespeicherte IDs in `Settings`-JSON mit umsetzen.
-- [ ] Tests mit `node:sqlite`: Beispieldaten auf alter Version anlegen, migrieren, alle
+- [x] Tests mit `node:sqlite`: Beispieldaten auf alter Version anlegen, migrieren, alle
       Beziehungen und Kaskaden prüfen.
 - [ ] Drizzle-Schema auf `text` umstellen. Alle Queries, Typen (`number` → `string`),
       Loader, `paths`, Rückweg, Hilfsfunktionen anpassen. Neue IDs per
