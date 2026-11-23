@@ -28,6 +28,8 @@ export type PullOutcome = {
   applied: number;
   /** Records waiting for an app update. */
   deferred: number;
+  /** Ids of all pulled records, including own ones and deletions. */
+  ids: string[];
 };
 
 /** Key of a row as used in the outbox: table and JSON array of the key values. */
@@ -190,8 +192,9 @@ export async function pullChanges(
     (record) =>
       record.schema <= SCHEMA_VERSION && record.deviceId != ctx.deviceId,
   );
+  const ids = [...latest.keys()];
   if (after == start)
-    return { applied: 0, deferred: await countDeferred(ctx.db) };
+    return { applied: 0, deferred: await countDeferred(ctx.db), ids };
   const applied = await applyDecoded(
     ctx,
     await decode(ctx, fresh),
@@ -204,7 +207,7 @@ export async function pullChanges(
       await writeSyncState(tx, { lastSeq: String(after) });
     },
   );
-  return { applied, deferred: await countDeferred(ctx.db) };
+  return { applied, deferred: await countDeferred(ctx.db), ids };
 }
 
 /**

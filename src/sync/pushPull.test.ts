@@ -1,63 +1,23 @@
-import type { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it } from "vitest";
-import { generateDataKey, type DataKey } from "../crypto/keys";
+import { generateDataKey } from "../crypto/keys";
 import { encryptRecord, recordId } from "../crypto/records";
 import { SCHEMA_VERSION } from "../db/migrations";
 import { createFakeServer } from "../test/fakeSyncServer";
-import { openTestDb } from "../test/sqliteDb";
-import { asSyncDb } from "../test/syncTestDb";
-import type { SyncContext } from "./context";
+import {
+  ANNA,
+  CLASS,
+  createDevice,
+  PHOTO,
+  seed,
+  type TestDevice,
+} from "../test/syncDevices";
 import { applyPending, pullChanges } from "./pull";
 import { pushChanges } from "./push";
 
-const CLASS = "c0000000-0000-4000-8000-000000000001";
-const ANNA = "50000000-0000-4000-8000-000000000001";
-const PHOTO = "data:image/png;base64,iVBORw0KGgo=";
-
-/** A device with its own database, sync enabled, on the shared fake server. */
-function createDevice(
-  server: ReturnType<typeof createFakeServer>,
-  key: DataKey,
-  deviceId: string,
-) {
-  const raw = openTestDb();
-  raw.exec("INSERT INTO _sync_state (key, value) VALUES ('enabled', '1')");
-  const ctx: SyncContext = {
-    db: asSyncDb(raw),
-    api: server.api(deviceId),
-    key,
-    userId: "u",
-    deviceId,
-  };
-  return {
-    raw,
-    ctx,
-    /** Push, then pull, like the engine does. */
-    sync: async () => {
-      await pushChanges(ctx);
-      return pullChanges(ctx);
-    },
-    /** All rows of a query. */
-    rows: (sql: string) => raw.prepare(sql).all() as Record<string, unknown>[],
-  };
-}
-
-/** Adds a class with student Anna and a grade. */
-function seed(db: DatabaseSync) {
-  db.exec(`
-    INSERT INTO Classes (id, subject, number, letter, year, part, day, hour, double)
-      VALUES ('${CLASS}', 'Mathe', '7', 'a', 2025, '1', 1, 2, 0);
-    INSERT INTO Students (id, firstName, lastName) VALUES ('${ANNA}', 'Anna', 'Arm');
-    INSERT INTO Classes2Students (classId, studentId) VALUES ('${CLASS}', '${ANNA}');
-    INSERT INTO Grades (id, date, classId, studentId, grade)
-      VALUES ('g1', '2025-09-01', '${CLASS}', '${ANNA}', 2);
-  `);
-}
-
 describe("push and pull between two devices", () => {
   let server: ReturnType<typeof createFakeServer>;
-  let a: ReturnType<typeof createDevice>;
-  let b: ReturnType<typeof createDevice>;
+  let a: TestDevice;
+  let b: TestDevice;
 
   beforeEach(async () => {
     server = createFakeServer();
@@ -196,7 +156,7 @@ describe("push and pull between two devices", () => {
       }),
     });
     await server.api("device-new").push([await newer(SCHEMA_VERSION + 1)]);
-    expect(await b.sync()).toEqual({ applied: 0, deferred: 1 });
+    expect(await b.sync()).toMatchObject({ applied: 0, deferred: 1 });
     expect(b.rows("SELECT * FROM Settings WHERE key = 'theme'")).toEqual([]);
 
     // Simulates the app update: the waiting record now has a known schema

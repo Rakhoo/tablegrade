@@ -4,8 +4,8 @@
  */
 import type { DeviceStore } from "./deviceStore";
 import type { SyncDb } from "./syncDb";
-import { readSyncState, writeSyncState } from "./syncState";
-import { clearSyncTables } from "./tables";
+import { turnOff } from "./activation";
+import { readSyncState } from "./syncState";
 
 /**
  * Result of the check:
@@ -27,15 +27,7 @@ export async function checkImportedDatabase(
   const deviceSyncId = (await store.get("syncId")) ?? null;
   const databaseSyncId = await readSyncState(db, "syncId");
   if (deviceSyncId == databaseSyncId) return "ok";
-  await db.transaction(async (tx) => {
-    await writeSyncState(tx, {
-      enabled: "0",
-      applying: null,
-      lastSeq: null,
-      syncId: null,
-    });
-    await clearSyncTables(tx);
-  });
+  await turnOff(db);
   if (deviceSyncId == null) return "reset";
   await store.delete("syncId");
   await store.delete("session");

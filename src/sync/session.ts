@@ -27,19 +27,26 @@ export async function checkSession(api: Api): Promise<SessionCheck> {
     const [info, keys] = await Promise.all([api.session(), api.listKeys()]);
     return { state: "valid", info, keys };
   } catch (error) {
-    if (!(error instanceof ApiError)) throw error;
-    switch (error.code) {
-      case "session_revoked":
-        return { state: "revoked", message: error.message };
-      case "unauthorized":
-        return { state: "signedOut", message: error.message };
-      case "upgrade_required":
-        return { state: "upgradeRequired", message: error.message };
-      case "offline":
-        return { state: "offline" };
-      default:
-        return { state: "error", message: error.message };
-    }
+    return classifyError(error);
+  }
+}
+
+/** Classifies a failed server call; also used by the sync run. Rethrows non-API errors. */
+export function classifyError(
+  error: unknown,
+): Exclude<SessionCheck, { state: "valid" }> {
+  if (!(error instanceof ApiError)) throw error;
+  switch (error.code) {
+    case "session_revoked":
+      return { state: "revoked", message: error.message };
+    case "unauthorized":
+      return { state: "signedOut", message: error.message };
+    case "upgrade_required":
+      return { state: "upgradeRequired", message: error.message };
+    case "offline":
+      return { state: "offline" };
+    default:
+      return { state: "error", message: error.message };
   }
 }
 

@@ -1,5 +1,10 @@
 import type { Bytes } from "../crypto/encoding";
-import type { Api, IncomingRecord, OutgoingRecord } from "../sync/api";
+import {
+  ApiError,
+  type Api,
+  type IncomingRecord,
+  type OutgoingRecord,
+} from "../sync/api";
 
 /** Server records and blobs of one account in memory, as in protocol.md 4 and 5. */
 export function createFakeServer() {
@@ -7,6 +12,8 @@ export function createFakeServer() {
   const blobs = new Map<string, Bytes>();
   let seq = 0;
   let blobUploads = 0;
+  /** Pulls with `0 < after < goneBelow` get `410`, like after pruned deletions. */
+  let goneBelow = 0;
 
   /** Stores pushed records; the newest always wins (Last Write Wins). */
   const push = (deviceId: string, list: OutgoingRecord[]) =>
@@ -26,6 +33,7 @@ export function createFakeServer() {
 
   /** Records after `after`, ascending. */
   const pull = (after: number, limit = 500) => {
+    if (after > 0 && after < goneBelow) throw new ApiError("gone", 410);
     const newer = [...records.values()]
       .filter((record) => record.seq > after)
       .sort((a, b) => a.seq - b.seq);
@@ -38,6 +46,11 @@ export function createFakeServer() {
 
   return {
     records,
+    /** Forgets a record and answers older pulls with `410`, like pruning on the server. */
+    prune: (id: string) => {
+      records.delete(id);
+      goneBelow = seq + 1;
+    },
     /** Number of blob uploads so far, including repeated ones. */
     blobUploads: () => blobUploads,
     /** API client of one device; only the sync calls exist. */
