@@ -61,6 +61,9 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
       mit `applying = '1'` und `PRAGMA defer_foreign_keys = ON` einfügen, ersetzen oder löschen.
       Danach Ereignis für `useRevalidator`.
 - [x] `410` → kompletter Neuabgleich ohne Datenverlust lokaler, noch nicht gepushter Änderungen.
+- [ ] `410 server_restored` (Entscheidung in blockers.md): **alle** lokalen synchronisierten
+      Zeilen in `_outbox` stellen, pushen, dann alles ab `after=0` holen. Das Gerät gewinnt.
+      Test dazu. Code und Meldung in `src/sync/api.ts` ergänzen.
 - [x] Fotos: beim Push Blob hochladen, wenn noch nicht auf dem Server; beim Pull Blob laden und
       als Data-URL in `Students.image` schreiben.
 - [x] WebSocket mit Ping und Backoff, `changed` → Pull, `revoked` → Status, `link` → Kopplung.

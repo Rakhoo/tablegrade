@@ -221,9 +221,7 @@ func TestPullAfterRestoreIsGone(t *testing.T) {
 	s := e.login("", "iPad")
 	e.push(s.SessionToken, nil, pushRec(recID(1), false, 0))
 	// The device saw seq 5 before the server was restored to a snapshot with seq 1.
-	if _, code := e.pull(s.SessionToken, "?after=5"); code != http.StatusGone {
-		t.Errorf("after=5: %d", code)
-	}
+	wantError(t, e.do(http.MethodGet, "/api/v1/records/pull?after=5", s.SessionToken, "", nil), http.StatusGone, "server_restored")
 	if _, code := e.pull(s.SessionToken, "?after=1"); code != http.StatusOK {
 		t.Errorf("after=1: %d", code)
 	}
