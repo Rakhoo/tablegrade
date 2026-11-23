@@ -15,6 +15,7 @@ import { SyncAccountActions } from "./SyncAccountActions";
 import { SyncApproveLink } from "./SyncApproveLink";
 import { SyncDevices } from "./SyncDevices";
 import { SyncErrorAlert } from "./SyncErrorAlert";
+import { SyncIdentities } from "./SyncIdentities";
 import { SyncIntro } from "./SyncIntro";
 import { SyncRecoveryKey } from "./SyncRecoveryKey";
 import { SyncSignIn } from "./SyncSignIn";
@@ -143,6 +144,7 @@ function SyncActive({ status }: SyncActiveProps) {
           Jetzt synchronisieren
         </Button>
       </div>
+      {status.account && <SyncIdentities account={status.account} />}
       <SyncApproveLink />
       <SyncDevices />
       <SyncAccountActions />

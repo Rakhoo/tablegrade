@@ -44,6 +44,7 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 ## C4 Konto verwalten
 
 - [ ] Anmeldewege: Liste, „Passkey hinzufügen“, „Microsoft verknüpfen“, „Google verknüpfen“.
+      (Liste erledigt; Hinzufügen/Verknüpfen blockiert, siehe blockers.md)
 - [x] Geräte: Liste mit letzter Aktivität, umbenennen, sperren (`ConfirmDialog`). (Umbenennen fehlt, siehe blockers.md)
 - [x] „Neuen Wiederherstellungsschlüssel erstellen“ (gleicher Ablauf wie C2, alter wird ungültig).
 - [x] „Sync ausschalten“, „Abmelden“, „Konto löschen“ (Bestätigung durch Eintippen eines

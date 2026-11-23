@@ -186,3 +186,8 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
   unterscheidet das nicht). „Später“ blendet ihn bis zum nächsten Start aus.
 - Nicht geprüft: Platz der Leiste im Hochformat auf dem iPad (keine Browser-Tests).
 - Nächster Schritt: C5 „Update nötig“ und Sicherungs-Import (beide blockiert), sonst C6.
+- Erledigt: C4 Anmeldewege als Liste (`SyncIdentities` aus `status.account.identities`).
+  Hinzufügen/Verknüpfen bleibt offen (blockers.md).
+- Offen: C5 Hinweis beim Sicherungs-Import wartet auf B2 (Logik „Sync ausschalten“ beim
+  Import). C5 „Update nötig“ wartet auf die Fassade (blockers.md). C6 erst danach.
+- Kein Merge nach `sync/integration`: Der einzige Merge-Punkt von Stream C ist C6.
