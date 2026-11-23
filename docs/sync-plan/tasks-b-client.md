@@ -11,16 +11,16 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 
 ## B1 Krypto (`src/crypto/`)
 
-- [ ] Hilfen: Zufall, HKDF-SHA256, AES-256-GCM, HMAC, Base64url, Crockford-Base32.
-- [ ] DEK erzeugen, importieren, exportieren. IDK ableiten.
-- [ ] Wraps für `passkey` (aus PRF-Ausgabe) und `recovery`.
-- [ ] Wiederherstellungsschlüssel: erzeugen, formatieren (Vierergruppen, Prüfzeichen),
+- [x] Hilfen: Zufall, HKDF-SHA256, AES-256-GCM, HMAC, Base64url, Crockford-Base32.
+- [x] DEK erzeugen, importieren, exportieren. IDK ableiten.
+- [x] Wraps für `passkey` (aus PRF-Ausgabe) und `recovery`.
+- [x] Wiederherstellungsschlüssel: erzeugen, formatieren (Vierergruppen, Prüfzeichen),
       Eingabe normalisieren (Klein-/Großschreibung, Leerzeichen, `O`→`0`, `I`/`L`→`1`),
       Prüfzeichen prüfen mit klarer Fehlermeldung.
-- [ ] Record-ID, Blob-ID, Record- und Blob-Verschlüsselung.
-- [ ] Kopplung: ECDH P-256, Ableitung, Prüfcode.
-- [ ] Alle Testvektoren aus `server/testdata/vectors.json` bestehen.
-- [ ] **Merge-Punkt.**
+- [x] Record-ID, Blob-ID, Record- und Blob-Verschlüsselung.
+- [x] Kopplung: ECDH P-256, Ableitung, Prüfcode.
+- [x] Alle Testvektoren aus `server/testdata/vectors.json` bestehen.
+- [x] **Merge-Punkt.**
 
 ## B2 Lokale Speicherung
 
