@@ -11,13 +11,13 @@ Branch: `sync/final`. Start erst, wenn A, B und C in progress.md als fertig steh
 
 ## D2 Gesamttest ohne Browser
 
-- [ ] Vitest-Suite `src/sync/e2e.test.ts` (eigenes Skript `npm run test:e2e`): startet den
+- [x] Vitest-Suite `src/sync/e2e.test.ts` (eigenes Skript `npm run test:e2e`): startet den
       Go-Server mit `DEV_AUTH=1` und temporärem `DATA_DIR`, zwei simulierte Geräte mit
       `node:sqlite`, echte HTTP- und WebSocket-Verbindungen.
-- [ ] Fälle: Erst-Upload, zweites Gerät per Wiederherstellungsschlüssel, Kopplung, parallele
+- [x] Fälle: Erst-Upload, zweites Gerät per Wiederherstellungsschlüssel, Kopplung, parallele
       Änderungen (Last Write Wins), Löschung mit Kaskade, Foto, Offline-Phase, `410`,
       Gerät sperren (`revoked` als Hinweis), Konto löschen.
-- [ ] CI führt die Suite aus (Go und Node sind dort vorhanden).
+- [x] CI führt die Suite aus (Go und Node sind dort vorhanden).
 
 ## D3 Dokumentation
 

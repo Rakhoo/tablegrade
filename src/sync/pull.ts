@@ -165,12 +165,14 @@ async function countDeferred(db: SqlRunner): Promise<number> {
 /**
  * Pulls all records after `_sync_state.lastSeq` and applies them. All pages go into one
  * transaction, so a child row on an early page never misses its parent from a later page.
- * Own records are skipped; they are already in the local tables. `onProgress` gets the
- * fetched and the total `seq` range.
+ * Own records are skipped; they are already in the local tables. `includeOwn` applies them
+ * too, for the pull after a server restore, where the server may hold own rows the device has
+ * deleted since. `onProgress` gets the fetched and the total `seq` range.
  */
 export async function pullChanges(
   ctx: SyncContext,
   onProgress?: (done: number, total: number) => void,
+  includeOwn = false,
 ): Promise<PullOutcome> {
   const start = Number((await readSyncState(ctx.db, "lastSeq")) ?? 0);
   // A row changed while paging shows up twice; only its latest record counts
@@ -190,7 +192,8 @@ export async function pullChanges(
   const newer = records.filter((record) => record.schema > SCHEMA_VERSION);
   const fresh = records.filter(
     (record) =>
-      record.schema <= SCHEMA_VERSION && record.deviceId != ctx.deviceId,
+      record.schema <= SCHEMA_VERSION &&
+      (includeOwn || record.deviceId != ctx.deviceId),
   );
   const ids = [...latest.keys()];
   if (after == start)

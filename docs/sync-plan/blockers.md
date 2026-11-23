@@ -20,6 +20,19 @@ Umsetzung: Server erledigt (Stream A, 2026-11-23). Client: Aufgabe in tasks-b-cl
 
 ---
 
+## 2026-11-23 · Stream D · offen
+Frage: Nach `410 server_restored` kommen Löschungen zurück, die nach der Sicherung passiert sind.
+Der Gesamttest (`src/sync/e2e.test.ts`) zeigte vorher sogar verschiedene Stände: Gerät A
+(hatte den Schüler gelöscht) ignorierte seine eigenen alten Einträge, Gerät B spielte sie ein.
+Stream D hat das behoben: Der Abruf nach dem Neu-Hochladen übernimmt jetzt auch eigene Einträge
+(`pullChanges(…, includeOwn)`). Alle Geräte haben danach denselben Stand, aber gelöschte
+Zeilen sind wieder da.
+Vorschlag der Session: So lassen (seltener Fall, nichts geht verloren). Option B: „Gerät
+gewinnt“ auch für Löschungen. Das Gerät müsste die Server-`latestSeq` der Sicherung kennen
+(z. B. im 410-Body) und für jeden Eintrag bis dahin, den es lokal nicht hat, eine Löschung
+senden. Braucht eine Protokolländerung (Server und Client).
+Antwort Mario: …
+
 ## 2026-11-23 · Stream A · erledigt
 Frage: Was soll ein Gerät tun, wenn der Server nach dem Zurückspielen einer Sicherung `410 gone`
 meldet, weil sein `after` größer als `latestSeq` ist? Der Server hat dann die Änderungen nach

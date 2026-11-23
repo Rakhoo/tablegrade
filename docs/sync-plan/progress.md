@@ -13,6 +13,23 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 19:05 UTC · Stream D · sync/final
+- Erledigt: D1 – `sync/final` von `sync/integration`, alle Prüfungen grün. Fassade ohne Stubs
+  (Demo nur mit `VITE_SYNC_DEMO=true`, im normalen Build nicht enthalten). Toten Fehlertext
+  „not implemented“ in `useSyncAction.ts` entfernt. Jeder Endpunkt aus protocol.md hat
+  Server-Code, Client-Aufruf und Go-Test; `/auth/dev/login` nutzt nur der Gesamttest.
+- Erledigt: D2 – `src/sync/e2e.test.ts` (`npm run test:e2e`, eigene Konfiguration
+  `vitest.e2e.config.ts`, aus `npm test` ausgenommen). Baut und startet den Go-Server
+  (`src/test/goServer.ts`), drei Geräte mit `node:sqlite`, echtes HTTP und WebSocket. Alle
+  10 Fälle grün. CI-Job `e2e` in `ci.yml`.
+- Gefunden und behoben: Nach `410 server_restored` hatten Geräte verschiedene Stände (eigene
+  alte Einträge wurden übersprungen). Fix in `pull.ts`/`engine.ts`. Offene Frage dazu in
+  blockers.md.
+- Entschieden: Jedes Gerät lädt die Sync-Module neu (`vi.resetModules`), weil der Status ein
+  Modulwert ist. Sperre (`revoked`) prüft der Test per WebSocket; Konto löschen prüft ihn über
+  den nächsten Sync, weil der Socket nach dem Server-Neustart noch im Backoff sein kann.
+- Nächster Schritt: D3 Dokumentation.
+
 ## 2026-11-23, 18:25 UTC · Stream B · sync/client (Lauf 18:13)
 - Erledigt: B5 `410 server_restored` (`engine.ts` `reupload`, Code in `api.ts`, Test mit
   `restore` im Fake-Server). B6: Kopplung (`deviceLink.ts`, beide Seiten, Polling plus
