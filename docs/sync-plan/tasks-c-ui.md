@@ -45,8 +45,8 @@ Nutzerin kurz und ohne Fachbegriffe (kein „DEK“, „PRF“, „Wrap“).
 
 - [ ] Anmeldewege: Liste, „Passkey hinzufügen“, „Microsoft verknüpfen“, „Google verknüpfen“.
 - [x] Geräte: Liste mit letzter Aktivität, umbenennen, sperren (`ConfirmDialog`). (Umbenennen fehlt, siehe blockers.md)
-- [ ] „Neuen Wiederherstellungsschlüssel erstellen“ (gleicher Ablauf wie C2, alter wird ungültig).
-- [ ] „Sync ausschalten“, „Abmelden“, „Konto löschen“ (Bestätigung durch Eintippen eines
+- [x] „Neuen Wiederherstellungsschlüssel erstellen“ (gleicher Ablauf wie C2, alter wird ungültig).
+- [x] „Sync ausschalten“, „Abmelden“, „Konto löschen“ (Bestätigung durch Eintippen eines
       Worts; Wahl, ob die Daten auf diesem Gerät bleiben).
 
 ## C5 Status in der App

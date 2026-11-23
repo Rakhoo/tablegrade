@@ -164,3 +164,14 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 - Entschieden: Liste lädt erst auf „Geräte anzeigen“. Grund: kein Netzaufruf beim bloßen
   Öffnen der Einstellungen, kein Effect nötig.
 - Offen: Umbenennen fehlt in der Fassade (blockers.md).
+- Erledigt: C4 neuer Wiederherstellungsschlüssel (`SyncRecoveryKey` mit `onCancel`),
+  „Abmelden“, „Synchronisierung ausschalten“, „Konto löschen“ (`SyncAccountActions`, alle mit
+  `ConfirmDialog`; Löschen erst nach Eintippen von „LÖSCHEN“).
+- Entschieden: „Auch Daten auf diesem Gerät löschen“ nutzt `deleteSchoolData` (Klassen,
+  Schüler, Einträge, Merkmale, Dienste). Einstellungen, Ferien und Schuljahre bleiben.
+  Erst wird das Konto gelöscht, dann lokal; scheitert das Konto-Löschen, bleibt alles.
+- Entschieden: Hinweis der Ansicht „gesperrt“ lautet jetzt „Abgemeldet oder Anmeldung
+  abgelaufen.“, weil „Abmelden“ in dieselbe Ansicht führt.
+- Offen: C4 „Anmeldewege“ (Liste, Passkey/Microsoft/Google verknüpfen) fehlt in der Fassade
+  (nur `AccountInfo.identities`, kein Verknüpfen; siehe blockers.md Punkt 1 für Passkey).
+- Nächster Schritt: C4 Anmeldewege (Liste ist möglich, Verknüpfen blockiert), dann C5.

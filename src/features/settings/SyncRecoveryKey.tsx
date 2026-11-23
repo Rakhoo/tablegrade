@@ -16,13 +16,19 @@ type SyncRecoveryKeyProps = {
   intro: string;
   /** Called after the user typed back the check groups. */
   onDone: () => void;
+  /** Offers to stop before the key is created; without it the step is mandatory. */
+  onCancel?: () => void;
 };
 
 /**
  * Creates a recovery key, shows it once with ways to keep it, and asks for two groups of it
  * to make sure it was saved. Used for a new account and to replace the key later.
  */
-export function SyncRecoveryKey({ intro, onDone }: SyncRecoveryKeyProps) {
+export function SyncRecoveryKey({
+  intro,
+  onDone,
+  onCancel,
+}: SyncRecoveryKeyProps) {
   const [recoveryKey, setRecoveryKey] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const { busy, error, run } = useSyncAction();
@@ -38,7 +44,7 @@ export function SyncRecoveryKey({ intro, onDone }: SyncRecoveryKeyProps) {
       <>
         <p className="text-sm">{intro}</p>
         <SyncErrorAlert error={error} />
-        <div>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="contained"
             disabled={busy}
@@ -47,6 +53,14 @@ export function SyncRecoveryKey({ intro, onDone }: SyncRecoveryKeyProps) {
           >
             Schlüssel erstellen
           </Button>
+          {onCancel && (
+            <Button
+              onClick={onCancel}
+              data-help="Behält den bisherigen Schlüssel."
+            >
+              Abbrechen
+            </Button>
+          )}
         </div>
       </>
     );

@@ -51,3 +51,10 @@ aber keine Funktion dafür.
 Vorschlag der Session: Stream B ergänzt `renameDevice(id, name)` in der Fassade. Stream C ergänzt dann einen Stift-Knopf in
 `SyncDevices`.
 Antwort Mario: …
+
+## 2026-11-23 · Stream C · offen
+Frage: C4 „Microsoft verknüpfen“ / „Google verknüpfen“ braucht eine Fassaden-Funktion, die eine
+weitere Identität an das angemeldete Konto hängt (nicht neu anmelden).
+Vorschlag der Session: Stream B ergänzt `linkOidcIdentity(provider)` (Redirect wie
+`startOidcLogin`, Rückkehr verknüpft statt anmeldet) und `addPasskey()` (siehe oben).
+Antwort Mario: …

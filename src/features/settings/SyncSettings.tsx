@@ -11,6 +11,7 @@ import {
 } from "../../sync";
 import { getSyncView, type SyncView } from "../../lib/syncView";
 import { SettingsSection } from "./SettingsSection";
+import { SyncAccountActions } from "./SyncAccountActions";
 import { SyncApproveLink } from "./SyncApproveLink";
 import { SyncDevices } from "./SyncDevices";
 import { SyncErrorAlert } from "./SyncErrorAlert";
@@ -28,7 +29,7 @@ const HINTS: Record<SyncView, string> = {
   missingKey:
     "Angemeldet. Dieses Gerät braucht noch den Schlüssel zu den Daten.",
   active: "Aktiv. Die Daten werden verschlüsselt abgeglichen.",
-  expired: "Anmeldung abgelaufen.",
+  expired: "Abgemeldet oder Anmeldung abgelaufen.",
 };
 
 /** Hint while a new account gets its recovery key. */
@@ -144,6 +145,7 @@ function SyncActive({ status }: SyncActiveProps) {
       </div>
       <SyncApproveLink />
       <SyncDevices />
+      <SyncAccountActions />
     </>
   );
 }

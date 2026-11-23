@@ -443,7 +443,9 @@ the tab used last:
   then comparing the check code) and typing the recovery key (password managers can fill it).
   The active view has "Gerät koppeln" to enter that code on a device that already syncs.
   "Geräte anzeigen" lists the devices of the account (last activity) and revokes another one
-  after a confirmation.
+  after a confirmation. Below: a new recovery key (same steps, the old one stops working),
+  "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
+  also delete the school data on this device).
 
 They are stored as JSON in the `Settings` table
 ([src/lib/settings.ts](src/lib/settings.ts)), so backups include them. A PIN lock exists, but stays
