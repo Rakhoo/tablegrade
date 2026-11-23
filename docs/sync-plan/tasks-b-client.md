@@ -24,29 +24,29 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
 
 ## B2 Lokale Speicherung
 
-- [ ] IndexedDB-Speicher für DEK, Sitzungs-Token, `userId`, `deviceId`, letzte `seq`
+- [x] IndexedDB-Speicher für DEK, Sitzungs-Token, `userId`, `deviceId`, letzte `seq`
       (oder `_sync_state`, Entscheidung begründen). Gerätespezifisch, nie im Backup-Export.
-- [ ] Prüfen: Die bestehende Sicherung exportiert die SQLite-Datei. `_sync_state` darf dabei
+- [x] Prüfen: Die bestehende Sicherung exportiert die SQLite-Datei. `_sync_state` darf dabei
       keine Geheimnisse enthalten. Beim Import auf ein Gerät mit aktivem Sync: Sync
       ausschalten und Hinweis (Logik hier, Text in Stream C).
 
 ## B3 API-Client
 
-- [ ] `src/sync/api.ts`: typisierte Aufrufe aller Endpunkte, Fehler in deutsche Meldungen,
+- [x] `src/sync/api.ts`: typisierte Aufrufe aller Endpunkte, Fehler in deutsche Meldungen,
       Basis-URL aus `import.meta.env.VITE_SYNC_URL`.
-- [ ] Sitzungsprüfung: beim Start, alle 15 Minuten, bei `online` und beim Sichtbarwerden.
+- [x] Sitzungsprüfung: beim Start, alle 15 Minuten, bei `online` und beim Sichtbarwerden.
       `session_revoked` → Status `revoked` (nur Hinweis, lokale Arbeit geht weiter, Sync stoppt).
 
 ## B4 Anmeldung (Logik)
 
-- [ ] Passkey-Registrierung und -Login mit `navigator.credentials`, PRF-Erweiterung
+- [x] Passkey-Registrierung und -Login mit `navigator.credentials`, PRF-Erweiterung
       (`eval` mit Salt aus protocol.md), Erkennen von `prfCapable`.
-- [ ] OIDC: PKCE und `state` erzeugen, zur Authorize-URL wechseln, nach Rückkehr
+- [x] OIDC: PKCE und `state` erzeugen, zur Authorize-URL wechseln, nach Rückkehr
       (`?oidc=callback`) Code an den Server senden, Query aus der URL entfernen. Das
       Hash-Routing darf nicht stören. Gilt für Microsoft und Google.
-- [ ] Nach dem Login: Wraps holen. DEK vorhanden? Dann entsperrt. Sonst Status „Schlüssel
+- [x] Nach dem Login: Wraps holen. DEK vorhanden? Dann entsperrt. Sonst Status „Schlüssel
       fehlt“ mit den Wegen Passkey-PRF, Kopplung, Wiederherstellungsschlüssel.
-- [ ] Weiteren Passkey hinzufügen (mit Wrap), Identität verknüpfen, neuen
+- [x] Weiteren Passkey hinzufügen (mit Wrap), Identität verknüpfen, neuen
       Wiederherstellungsschlüssel erzeugen (alten Wrap ersetzen), Abmelden.
 
 ## B5 Sync-Engine
@@ -71,10 +71,30 @@ Tests mit Vitest. DB-Zugriffe der Engine laufen über ein kleines Interface, dam
       `410`, `revoked`, neuere Schema-Version.
 - [ ] **Merge-Punkt.**
 
+## B7 Fassaden-Ergänzungen für Stream C (Antworten Mario, blockers.md, 2026-11-23)
+
+Signaturen sind mit Mario abgestimmt. Jede Ergänzung auch in `src/sync/demo.ts`, damit
+Stream C sie im Demo-Modus nutzen kann. Kleine Teilstücke früh mergen; Stream C wartet darauf.
+
+- [x] `SyncPhase` um `"upgradeRequired"` ergänzen. Setzen bei HTTP 426 und bei
+      zurückgestellten Einträgen mit neuerer `schema` (B5 Pull).
+- [x] `AccountInfo.hasDataKey: boolean` (Server hat schon einen Wrap). Auch nach der
+      OIDC-Rückkehr gesetzt, damit die UI ein neues Konto von einem neuen Gerät unterscheidet.
+- [x] `AccountInfo.hasPrfPasskey: boolean` und `addPasskey(): Promise<void>` (neuer Passkey
+      mit Wrap, B4-Logik).
+- [x] `SyncStatus.progress: { done: number; total: number } | null`, gesetzt während
+      Erst-Upload und Erst-Download, sonst `null`.
+- [x] `hasLocalData(): Promise<boolean>` und `replaceLocalData(): Promise<void>`; der
+      Erst-Download auf einem neuen Gerät startet erst danach.
+- [x] `renameDevice(id: string, name: string): Promise<void>` (`PATCH /devices/{id}`).
+- [x] `linkOidcIdentity(provider: OidcProvider): Promise<void>`: Redirect wie
+      `startOidcLogin`; die Rückkehr verknüpft die Identität mit dem angemeldeten Konto.
+- [x] **Merge-Punkt.**
+
 ## B6 Kopplung und Konto (Logik)
 
 - [ ] Kopplung auf beiden Seiten laut protocol.md 6, mit Prüfcode-Bestätigung.
 - [ ] Konto löschen: Server-Aufruf, dann lokale Sync-Daten und Schlüssel entfernen, die
       lokale App-DB bleibt (Nutzerin entscheidet in der UI).
-- [ ] Fassade vollständig umgesetzt, Stubs entfernt.
+- [ ] Fassade vollständig umgesetzt (inklusive B7), Stubs entfernt.
 - [ ] **Merge-Punkt**, „Stream B fertig“ in progress.md.

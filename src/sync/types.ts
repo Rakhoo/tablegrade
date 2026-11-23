@@ -13,9 +13,17 @@ export type OidcProvider = Exclude<IdentityProvider, "passkey">;
  * - `syncing`: a push or pull runs.
  * - `offline`: the server is not reachable; changes wait in the outbox.
  * - `error`: the last attempt failed, see `SyncStatus.error`.
+ * - `upgradeRequired`: the server or another device uses a newer version; update the app.
  */
 export type SyncPhase =
-  "off" | "signedOut" | "locked" | "idle" | "syncing" | "offline" | "error";
+  | "off"
+  | "signedOut"
+  | "locked"
+  | "idle"
+  | "syncing"
+  | "offline"
+  | "error"
+  | "upgradeRequired";
 
 /** A sign-in method linked to the account. */
 export type Identity = {
@@ -33,6 +41,18 @@ export type AccountInfo = {
   deviceId: string;
   /** Linked sign-in methods. */
   identities: Identity[];
+  /** Whether the server already holds a wrapped data key, i.e. the account is not new. */
+  hasDataKey: boolean;
+  /** Whether a passkey with PRF exists, so the device can unlock with a passkey. */
+  hasPrfPasskey: boolean;
+};
+
+/** Progress of the first upload or download, counted in records. */
+export type SyncProgress = {
+  /** Records done so far. */
+  done: number;
+  /** Records in total. */
+  total: number;
 };
 
 /** Snapshot of the sync state for the UI. Replaced as a whole on every change. */
@@ -47,6 +67,8 @@ export type SyncStatus = {
   pending: number;
   /** German message for the UI when `phase` is `error`. */
   error: string | null;
+  /** Set during the first upload or download, otherwise `null`. */
+  progress: SyncProgress | null;
 };
 
 /** A device of the account. */

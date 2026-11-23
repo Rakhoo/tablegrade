@@ -13,6 +13,65 @@ Fertig-Meldungen als eigene Zeile: `**Stream <x> fertig**`.
 
 ---
 
+## 2026-11-23, 17:20 UTC · Stream B · sync/client
+- Erledigt: B7 (Signaturen und Demo). `SyncPhase` mit `upgradeRequired`,
+  `AccountInfo.hasDataKey`/`hasPrfPasskey`, `SyncStatus.progress`, Fassade mit `addPasskey`,
+  `linkOidcIdentity`, `renameDevice`, `hasLocalData`, `replaceLocalData`; alle in `demo.ts`.
+  `checkSession` holt zusätzlich `GET /keys` und setzt daraus `hasDataKey` und
+  `hasPrfPasskey` (`accountInfo` in `session.ts`); HTTP 426 → `upgradeRequired`.
+- Entschieden: `hasPrfPasskey` = es gibt einen `passkey`-Wrap. Grund: Wraps entstehen nur für
+  Passkeys mit PRF; `GET /auth/session` liefert keine Passkey-Liste.
+- Entschieden: Ohne Demo-Modus werfen die neuen Fassaden-Funktionen wie die alten noch
+  „not implemented“. Die echte Verdrahtung kommt gesammelt in B6 („Stubs entfernt“).
+- Nächster Schritt: B5 Sync-Engine (braucht Migration 24 für `_sync_pending`).
+
+## 2026-11-23, 17:45 UTC · Stream B · sync/client
+- Erledigt: B4 (Logik). `webauthn.ts` (JSON-Optionen von Hand umgewandelt, PRF-Erweiterung,
+  deutsche Fehlermeldungen), `passkeyFlow.ts` (Registrierung, Login, weiterer Passkey,
+  Entsperren per Passkey), `oidc.ts` (PKCE `S256`, `state`, Rückkehr, URL ohne Query mit
+  Hash-Route), `keyring.ts` (nach Login entsperren, neues Konto mit neuer DEK,
+  Wiederherstellungsschlüssel ersetzen, Passkey-Wrap, Abmelden). Tests in `auth.test.ts`
+  (Keyring über drei Geräte, Tippfehler, falsches Konto, OIDC-Ablauf).
+- Entschieden: OIDC-Zwischenstand in `localStorage` (`notenfeder-oidc`), nicht
+  `sessionStorage`. Grund: In der installierten PWA auf dem iPad geht `sessionStorage` beim
+  Wechsel zum Anbieter verloren, wenn iOS den Web-View neu erzeugt.
+- Entschieden: Liefert ein Passkey bei der Registrierung nur `prf.enabled`, holt ein zweiter
+  Dialog die PRF-Ausgabe. Die PRF-Ausgabe geht nie an den Server.
+- Entschieden: Der Wiederherstellungsschlüssel wird beim Ersetzen erst hochgeladen, dann
+  werden alte gelöscht (nie ohne `recovery`-Wrap).
+- Offen: Aufruf von `finishOidcLogin` beim App-Start (`?oidc=callback`) kommt mit der
+  Fassade (B6); die Logik ist fertig. Passkey/PRF und OIDC-Rückkehr in der PWA sind nur auf
+  dem iPad prüfbar (keine Browser-Tests).
+- Nächster Schritt: B5 Sync-Engine (braucht Migration 24 für `_sync_pending`).
+
+## 2026-11-23, 17:05 UTC · Stream B · sync/client
+- Erledigt: B3. `src/sync/api.ts` (alle Endpunkte, `ApiError` mit Code, Status, deutscher
+  Meldung, `retryAfter`; Netzfehler = `offline`), `src/sync/session.ts` (`checkSession`,
+  `sessionStatus`, `startSessionMonitor`: Start, 15 min, `online`, sichtbar), Tests in
+  `src/sync/api.test.ts`. `VITE_SYNC_URL` in `src/sync/config.ts`.
+- Entschieden: Gesperrte oder abgelaufene Sitzung → Phase `signedOut`, Grund in `error`
+  (kein neuer Phasen-Wert `revoked`, damit die Fassade gleich bleibt). Offline behält das Konto.
+- Entschieden: `import.meta.env` nur in `config.ts`, weil die Node-Tests es nicht kennen.
+- Nächster Schritt: B4 Anmeldung (Passkey, OIDC, Entsperren).
+
+## 2026-11-23, 16:40 UTC · Stream B · sync/client
+- Erledigt: B2. `src/sync/deviceStore.ts` (IndexedDB `notenfeder-sync`, Speicher im Speicher für
+  Tests), `syncState.ts` (`_sync_state`), `importGuard.ts` mit Tests, `SyncDb`-Interface
+  (`src/sync/syncDb.ts`) mit Adapter `src/db/queries/syncDb.ts` (SQLocal) und
+  `src/test/syncTestDb.ts` (`node:sqlite`).
+- Entschieden: DEK, Sitzung (`token`, `userId`, `deviceId`) und `syncId` in IndexedDB;
+  `lastSeq` in `_sync_state`. Grund: `lastSeq` muss in derselben Transaktion wie die gezogenen
+  Zeilen committen; es ist kein Geheimnis. `_sync_state` hat nur die Schlüssel `enabled`,
+  `applying`, `lastSeq`, `syncId` (Typ `SyncStateKey`).
+- Entschieden: Import-Erkennung über `syncId` (Zufalls-ID pro Einschalten, in DB und
+  IndexedDB). Weichen sie ab: Sync aus, `lastSeq`/`syncId` weg, `_outbox` leeren, Sitzung lokal
+  entfernen, DEK bleibt. War Sync hier aktiv: `importNotice` im Gerätespeicher für den Hinweis.
+- Für B5: Einschalten muss `syncId` in beiden Speichern setzen; Engine-Start ruft
+  `checkImportedDatabase` auf.
+- Für Stream C (Vorschlag, Fassaden-Erweiterung): `takeImportNotice(): Promise<boolean>`
+  liefert einmalig `true` nach einem Import über aktiven Sync. Kommt mit B5/B6.
+- Nächster Schritt: B3 API-Client.
+
 ## 2026-11-23, 16:20 UTC · Stream A · sync/server
 - Erledigt: A3 Passkeys (`internal/api/passkey.go`): Registrierung (neues Konto oder weiterer
   Passkey mit Sitzung), Login mit discoverable credentials, PRF-Salt in den Optionen,
