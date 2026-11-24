@@ -249,12 +249,8 @@ export function createSyncService(deps: ServiceDeps) {
     },
     startOidcLogin: redirectToProvider,
     async addPasskey() {
-      const canUnlock = await addPasskey(keyring);
+      await addPasskey(keyring);
       await refresh();
-      if (!canUnlock)
-        throw new Error(
-          "Dieser Passkey kann die Daten nicht entsperren. Bitte einen anderen Speicherort wählen, z. B. iCloud-Schlüsselbund oder Google Passwortmanager.",
-        );
     },
     async unlockWithPasskey() {
       await unlockWithPasskey(keyring);

@@ -531,7 +531,10 @@ the default:
   one stops working) and "Abmelden & Löschen" ("Abmelden", "Synchronisierung ausschalten",
   "Konto löschen": type „LÖSCHEN“, optionally also delete the school data on this device).
   An account has exactly one sign-in method; there is no linking of a second one. Passkeys
-  never sign in or create an account; one without PRF is refused with a hint. If the
+  never sign in or create an account; one without PRF is refused with a hint before the
+  server learns about it (Windows Hello often lacks PRF; the Google Password Manager has it).
+  Unlocking asks for a passkey without a credential list, so Chrome on Windows offers its own
+  passkeys instead of handing over to Windows Hello; a passkey without wrap is refused. If the
   authenticator already holds a passkey of the account, "Passkey hinzufügen" lets the user
   pick it and sets it up for unlocking instead.
   The sync state (`getSyncBadge` in `lib/syncView.ts`) feeds the hints on open points (see

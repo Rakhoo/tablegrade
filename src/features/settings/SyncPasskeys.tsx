@@ -42,7 +42,7 @@ export function SyncPasskeys({ account }: SyncPasskeysProps) {
           startIcon={<PlusIcon size={16} />}
           disabled={busy}
           onClick={() => run(addPasskey)}
-          data-help="Legt einen Passkey an, z. B. im iCloud-Schlüsselbund oder im Google Passwortmanager. Er entsperrt neue Geräte; anmelden geht weiter mit Microsoft oder Google."
+          data-help="Legt einen Passkey an, z. B. im iCloud-Schlüsselbund oder im Google Passwortmanager. Unter Windows „Google Passwortmanager“ wählen, nicht „Windows-Sicherheit“. Er entsperrt neue Geräte; anmelden geht weiter mit Microsoft oder Google."
         >
           {account.hasPrfPasskey
             ? "Weiteren Passkey hinzufügen"
