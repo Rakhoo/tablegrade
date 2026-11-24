@@ -149,6 +149,14 @@ export async function renameDevice(id: string, name: string): Promise<void> {
   return DEMO ? demo.renameDevice(id, name) : real().renameDevice(id, name);
 }
 
+/**
+ * Stores the contact address and the note of the access request on the server. The operator
+ * approves the account and writes to this address; it is also used for maintenance and billing.
+ */
+export async function setContact(email: string, note: string): Promise<void> {
+  return DEMO ? demo.setContact(email, note) : real().setContact(email, note);
+}
+
 /** Revokes another device; it keeps its local data but can no longer sync. */
 export async function revokeDevice(id: string): Promise<void> {
   return DEMO ? demo.revokeDevice(id) : real().revokeDevice(id);

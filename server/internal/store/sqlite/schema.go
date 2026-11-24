@@ -111,4 +111,12 @@ CREATE TABLE links (
 ) STRICT;
 CREATE INDEX links_user ON links(user_id);
 `,
+	`
+-- Approval before first use and a contact address for approval, maintenance and billing mails.
+ALTER TABLE users ADD COLUMN approved_at INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN contact_email TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN access_note TEXT NOT NULL DEFAULT '';
+-- Accounts from before this step keep working.
+UPDATE users SET approved_at = created_at;
+`,
 }

@@ -154,7 +154,9 @@ Nobody but the user can read the data or reset the recovery key. Details:
 - **Konto & Sync** (settings tab, off by default): an account with Microsoft or Google
   sign-in keeps several devices in sync, end-to-end encrypted. A recovery key, another device
   or a passkey unlocks the data on a new device. A badge next to the speed dial shows the sync
-  state; an expired sign-in only shows a notice, the app keeps working offline. Details in
+  state; an expired sign-in only shows a notice, the app keeps working offline. New accounts
+  ask for access (contact email and a short reason) and wait until Mario approves them on the
+  server. Details in
   [Settings](#settings).
 
 ### Installed app (PWA)
@@ -491,7 +493,11 @@ the tab used last:
   "Einrichten"), setup (device name, branded buttons "Mit Google anmelden" and "Mit
   Microsoft anmelden", `OidcButton.tsx`; the first sign-in creates the account), missing key on a new device, active (state, last sync, "Jetzt
   synchronisieren", sign-in and passkeys) and an expired sign-in (the app keeps working
-  locally). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
+  locally). A new account first waits for approval (`SyncPending.tsx`, view `pending`, badge
+  "Freischaltung offen"): it sends the contact email (suggested from the sign-in) and a reason,
+  then shows "Anfrage gesendet" with "Status prüfen" and "Anfrage ändern"; the server refuses
+  data until approval (`not_approved`). The active view shows and edits the contact email
+  ("Kontakt", `SyncContact.tsx`). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
   locked account without a data key on the server is new (`account.hasDataKey`), also after
   a Microsoft or Google sign-up; then the card shows the recovery key once (form that
   password managers offer to save, "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for

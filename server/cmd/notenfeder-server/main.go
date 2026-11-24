@@ -36,6 +36,10 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "admin" {
+		runAdmin(os.Args[2:])
+		return
+	}
 	if err := run(); err != nil {
 		slog.Error("server stopped", "err", err)
 		os.Exit(1)

@@ -10,11 +10,13 @@ import { reloadApp } from "../../services/pwa";
 import { SettingsSection } from "./SettingsSection";
 import { SyncAccountActions } from "./SyncAccountActions";
 import { SyncApproveLink } from "./SyncApproveLink";
+import { SyncContact } from "./SyncContact";
 import { SyncDevices } from "./SyncDevices";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIdentities } from "./SyncIdentities";
-import { SyncPasskeys } from "./SyncPasskeys";
 import { SyncIntro } from "./SyncIntro";
+import { SyncPasskeys } from "./SyncPasskeys";
+import { SyncPending } from "./SyncPending";
 import { SyncRecoveryKey } from "./SyncRecoveryKey";
 import { SyncReplaceCheck } from "./SyncReplaceCheck";
 import { SyncSignIn } from "./SyncSignIn";
@@ -31,6 +33,7 @@ const HINTS: Record<SyncView, string> = {
   active: "Aktiv. Die Daten werden verschlüsselt abgeglichen.",
   expired: "Abgemeldet oder Anmeldung abgelaufen.",
   upgrade: "Pausiert. Diese App-Version ist zu alt.",
+  pending: "Angemeldet. Das Konto wartet auf Freischaltung.",
 };
 
 /**
@@ -66,6 +69,12 @@ export function SyncSettings() {
       </>
     ),
     upgrade: <SyncUpgrade />,
+    pending: (
+      <>
+        <SyncPending />
+        <CancelSetup />
+      </>
+    ),
   };
   return (
     <SettingsSection
@@ -180,6 +189,7 @@ function SyncActive({ status }: SyncActiveProps) {
         <>
           <SyncIdentities account={status.account} />
           <SyncPasskeys account={status.account} />
+          <SyncContact account={status.account} />
         </>
       )}
       <SyncApproveLink />

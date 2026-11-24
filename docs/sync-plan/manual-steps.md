@@ -97,6 +97,71 @@ Passkeys. Ändert sich die Domain später, sind alle Passkeys ungültig. Darum v
 - Die App-Origins müssen in `APP_ORIGINS` der `.env` auf dem Pi stehen (Standard: Produktion
   und Dev-Vorschau). Eine andere Domain dort und in `RP_ID` eintragen.
 
+## 8a. Konten freischalten
+
+- Neue Konten (außer schon bestehenden) warten auf Freischaltung. Befehle in
+  `server/README.md`, Abschnitt „Konten freischalten“.
+- Nach `admin approve` die Person per Mail benachrichtigen. Der Server verschickt keine Mails.
+- Die Adressen liegen im Klartext in der Datenbank und damit im Backup. Darum das Backup
+  verschlüsseln (Abschnitt 8b).
+- Sobald Fremde das Konto nutzen: Datenschutzerklärung und Impressum bereitstellen.
+
+## 8b. Backup verschlüsseln (rclone crypt)
+
+Ein `crypt`-Remote verschlüsselt Inhalt und Dateinamen, bevor sie bei Google Drive ankommen.
+Es liegt über dem vorhandenen Remote `gdrive`, in einem neuen Ordner `notenfeder-crypt`.
+
+1. Auf dem Pi ins Verzeichnis wechseln und den Assistenten starten:
+   ```sh
+   cd /opt/notenfeder
+   docker run --rm -it -v "$PWD/rclone:/config/rclone" rclone/rclone:1.75 config
+   ```
+2. Eingaben:
+
+   | Frage | Eingabe |
+   |---|---|
+   | Hauptmenü | `n` (New remote) |
+   | `name>` | `gcrypt` |
+   | `Storage>` | `crypt` (oder die Nummer von „Encrypt/Decrypt a remote“) |
+   | `remote>` | `gdrive:notenfeder-crypt` |
+   | `filename_encryption>` | `standard` |
+   | `directory_name_encryption>` | `true` |
+   | `password` (Passwort) | `g` (generieren), Stärke `256`, dann `y` |
+   | `password2` (Salt) | `g`, Stärke `256`, dann `y` |
+   | `Edit advanced config?` | `n` |
+   | `Keep this "gcrypt" remote?` | `y` |
+   | Hauptmenü | `q` |
+
+3. **Beide angezeigten Passwörter sofort im Passwortmanager speichern** (z. B. Eintrag
+   „Notenfeder Backup rclone crypt“). Ohne sie lässt sich kein Backup mehr lesen, auch nicht
+   bei Verlust des Pi. `rclone.conf` enthält sie nur verschleiert, nicht verschlüsselt.
+4. Datei schützen und testen (die Ausgabe ist beim ersten Mal leer):
+   ```sh
+   sudo chmod 600 rclone/rclone.conf
+   docker run --rm -v "$PWD/rclone:/config/rclone" rclone/rclone:1.75 lsd gcrypt:
+   ```
+5. In `.env` umstellen:
+   ```
+   RCLONE_REMOTE=gcrypt:notenfeder
+   ```
+6. Backup-Container neu starten. Er kopiert sofort und meldet `backup synced …`:
+   ```sh
+   docker compose up -d backup
+   docker compose logs backup
+   ```
+7. Prüfen:
+   - In Google Drive liegt `notenfeder-crypt` nur mit unlesbaren Namen.
+   - Lesbar über rclone:
+     ```sh
+     docker run --rm -v "$PWD/rclone:/config/rclone" rclone/rclone:1.75 ls gcrypt:notenfeder
+     ```
+8. Den alten, unverschlüsselten Ordner `notenfeder` in Google Drive löschen und den Papierkorb
+   leeren.
+9. Zurückspielen geht wie in `server/README.md` („Sicherung zurückspielen“) mit
+   `<remote>` = `gcrypt:notenfeder`. Auf einem neuen Pi zuerst `gdrive` wie in `server/README.md` (Einrichten, Schritt 6)
+   und dann `gcrypt` mit denselben zwei Passwörtern anlegen (bei `password` dann `y` und
+   eintippen statt `g`).
+
 ## 9. Tests auf echten Geräten (nur Mario)
 
 Diese Punkte kann keine Session prüfen. Am besten früh testen, sobald A und B gemergt sind:

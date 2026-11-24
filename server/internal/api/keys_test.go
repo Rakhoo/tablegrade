@@ -36,7 +36,7 @@ func (e *testEnv) listKeys(token string) []wrapJSON {
 func TestKeysLifecycle(t *testing.T) {
 	e := newEnv(t)
 	a := newAuthenticator(t, true)
-	s := e.registerPasskey(a, "iPad")
+	s := e.registerApproved(a, "iPad")
 	put := func(id, body string) int {
 		return e.do(http.MethodPut, "/api/v1/keys/"+id, s.SessionToken, body, nil).Code
 	}

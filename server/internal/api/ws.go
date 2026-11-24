@@ -38,6 +38,9 @@ func originHosts(origins []string) []string {
 // set headers on WebSocket requests.
 func (s *Server) handleWS(w http.ResponseWriter, r *http.Request) {
 	sess, err := s.checkToken(r, r.URL.Query().Get("token"))
+	if err == nil {
+		err = s.checkApproved(r, sess.UserID)
+	}
 	if err != nil {
 		writeError(w, err)
 		return

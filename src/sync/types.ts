@@ -23,7 +23,8 @@ export type SyncPhase =
   | "syncing"
   | "offline"
   | "error"
-  | "upgradeRequired";
+  | "upgradeRequired"
+  | "notApproved";
 
 /** A sign-in method linked to the account. */
 export type Identity = {
@@ -54,6 +55,12 @@ export type AccountInfo = {
   hasPrfPasskey: boolean;
   /** Sign-in of this device; `null` for sessions from before it was recorded. */
   signedInWith: SignedInWith | null;
+  /** Whether the operator approved the account; until then it cannot sync. */
+  approved: boolean;
+  /** Contact address for approval, maintenance and billing mails. */
+  contactEmail: string | null;
+  /** Free text of the access request, e.g. who recommended the app. */
+  accessNote: string | null;
 };
 
 /** Progress of the first upload or download, counted in records. */

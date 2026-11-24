@@ -29,6 +29,30 @@ func (s *Server) withSession(next authed) http.Handler {
 	})
 }
 
+// withApproved is withSession for endpoints that store or return account data. Accounts that
+// the operator has not approved yet get not_approved.
+func (s *Server) withApproved(next authed) http.Handler {
+	return s.withSession(func(w http.ResponseWriter, r *http.Request, sess store.Session) {
+		if err := s.checkApproved(r, sess.UserID); err != nil {
+			writeError(w, err)
+			return
+		}
+		next(w, r, sess)
+	})
+}
+
+// checkApproved returns errNotApproved for an account without approval.
+func (s *Server) checkApproved(r *http.Request, userID string) error {
+	u, err := s.store.GetUser(r.Context(), userID)
+	if err != nil {
+		return err
+	}
+	if u.ApprovedAt == 0 {
+		return errNotApproved
+	}
+	return nil
+}
+
 // authenticate checks the bearer token of a request and maps failures to API errors.
 func (s *Server) authenticate(r *http.Request) (store.Session, error) {
 	token, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer ")
@@ -147,6 +171,11 @@ func (s *Server) handleDevLogin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		userID = u.ID
+		// Test accounts skip the approval step.
+		if err := s.store.SetApproved(r.Context(), userID, s.now().UnixMilli()); err != nil {
+			writeError(w, err)
+			return
+		}
 	} else if _, err := s.store.GetUser(r.Context(), userID); err != nil {
 		writeError(w, err)
 		return
@@ -167,6 +196,11 @@ type identityJSON struct {
 
 // handleSession returns the account overview of the current session.
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request, sess store.Session) {
+	user, err := s.store.GetUser(r.Context(), sess.UserID)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
 	ids, err := s.store.ListIdentities(r.Context(), sess.UserID)
 	if err != nil {
 		writeError(w, err)
@@ -186,6 +220,10 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request, sess stor
 		"deviceId":   sess.DeviceID,
 		"identities": identities,
 		"devices":    devices,
+		"approved":   user.ApprovedAt != 0,
+		// Empty values are sent as null, so the app tells "none yet" from an empty field.
+		"contactEmail": nullIfEmpty(user.ContactEmail),
+		"accessNote":   nullIfEmpty(user.AccessNote),
 	})
 }
 
@@ -196,4 +234,12 @@ func (s *Server) handleLogout(w http.ResponseWriter, r *http.Request, sess store
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// nullIfEmpty turns "" into a JSON null.
+func nullIfEmpty(v string) *string {
+	if v == "" {
+		return nil
+	}
+	return &v
 }

@@ -39,6 +39,13 @@ const (
 type User struct {
 	ID        string
 	CreatedAt int64
+	// ApprovedAt is 0 until the operator approves the account; until then it cannot sync.
+	ApprovedAt int64
+	// ContactEmail is the address the user gave for approval, maintenance and billing mails;
+	// empty if none.
+	ContactEmail string
+	// AccessNote is the free text of the access request, e.g. who recommended the app.
+	AccessNote string
 }
 
 // Identity is a way to sign in to an account.
@@ -168,6 +175,13 @@ type Store interface {
 	GetUser(ctx context.Context, userID string) (User, error)
 	// DeleteUser removes an account and everything that belongs to it.
 	DeleteUser(ctx context.Context, userID string) error
+	// ListUsers returns all accounts, oldest first (operator commands).
+	ListUsers(ctx context.Context) ([]User, error)
+	// SetApproved sets the approval time; 0 withdraws the approval.
+	SetApproved(ctx context.Context, userID string, approvedAt int64) error
+	// SetContact stores the contact address and the note of the access request; empty
+	// values remove them.
+	SetContact(ctx context.Context, userID, email, note string) error
 
 	// AddIdentity links a sign-in identity; ErrConflict if it already belongs to an account.
 	AddIdentity(ctx context.Context, id Identity) error

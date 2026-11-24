@@ -166,6 +166,23 @@ Timer braucht kein weiteres Image mit Zugriff auf den Docker-Socket.
    Geräte, die schon weiter waren, bekommen beim nächsten Pull `410 gone` und laden alles neu
    (offene Frage zum Wieder-Hochladen: `docs/sync-plan/blockers.md`).
 
+### Konten freischalten
+
+Neue Konten warten auf Freischaltung. Sie hinterlassen eine Kontakt-Adresse und eine kurze
+Begründung. Befehle (laufen neben dem Server im Container):
+
+```sh
+docker compose exec server /notenfeder-server admin pending            # wartende Konten
+docker compose exec server /notenfeder-server admin list               # alle Konten
+docker compose exec server /notenfeder-server admin approve <id|mail>  # freischalten
+docker compose exec server /notenfeder-server admin revoke <id|mail>   # zurücknehmen
+docker compose exec server /notenfeder-server admin emails             # Adressen für Rundmails
+```
+
+Mails verschickt der Server nicht. Nach `approve` die Person selbst benachrichtigen. Rundmails
+zu Wartung oder Bezahlung mit der Liste aus `admin emails` als BCC. Die App bemerkt die
+Freischaltung beim nächsten Start, beim Wechsel in die App oder über „Status prüfen“.
+
 ### Logs
 
 `docker compose logs -f server`. Die Logs rotieren bei 10 MB (3 Dateien).

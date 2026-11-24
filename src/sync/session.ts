@@ -17,6 +17,8 @@ export type SessionCheck =
   | { state: "signedOut"; message: string }
   /** The server needs a newer app version. */
   | { state: "upgradeRequired"; message: string }
+  /** The account waits for approval; `info` is missing when a sync call was refused. */
+  | { state: "notApproved"; info?: SessionInfo }
   /** The server is not reachable; keep the last known state. */
   | { state: "offline" }
   | { state: "error"; message: string };
@@ -24,8 +26,10 @@ export type SessionCheck =
 /** Asks the server whether the session is still valid. */
 export async function checkSession(api: Api): Promise<SessionCheck> {
   try {
-    const [info, keys] = await Promise.all([api.session(), api.listKeys()]);
-    return { state: "valid", info, keys };
+    const info = await api.session();
+    // Keys are refused before approval, so they are only asked for afterwards
+    if (!info.approved) return { state: "notApproved", info };
+    return { state: "valid", info, keys: await api.listKeys() };
   } catch (error) {
     return classifyError(error);
   }
@@ -43,6 +47,8 @@ export function classifyError(
       return { state: "signedOut", message: error.message };
     case "upgrade_required":
       return { state: "upgradeRequired", message: error.message };
+    case "not_approved":
+      return { state: "notApproved" };
     case "offline":
       return { state: "offline" };
     default:
@@ -62,6 +68,9 @@ export function accountInfo(info: SessionInfo, keys: KeyWrap[]): AccountInfo {
     hasDataKey: keys.length > 0,
     hasPrfPasskey: keys.some((wrap) => wrap.kind == "passkey"),
     signedInWith: null,
+    approved: info.approved,
+    contactEmail: info.contactEmail,
+    accessNote: info.accessNote,
   };
 }
 
@@ -78,6 +87,12 @@ export function sessionStatus(check: SessionCheck): Partial<SyncStatus> {
       return { phase: "signedOut", account: null, error: check.message };
     case "upgradeRequired":
       return { phase: "upgradeRequired", error: check.message };
+    case "notApproved":
+      return {
+        phase: "notApproved",
+        error: null,
+        ...(check.info && { account: accountInfo(check.info, []) }),
+      };
     case "offline":
       return { phase: "offline" };
     case "error":

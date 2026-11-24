@@ -170,8 +170,40 @@ func (db *DB) CreateUserWithID(ctx context.Context, userID string) (store.User, 
 // GetUser implements store.Store.
 func (db *DB) GetUser(ctx context.Context, userID string) (store.User, error) {
 	u := store.User{ID: userID}
-	err := db.read.QueryRowContext(ctx, `SELECT created_at FROM users WHERE id = ?`, userID).Scan(&u.CreatedAt)
+	err := db.read.QueryRowContext(ctx,
+		`SELECT created_at, approved_at, contact_email, access_note FROM users WHERE id = ?`, userID).
+		Scan(&u.CreatedAt, &u.ApprovedAt, &u.ContactEmail, &u.AccessNote)
 	return u, mapErr(err)
+}
+
+// ListUsers implements store.Store.
+func (db *DB) ListUsers(ctx context.Context) ([]store.User, error) {
+	rows, err := db.read.QueryContext(ctx,
+		`SELECT id, created_at, approved_at, contact_email, access_note FROM users ORDER BY created_at, id`)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	var users []store.User
+	for rows.Next() {
+		var u store.User
+		if err := rows.Scan(&u.ID, &u.CreatedAt, &u.ApprovedAt, &u.ContactEmail, &u.AccessNote); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, rows.Err()
+}
+
+// SetApproved implements store.Store.
+func (db *DB) SetApproved(ctx context.Context, userID string, approvedAt int64) error {
+	return db.exec(ctx, `UPDATE users SET approved_at = ? WHERE id = ?`, approvedAt, userID)
+}
+
+// SetContact implements store.Store.
+func (db *DB) SetContact(ctx context.Context, userID, email, note string) error {
+	return db.exec(ctx, `UPDATE users SET contact_email = ?, access_note = ? WHERE id = ?`,
+		email, note, userID)
 }
 
 // DeleteUser implements store.Store. Foreign keys cascade to all other tables.

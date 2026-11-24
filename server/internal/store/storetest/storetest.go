@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -108,6 +109,25 @@ func testUsers(t *testing.T, s store.Store, clock *Clock) {
 	}
 	_, err = s.CreateUserWithID(ctx, id)
 	wantErr(t, err, store.ErrConflict)
+
+	// New accounts wait for approval and have no contact address.
+	if u.ApprovedAt != 0 || u.ContactEmail != "" || u.AccessNote != "" {
+		t.Errorf("new user = %+v", u)
+	}
+	check(t, s.SetApproved(ctx, u.ID, 42))
+	check(t, s.SetContact(ctx, u.ID, "a@example.org", "Empfohlen"))
+	if got := must(s.GetUser(ctx, u.ID)); got.ApprovedAt != 42 || got.ContactEmail != "a@example.org" || got.AccessNote != "Empfohlen" {
+		t.Errorf("after approval = %+v", got)
+	}
+	wantErr(t, s.SetApproved(ctx, "missing", 1), store.ErrNotFound)
+	wantErr(t, s.SetContact(ctx, "missing", "x@example.org", ""), store.ErrNotFound)
+	// Both accounts share the clock time, so the order between them is not fixed.
+	users := must(s.ListUsers(ctx))
+	if len(users) != 2 || !slices.ContainsFunc(users, func(x store.User) bool {
+		return x.ID == u.ID && x.ContactEmail == "a@example.org"
+	}) {
+		t.Errorf("ListUsers = %+v", users)
+	}
 }
 
 func testIdentities(t *testing.T, s store.Store, _ *Clock) {

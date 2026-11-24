@@ -15,6 +15,7 @@ export const PROVIDER_LABELS: Record<OidcProvider, string> = {
  * - `active`: signed in and unlocked (syncing, idle, offline or failed).
  * - `expired`: the sign-in ended after the device had synced; the app keeps working locally.
  * - `upgrade`: the server or the synced data needs a newer app version.
+ * - `pending`: signed in, but the operator has not approved the account yet.
  */
 export type SyncView =
   | "off"
@@ -23,7 +24,8 @@ export type SyncView =
   | "missingKey"
   | "active"
   | "expired"
-  | "upgrade";
+  | "upgrade"
+  | "pending";
 
 /**
  * Maps the sync status to the view of the settings. A signed-out device that synced before
@@ -44,6 +46,8 @@ export function getSyncView({
       return account?.hasDataKey == false ? "createKey" : "missingKey";
     case "upgradeRequired":
       return "upgrade";
+    case "notApproved":
+      return "pending";
     default:
       return "active";
   }
@@ -67,6 +71,7 @@ const VIEW_BADGES: Record<Exclude<SyncView, "off" | "active">, SyncBadge> = {
   missingKey: { label: "Schlüssel fehlt", tone: "warning" },
   expired: { label: "Abgemeldet", tone: "warning" },
   upgrade: { label: "Update nötig", tone: "error" },
+  pending: { label: "Freischaltung offen", tone: "warning" },
 };
 
 /** Badges of the phases of an active sync. */

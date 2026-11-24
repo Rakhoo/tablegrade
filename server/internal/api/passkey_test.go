@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -174,6 +175,16 @@ func (e *testEnv) registerPasskey(a *authenticator, deviceName string) signIn {
 		e.t.Fatalf("register finish: %d %s", rec.Code, rec.Body.String())
 	}
 	return res
+}
+
+// registerApproved is registerPasskey for tests that go on to sync: it approves the account.
+func (e *testEnv) registerApproved(a *authenticator, deviceName string) signIn {
+	e.t.Helper()
+	s := e.registerPasskey(a, deviceName)
+	if err := e.store.SetApproved(context.Background(), s.UserID, 1); err != nil {
+		e.t.Fatal(err)
+	}
+	return s
 }
 
 // passkeyLogin signs in with a passkey and returns the response.

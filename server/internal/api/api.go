@@ -101,24 +101,25 @@ func (s *Server) Handler() http.Handler {
 		mux.Handle("POST /api/v1/auth/dev/login", s.withAuthLimit(s.handleDevLogin))
 	}
 
-	mux.Handle("GET /api/v1/keys", s.withSession(s.handleListKeys))
-	mux.Handle("PUT /api/v1/keys/{id}", s.withSession(s.handlePutKey))
-	mux.Handle("DELETE /api/v1/keys/{id}", s.withSession(s.handleDeleteKey))
+	mux.Handle("GET /api/v1/keys", s.withApproved(s.handleListKeys))
+	mux.Handle("PUT /api/v1/keys/{id}", s.withApproved(s.handlePutKey))
+	mux.Handle("DELETE /api/v1/keys/{id}", s.withApproved(s.handleDeleteKey))
 
-	mux.Handle("POST /api/v1/records/push", s.withSession(s.handlePush))
-	mux.Handle("GET /api/v1/records/pull", s.withSession(s.handlePull))
+	mux.Handle("POST /api/v1/records/push", s.withApproved(s.handlePush))
+	mux.Handle("GET /api/v1/records/pull", s.withApproved(s.handlePull))
 
-	mux.Handle("PUT /api/v1/blobs/{id}", s.withSession(s.handlePutBlob))
-	mux.Handle("GET /api/v1/blobs/{id}", s.withSession(s.handleGetBlob))
+	mux.Handle("PUT /api/v1/blobs/{id}", s.withApproved(s.handlePutBlob))
+	mux.Handle("GET /api/v1/blobs/{id}", s.withApproved(s.handleGetBlob))
 
 	mux.HandleFunc("GET /api/v1/ws", s.handleWS)
 
-	mux.Handle("POST /api/v1/link", s.withSession(s.handleCreateLink))
-	mux.Handle("GET /api/v1/link/by-code/{code}", s.withAuthLimit(s.withSession(s.handleLinkByCode).ServeHTTP))
-	mux.Handle("POST /api/v1/link/{linkId}/complete", s.withSession(s.handleCompleteLink))
-	mux.Handle("GET /api/v1/link/{linkId}", s.withSession(s.handleGetLink))
+	mux.Handle("POST /api/v1/link", s.withApproved(s.handleCreateLink))
+	mux.Handle("GET /api/v1/link/by-code/{code}", s.withAuthLimit(s.withApproved(s.handleLinkByCode).ServeHTTP))
+	mux.Handle("POST /api/v1/link/{linkId}/complete", s.withApproved(s.handleCompleteLink))
+	mux.Handle("GET /api/v1/link/{linkId}", s.withApproved(s.handleGetLink))
 
 	mux.Handle("DELETE /api/v1/account", s.withSession(s.handleDeleteAccount))
+	mux.Handle("PUT /api/v1/account/contact", s.withSession(s.handlePutContact))
 	mux.Handle("GET /api/v1/devices", s.withSession(s.handleListDevices))
 	mux.Handle("POST /api/v1/devices/{id}/revoke", s.withSession(s.handleRevokeDevice))
 	mux.Handle("PATCH /api/v1/devices/{id}", s.withSession(s.handleRenameDevice))

@@ -135,7 +135,8 @@ export function createSyncService(deps: ServiceDeps) {
     updateStatus(change);
     if (check.state == "revoked" || check.state == "signedOut")
       return dropSession();
-    if (check.state == "upgradeRequired") return engine.stop();
+    if (check.state == "upgradeRequired" || check.state == "notApproved")
+      return engine.stop();
     const dataKey = await store.get("dataKey");
     if (dataKey?.userId != session.userId) {
       updateStatus({ phase: "locked" });
@@ -289,6 +290,10 @@ export function createSyncService(deps: ServiceDeps) {
       findLink(keyring, code),
     listDevices: () => api.listDevices(),
     renameDevice: (id: string, name: string) => api.renameDevice(id, name),
+    async setContact(email: string, note: string) {
+      await api.putContact(email, note);
+      await refresh();
+    },
     revokeDevice: (id: string) => api.revokeDevice(id),
     hasLocalData: () => hasLocalRows(db),
     async replaceLocalData() {

@@ -13,6 +13,9 @@ const account = (hasDataKey: boolean): AccountInfo => ({
   identities: [],
   hasDataKey,
   signedInWith: null,
+  approved: true,
+  contactEmail: null,
+  accessNote: null,
   hasPrfPasskey: false,
 });
 
@@ -22,6 +25,7 @@ describe("getSyncView", () => {
     expect(getSyncView(status({ phase: "signedOut" }))).toBe("setup");
     expect(getSyncView(status({ phase: "locked" }))).toBe("missingKey");
     expect(getSyncView(status({ phase: "upgradeRequired" }))).toBe("upgrade");
+    expect(getSyncView(status({ phase: "notApproved" }))).toBe("pending");
     for (const phase of ["idle", "syncing", "offline", "error"] as const)
       expect(getSyncView(status({ phase }))).toBe("active");
   });

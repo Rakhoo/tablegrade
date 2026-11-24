@@ -10,6 +10,7 @@ export type ApiErrorCode =
   | "unauthorized"
   | "session_revoked"
   | "forbidden"
+  | "not_approved"
   | "not_found"
   | "conflict"
   | "gone"
@@ -26,6 +27,7 @@ const MESSAGES: Record<ApiErrorCode, string> = {
   unauthorized: "Bitte neu anmelden.",
   session_revoked: "Dieses Gerät wurde abgemeldet. Bitte neu anmelden.",
   forbidden: "Das ist nicht erlaubt.",
+  not_approved: "Das Konto ist noch nicht freigeschaltet.",
   not_found: "Nicht gefunden.",
   conflict: "Das geht gerade nicht.",
   gone: "Die Daten müssen neu geladen werden.",
@@ -80,6 +82,12 @@ export type SessionInfo = {
   deviceId: string;
   identities: { provider: IdentityProvider; createdAt: number }[];
   devices: Device[];
+  /** Whether the operator approved the account; until then it cannot sync. */
+  approved: boolean;
+  /** Contact address for approval, maintenance and billing mails. */
+  contactEmail: string | null;
+  /** Free text of the access request. */
+  accessNote: string | null;
 };
 
 /** WebAuthn options as JSON plus the challenge to answer. */
@@ -250,6 +258,8 @@ export function createApi({ baseUrl, getToken, fetch: doFetch }: ApiOptions) {
         body: { name },
       }),
     deleteAccount: () => call<void>("/account", { method: "DELETE" }),
+    putContact: (email: string, note: string) =>
+      call<void>("/account/contact", { method: "PUT", body: { email, note } }),
     listKeys: () =>
       call<{ keys: KeyWrap[] }>("/keys").then((result) => result.keys),
     putKey: (wrap: KeyWrap) =>

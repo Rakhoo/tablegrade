@@ -21,7 +21,8 @@ Status: **verbindlich** (seit 2026-11-23, Stream 0)
 - Fehler: HTTP-Status plus `{ "error": "<code>", "message": "<deutsch, für die UI>" }`.
   Codes: `unauthorized`, `session_revoked`, `not_found`, `conflict`, `too_large`,
   `rate_limited`, `upgrade_required`, `bad_request`.
-- Weitere Codes: `gone` (410, siehe 4), `server_restored` (410, siehe 4), `forbidden` (403), `internal` (500, Serverfehler).
+- Weitere Codes: `gone` (410, siehe 4), `server_restored` (410, siehe 4), `forbidden` (403),
+  `not_approved` (403, Konto noch nicht freigeschaltet, siehe 2), `internal` (500, Serverfehler).
 - Status je Code: `bad_request` 400, `unauthorized` 401, `session_revoked` 401, `forbidden` 403,
   `not_found` 404, `conflict` 409, `gone` 410, `server_restored` 410, `too_large` 413, `upgrade_required` 426,
   `rate_limited` 429 (mit Header `Retry-After` in Sekunden).
@@ -64,9 +65,10 @@ keyWraps    id, userId, kind ('passkey' | 'recovery' | 'org'), credentialId?, al
 | `POST /auth/passkey/login/finish` | Prüfen, Sitzung anlegen. |
 | `GET  /auth/oidc/{provider}/config` | Client-ID, Authorize-URL, Scopes für den Browser. |
 | `POST /auth/oidc/{provider}/exchange` | Body: `code`, `codeVerifier`, `redirectUri`, `deviceName`. Server tauscht ein, prüft das ID-Token, legt bei Bedarf ein Konto an (oder verknüpft mit Sitzung), gibt Sitzung zurück. |
-| `GET  /auth/session` | Prüfung der Sitzung: `{ userId, deviceId, identities[], devices[] }`. |
+| `GET  /auth/session` | Prüfung der Sitzung: `{ userId, deviceId, identities[], devices[], approved, contactEmail, accessNote }`. |
 | `POST /auth/logout` | Sitzung beenden. |
 | `GET  /devices` / `POST /devices/{id}/revoke` / `PATCH /devices/{id}` | Geräte auflisten, sperren, umbenennen. |
+| `PUT  /account/contact` | Body `{ email, note }`: Kontakt-Adresse und Begründung der Zugangsanfrage. Leere Werte löschen. Antwort `204`. |
 | `DELETE /account` | Konto mit allen Daten löschen (nach Bestätigung in der UI). Antwort `204`; verbundene Geräte bekommen per WebSocket `revoked`, ihre Sitzungen gelten danach als ungültig (`unauthorized`). |
 | `POST /auth/dev/login` | Nur mit `DEV_AUTH=1` (Tests). Body `{ deviceName, userId? }`. Ohne `userId` neues Konto, mit `userId` weiteres Gerät dieses Kontos. Antwort wie jede Anmeldung. |
 
@@ -104,6 +106,15 @@ Antwort bei erfolgreicher Anmeldung:
 - Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
   `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
   speichert und protokolliert der Server nicht.
+- **Freischaltung:** Ein neues Konto hat `approved: false`. Anmelden, `GET /auth/session`,
+  Logout, Geräte, `PUT /account/contact` und `DELETE /account` gehen. Schlüssel, Einträge,
+  Fotos, Kopplung und WebSocket antworten mit `403 not_approved`. Mario schaltet Konten per
+  Befehl auf dem Server frei (`notenfeder-server admin approve`, siehe `server/README.md`).
+  Konten von vor dieser Änderung gelten als freigeschaltet. Test-Logins (`DEV_AUTH`) auch.
+- **Kontakt:** `email` ist eine reine Adresse (ohne Anzeigenamen, höchstens 254 Zeichen),
+  `note` höchstens 500 Zeichen. Zweck: Freischaltung, Wartung, Bezahlung. Beides liegt im
+  Klartext auf dem Server (Ausnahme vom Grundsatz „nur Chiffretext“, mit diesem Zweck) und wird
+  mit dem Konto gelöscht. In `GET /auth/session` ist ein leerer Wert `null`.
 - Die App meldet sich nur mit Microsoft oder Google an. Passkeys legt sie nur mit Sitzung an,
   zum Entsperren. Anmelden per Passkey und neues Konto per Passkey bietet der Server weiter
   an, die App nutzt es nicht.
@@ -338,3 +349,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |
 | 2026-11-24 | – | OIDC: Redirect-URI ohne Query (`<Origin>/` statt `<Origin>/?oidc=callback`), weil Microsoft keine Query erlaubt. |
 | 2026-11-24 | – | OIDC: Scope `email`, `exchange` gibt `email` zurück (nur zur Anzeige, nicht gespeichert). App ohne Passkey-Login und -Registrierung ohne Sitzung. |
+| 2026-11-24 | – | Freischaltung (`approved`, `403 not_approved`), Kontakt-Adresse und Begründung (`PUT /account/contact`, Felder in `GET /auth/session`). |

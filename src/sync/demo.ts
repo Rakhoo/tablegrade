@@ -56,6 +56,9 @@ async function signIn(provider: OidcProvider, deviceName: string) {
       hasDataKey: !isNewUser,
       hasPrfPasskey: !isNewUser,
       signedInWith: { provider, email: "lehrerin@example.org" },
+      approved: true,
+      contactEmail: "lehrerin@example.org",
+      accessNote: null,
     },
   });
 }
@@ -146,6 +149,10 @@ export const demo = {
   listDevices: async () => {
     await wait();
     return devices;
+  },
+  setContact: async (email: string, note: string) => {
+    await wait();
+    updateAccount({ contactEmail: email || null, accessNote: note || null });
   },
   renameDevice: async (id: string, name: string) => {
     await wait();

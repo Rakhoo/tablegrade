@@ -37,6 +37,7 @@ var (
 	errNotFound        = newError(http.StatusNotFound, "not_found", "Nicht gefunden.")
 	errConflict        = newError(http.StatusConflict, "conflict", "Die Änderung passt nicht zum aktuellen Stand.")
 	errTooLarge        = newError(http.StatusRequestEntityTooLarge, "too_large", "Die Daten sind zu groß.")
+	errNotApproved     = newError(http.StatusForbidden, "not_approved", "Das Konto ist noch nicht freigeschaltet.")
 	errUpgradeRequired = newError(http.StatusUpgradeRequired, "upgrade_required", "Der Server ist älter als die App. Bitte später erneut versuchen.")
 	errInternal        = newError(http.StatusInternalServerError, "internal", "Serverfehler. Bitte später erneut versuchen.")
 )

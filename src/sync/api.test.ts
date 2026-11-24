@@ -27,6 +27,9 @@ const SESSION = {
   deviceId: "d",
   identities: [{ provider: "passkey", createdAt: 1 }],
   devices: [],
+  approved: true,
+  contactEmail: null,
+  accessNote: null,
 };
 
 describe("api", () => {
@@ -153,8 +156,26 @@ describe("session check", () => {
         hasDataKey: true,
         hasPrfPasskey: true,
         signedInWith: null,
+        approved: true,
+        contactEmail: null,
+        accessNote: null,
       },
       error: null,
+    });
+  });
+
+  it("skips the keys of an account that waits for approval", async () => {
+    const pending = { ...SESSION, approved: false, contactEmail: "a@b.de" };
+    const check = await checkSession(
+      apiAnswering((url) =>
+        url.endsWith("/keys")
+          ? json({ error: "not_approved" }, 403)
+          : json(pending),
+      ),
+    );
+    expect(sessionStatus(check)).toMatchObject({
+      phase: "notApproved",
+      account: { approved: false, contactEmail: "a@b.de", hasDataKey: false },
     });
   });
 
