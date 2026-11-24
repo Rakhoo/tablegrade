@@ -168,7 +168,7 @@ export function createSyncService(deps: ServiceDeps) {
     return result;
   }
 
-  /** Finishes an OIDC login or identity link when the app opens with `?oidc=callback`. */
+  /** Finishes an OIDC login or identity link when the provider redirects back. */
   async function handleOidcReturn() {
     const href = deps.currentUrl();
     const callback = parseOidcCallback(href);

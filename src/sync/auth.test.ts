@@ -32,7 +32,7 @@ function fakeApi() {
       clientId: "client",
       authorizeUrl: "https://login.test/authorize",
       scopes: ["openid"],
-      redirectUri: "https://app.test/?oidc=callback",
+      redirectUri: "https://app.test/",
     }),
     oidcExchange: async (_provider: string, body: unknown) => ({
       sessionToken: "t",
@@ -165,12 +165,10 @@ describe("oidc", () => {
       "https://login.test/authorize",
     );
     expect(target.searchParams.get("code_challenge_method")).toBe("S256");
-    expect(target.searchParams.get("redirect_uri")).toBe(
-      "https://app.test/?oidc=callback",
-    );
+    expect(target.searchParams.get("redirect_uri")).toBe("https://app.test/");
     const state = target.searchParams.get("state")!;
 
-    const back = `https://app.test/?oidc=callback&code=abc&state=${state}#/`;
+    const back = `https://app.test/?code=abc&state=${state}#/`;
     const callback = parseOidcCallback(back)!;
     const { grant: result, returnTo } = await finishOidcLogin(
       api,
@@ -204,7 +202,9 @@ describe("oidc", () => {
     ).rejects.toThrow("abgebrochen");
   });
 
-  it("ignores URLs without the callback marker", () => {
-    expect(parseOidcCallback("https://app.test/#/?oidc=callback")).toBeNull();
+  it("ignores URLs that are no provider return", () => {
+    expect(parseOidcCallback("https://app.test/#/?state=s&code=c")).toBeNull();
+    expect(parseOidcCallback("https://app.test/?state=s")).toBeNull();
+    expect(parseOidcCallback("https://app.test/?code=c")).toBeNull();
   });
 });

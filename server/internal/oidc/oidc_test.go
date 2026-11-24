@@ -10,7 +10,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/oidc/oidctest"
 )
 
-const redirect = "https://app.example/?oidc=callback"
+const redirect = "https://app.example/"
 
 func TestExchange(t *testing.T) {
 	fake := oidctest.New(t)

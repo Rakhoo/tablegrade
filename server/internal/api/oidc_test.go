@@ -9,7 +9,7 @@ import (
 )
 
 // testRedirect is the redirect URI of the test app.
-const testRedirect = testOrigin + "/?oidc=callback"
+const testRedirect = testOrigin + "/"
 
 // newOIDCEnv starts a server with a fake "google" provider.
 func newOIDCEnv(t *testing.T) (*testEnv, *oidctest.Provider) {
@@ -94,7 +94,7 @@ func TestOIDCExchangeErrors(t *testing.T) {
 		return &res
 	}
 	// Redirect URI of a foreign origin.
-	if res := post(`{"code":"c","codeVerifier":"v","redirectUri":"https://evil.example/?oidc=callback","deviceName":"iPad"}`); res.Code != "bad_request" {
+	if res := post(`{"code":"c","codeVerifier":"v","redirectUri":"https://evil.example/","deviceName":"iPad"}`); res.Code != "bad_request" {
 		t.Errorf("foreign redirect: %+v", res)
 	}
 	if res := post(`{"code":"c","codeVerifier":"v","redirectUri":"` + testRedirect + `","deviceName":""}`); res.Code != "bad_request" {

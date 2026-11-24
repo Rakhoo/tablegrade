@@ -97,7 +97,7 @@ export async function loginWithPasskey(
 
 /**
  * Starts the OIDC login with Microsoft or Google. Navigates away; the app finishes the login
- * when it opens again with `?oidc=callback`.
+ * when the provider redirects back.
  */
 export async function startOidcLogin(
   provider: OidcProvider,

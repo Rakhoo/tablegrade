@@ -72,9 +72,9 @@ Die genaue Anleitung schreibt Stream A in `server/README.md`. Überblick:
 
 **Microsoft** (portal.azure.com → App-Registrierungen):
 - Kontotyp: nur persönliche Microsoft-Konten.
-- Plattform „Web“, Redirect-URIs: `<App-Origin>/?oidc=callback` für Produktion
-  (`https://tablegrade.pages.dev/?oidc=callback`) und Dev-Vorschau
-  (`https://dev.tablegrade.pages.dev/?oidc=callback`). Der Server akzeptiert genau diese
+- Plattform „Web“, Redirect-URIs: `<App-Origin>/` für Produktion
+  (`https://tablegrade.pages.dev/`) und Dev-Vorschau
+  (`https://dev.tablegrade.pages.dev/`). Der Server akzeptiert genau diese
   Adressen (aus `APP_ORIGINS`).
 - Client-Secret anlegen. Client-ID und Secret in die `.env` auf dem Pi.
 

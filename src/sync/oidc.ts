@@ -1,6 +1,7 @@
 /**
  * OIDC login with Microsoft and Google (plan B4): PKCE and `state` in the browser, code
- * exchange on the server. The provider redirects to `/?oidc=callback`; the hash route stays.
+ * exchange on the server. The provider redirects to the app origin with `code` (or `error`) and
+ * `state` in the query; the hash route stays.
  */
 import { toBase64url } from "../crypto/encoding";
 import { randomBytes, sha256 } from "../crypto/primitives";
@@ -9,9 +10,6 @@ import type { OidcProvider } from "./types";
 
 /** Storage key of the pending login; `localStorage`, so it survives the redirect. */
 const PENDING_KEY = "notenfeder-oidc";
-
-/** Query value that marks the return from the provider. */
-const CALLBACK = "callback";
 
 /** Login state kept across the redirect. */
 type PendingLogin = {
@@ -77,7 +75,10 @@ export async function beginOidcLogin(
 /** Reads the provider's answer from a URL; `null` if it is no OIDC return. */
 export function parseOidcCallback(href: string): OidcCallback | null {
   const params = new URL(href).searchParams;
-  if (params.get("oidc") != CALLBACK) return null;
+  // The redirect URI carries no marker (Microsoft forbids a query), so `state` plus a result
+  // identifies the return; `finishOidcLogin` then checks `state` against the pending login.
+  if (!params.has("state") || !(params.has("code") || params.has("error")))
+    return null;
   return {
     code: params.get("code"),
     state: params.get("state"),

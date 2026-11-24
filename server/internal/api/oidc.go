@@ -15,7 +15,8 @@ import (
 var oidcScopes = []string{"openid"}
 
 // oidcRedirectPath is appended to an app origin to form the redirect URI (protocol.md 2).
-const oidcRedirectPath = "/?oidc=callback"
+// No query string: Microsoft rejects redirect URIs with one.
+const oidcRedirectPath = "/"
 
 // errOIDCFailed answers a refused code or an invalid ID token without details.
 var errOIDCFailed = newError(http.StatusUnauthorized, "unauthorized",

@@ -111,7 +111,8 @@ Antwort bei erfolgreicher Anmeldung:
   dafür gibt es `logout`.
 
 Microsoft: Mandant `consumers` (nur private Konten). Google: normale OAuth-Client-ID vom Typ
-„Webanwendung“. Redirect-URI ist die App-Origin mit Pfad `/` und Query `?oidc=callback`.
+„Webanwendung“. Redirect-URI ist die App-Origin mit Pfad `/`, ohne Query (Microsoft lehnt
+Redirect-URIs mit Query ab). Die App erkennt die Rückkehr an `state` plus `code` oder `error`.
 
 ## 3. Schlüssel
 
@@ -331,3 +332,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | 2026-11-23 | A | Schlüssel: `204` bei `PUT`/`DELETE`, Prüfregeln für `PUT`, `conflict` beim letzten `recovery`-Wrap. |
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |
+| 2026-11-24 | – | OIDC: Redirect-URI ohne Query (`<Origin>/` statt `<Origin>/?oidc=callback`), weil Microsoft keine Query erlaubt. |
