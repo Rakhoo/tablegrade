@@ -13,6 +13,9 @@ vi.mock("./webauthn", async (original) => ({
   evaluatePrf: vi.fn(),
 }));
 
+/** Relying party id of the server; differs from the page's host in the dev preview. */
+const RP_ID = "tablegrade.pages.dev";
+
 /** A passkey as the browser returns it. */
 const passkey = (
   credentialId: string,
@@ -29,7 +32,11 @@ function fakeApi() {
   const wraps: KeyWrap[] = [];
   const finish = vi.fn();
   const api = {
-    passkeyRegisterBegin: async () => ({ challengeId: "c", options: {} }),
+    passkeyRegisterBegin: async () => ({
+      challengeId: "c",
+      options: { rp: { id: RP_ID } },
+    }),
+    session: async () => ({ rpId: RP_ID }),
     passkeyRegisterFinish: finish,
     listKeys: async () => wraps,
     putKey: async (wrap: KeyWrap) => void wraps.push(wrap),
@@ -73,7 +80,8 @@ describe("passkey flow", () => {
     vi.mocked(evaluatePrf).mockResolvedValue(passkey("gpm", prf));
     await unlockWithPasskey({ api, store: fresh });
     expect(await fresh.get("dataKey")).toBeDefined();
-    // No credential list, so Chrome on Windows offers its own passkeys
-    expect(evaluatePrf).toHaveBeenCalledWith([]);
+    // No credential list, so Chrome on Windows offers its own passkeys, and the server's
+    // relying party id, so the dev preview finds passkeys of the main domain
+    expect(evaluatePrf).toHaveBeenCalledWith([], RP_ID);
   });
 });

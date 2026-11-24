@@ -221,6 +221,9 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request, sess stor
 		"identities": identities,
 		"devices":    devices,
 		"approved":   user.ApprovedAt != 0,
+		// Passkey requests outside a server ceremony need it; the dev preview runs on a
+		// subdomain, where the browser would otherwise default to the wrong id.
+		"rpId": s.cfg.RPID,
 		// Empty values are sent as null, so the app tells "none yet" from an empty field.
 		"contactEmail": nullIfEmpty(user.ContactEmail),
 		"accessNote":   nullIfEmpty(user.AccessNote),

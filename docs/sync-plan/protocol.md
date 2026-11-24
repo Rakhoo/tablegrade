@@ -65,7 +65,7 @@ keyWraps    id, userId, kind ('passkey' | 'recovery' | 'org'), credentialId?, al
 | `POST /auth/passkey/login/finish` | Prüfen, Sitzung anlegen. |
 | `GET  /auth/oidc/{provider}/config` | Client-ID, Authorize-URL, Scopes für den Browser. |
 | `POST /auth/oidc/{provider}/exchange` | Body: `code`, `codeVerifier`, `redirectUri`, `deviceName`. Server tauscht ein, prüft das ID-Token, legt bei Bedarf ein Konto an (oder verknüpft mit Sitzung), gibt Sitzung zurück. |
-| `GET  /auth/session` | Prüfung der Sitzung: `{ userId, deviceId, identities[], devices[], approved, contactEmail, accessNote }`. |
+| `GET  /auth/session` | Prüfung der Sitzung: `{ userId, deviceId, identities[], devices[], approved, contactEmail, accessNote, rpId }`. `rpId` ist die WebAuthn-RP-ID; die App braucht sie für Passkey-Abfragen ohne Server-Zeremonie (Entsperren per PRF), weil die Dev-Vorschau auf einer Subdomain läuft. |
 | `POST /auth/logout` | Sitzung beenden. |
 | `GET  /devices` / `POST /devices/{id}/revoke` / `PATCH /devices/{id}` | Geräte auflisten, sperren, umbenennen. |
 | `PUT  /account/contact` | Body `{ email, note }`: Kontakt-Adresse und Begründung der Zugangsanfrage. Leere Werte löschen. Antwort `204`. |
@@ -355,3 +355,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | 2026-11-24 | – | Freischaltung (`approved`, `403 not_approved`), Kontakt-Adresse und Begründung (`PUT /account/contact`, Felder in `GET /auth/session`). |
 | 2026-11-24 | – | Kopplung: `POST /link/{linkId}/key` und Status `keyed`, damit beide Geräte den Prüfcode vor der Bestätigung zeigen. |
 | 2026-11-24 | – | Genau ein Anmeldeweg pro Konto: `exchange` mit Sitzung gibt `409 conflict` (kein Verknüpfen mehr). |
+| 2026-11-24 | – | `GET /auth/session` liefert `rpId` für das Entsperren per Passkey. |

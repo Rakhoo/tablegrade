@@ -14,9 +14,10 @@ func TestApprovalAndContact(t *testing.T) {
 		Approved     bool    `json:"approved"`
 		ContactEmail *string `json:"contactEmail"`
 		AccessNote   *string `json:"accessNote"`
+		RPID         string  `json:"rpId"`
 	}
 	e.do(http.MethodGet, "/api/v1/auth/session", s.SessionToken, "", &info)
-	if info.Approved || info.ContactEmail != nil || info.AccessNote != nil {
+	if info.Approved || info.ContactEmail != nil || info.AccessNote != nil || info.RPID != testRPID {
 		t.Fatalf("new account: %+v", info)
 	}
 

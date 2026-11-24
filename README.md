@@ -534,7 +534,9 @@ the default:
   never sign in or create an account; one without PRF is refused with a hint before the
   server learns about it (Windows Hello often lacks PRF; the Google Password Manager has it).
   Unlocking asks for a passkey without a credential list, so Chrome on Windows offers its own
-  passkeys instead of handing over to Windows Hello; a passkey without wrap is refused. If the
+  passkeys instead of handing over to Windows Hello; a passkey without wrap is refused. Every
+  passkey request names the server's relying party id (`rpId` from `GET /auth/session` or the
+  registration options), so the dev preview on a subdomain finds the passkeys too. If the
   authenticator already holds a passkey of the account, "Passkey hinzufügen" lets the user
   pick it and sets it up for unlocking instead.
   The sync state (`getSyncBadge` in `lib/syncView.ts`) feeds the hints on open points (see

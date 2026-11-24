@@ -88,6 +88,8 @@ export type SessionInfo = {
   contactEmail: string | null;
   /** Free text of the access request. */
   accessNote: string | null;
+  /** WebAuthn relying party id of the server, e.g. `tablegrade.pages.dev`. */
+  rpId: string;
 };
 
 /** WebAuthn options as JSON plus the challenge to answer. */

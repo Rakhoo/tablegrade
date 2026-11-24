@@ -25,11 +25,14 @@ const NO_PRF =
  * second dialog evaluates PRF. It passes no credential list (see `unlockWithPasskey`), so the
  * user picks the passkey just created; another one does not count.
  */
-async function prfOf(passkey: PasskeyResult): Promise<PrfResult | null> {
+async function prfOf(
+  passkey: PasskeyResult,
+  rpId: string | undefined,
+): Promise<PrfResult | null> {
   const { credentialId } = passkey;
   if (passkey.prfOutput) return { credentialId, prfOutput: passkey.prfOutput };
   if (!passkey.prfCapable) return null;
-  const evaluated = await evaluatePrf([]);
+  const evaluated = await evaluatePrf([], rpId);
   return evaluated.prfOutput && evaluated.credentialId == credentialId
     ? { credentialId, prfOutput: evaluated.prfOutput }
     : null;
@@ -46,8 +49,10 @@ export async function addPasskey(context: KeyringContext): Promise<void> {
     if (error instanceof PasskeyExistsError) return null;
     throw error;
   });
-  if (!passkey) return wrapExistingPasskey(context);
-  const prf = await prfOf(passkey);
+  // Without the server's id the browser takes the page's host, which differs in the dev preview
+  const rpId = options.rp.id;
+  if (!passkey) return wrapExistingPasskey(context, rpId);
+  const prf = await prfOf(passkey, rpId);
   if (!prf) throw new Error(NO_PRF);
   await context.api.passkeyRegisterFinish(challengeId, passkey.json, "");
   await addPasskeyWrap(context, prf);
@@ -57,8 +62,11 @@ export async function addPasskey(context: KeyringContext): Promise<void> {
  * Sets up a passkey that already exists on this authenticator (e.g. added before PRF wraps
  * existed) for unlocking: the user picks it, its PRF output gets a wrap.
  */
-async function wrapExistingPasskey(context: KeyringContext): Promise<void> {
-  const { credentialId, prfOutput } = await evaluatePrf([]);
+async function wrapExistingPasskey(
+  context: KeyringContext,
+  rpId: string | undefined,
+): Promise<void> {
+  const { credentialId, prfOutput } = await evaluatePrf([], rpId);
   if (!prfOutput) throw new Error(NO_PRF);
   await addPasskeyWrap(context, { credentialId, prfOutput });
 }
@@ -67,12 +75,15 @@ async function wrapExistingPasskey(context: KeyringContext): Promise<void> {
 export async function unlockWithPasskey(
   context: KeyringContext,
 ): Promise<void> {
-  const ids = await passkeyWrapIds(context.api);
+  const [ids, { rpId }] = await Promise.all([
+    passkeyWrapIds(context.api),
+    context.api.session(),
+  ]);
   if (!ids.length)
     throw new Error("Kein Passkey dieses Kontos kann die Daten entsperren.");
   // No list of credentials: with one, Chrome on Windows hands the request to Windows Hello
   // and never looks into the Google Password Manager. Without, it offers all its passkeys.
-  const { credentialId, prfOutput } = await evaluatePrf([]);
+  const { credentialId, prfOutput } = await evaluatePrf([], rpId);
   if (!ids.includes(credentialId))
     throw new Error(
       "Dieser Passkey ist nicht zum Entsperren eingerichtet. Bitte einen anderen wählen oder das Gerät koppeln.",
