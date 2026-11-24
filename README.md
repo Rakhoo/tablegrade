@@ -500,7 +500,8 @@ the default:
   "Einrichten"), the setup wizard (`SyncSetupWizard.tsx`, vertical stepper with the required
   steps in order, only the current one open: "Anmelden" with device name and branded buttons
   "Mit Google anmelden"/"Mit Microsoft anmelden" (`OidcButton.tsx`; the first sign-in creates
-  the account), "Freischaltung", "Schlüssel" (save the recovery key of a new account or
+  the account; the provider always shows its account picker, as signing out of the app keeps
+  the provider's own sign-in), "Freischaltung", "Schlüssel" (save the recovery key of a new account or
   unlock this device) and "Daten abgleichen" (consent to replace own local data), then
   active (state, last sync, "Jetzt synchronisieren", sign-in, passkeys, contact) and an
   expired sign-in (the app keeps working locally). An unlocked device that cannot start yet

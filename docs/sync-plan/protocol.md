@@ -94,7 +94,8 @@ Antwort bei erfolgreicher Anmeldung:
 - Gerät: Jede neue Sitzung ohne bestehende Sitzung legt ein neues Gerät mit `deviceName` an.
 - `GET /auth/oidc/{provider}/config` liefert
   `{ clientId, authorizeUrl, scopes: ["openid", "email"], redirectUri }`. Der Browser nutzt PKCE
-  (`S256`) und `state`; beides prüft nur der Browser.
+  (`S256`) und `state`; beides prüft nur der Browser. Er sendet `prompt=select_account`, damit
+  nach dem Abmelden in der App die Kontoauswahl erscheint statt sofort desselben Kontos.
 - `{provider}` ist `microsoft` oder `google`. Ein Anbieter ohne Client-ID ist aus: `404 not_found`.
   `redirectUri` gehört zur App-Origin aus dem `Origin`-Header (sonst die erste aus
   `APP_ORIGINS`). `exchange` nimmt nur diese Redirect-URIs an, sonst `bad_request`.

@@ -183,6 +183,7 @@ describe("oidc", () => {
       "https://login.test/authorize",
     );
     expect(target.searchParams.get("code_challenge_method")).toBe("S256");
+    expect(target.searchParams.get("prompt")).toBe("select_account");
     expect(target.searchParams.get("redirect_uri")).toBe("https://app.test/");
     const state = target.searchParams.get("state")!;
 

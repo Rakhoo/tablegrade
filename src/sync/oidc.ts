@@ -45,6 +45,9 @@ export async function authorizeUrl(
     state,
     code_challenge: toBase64url(await sha256(codeVerifier)),
     code_challenge_method: "S256",
+    // Signing out of the app keeps the provider's own sign-in in the browser; without this
+    // the provider would return the same account at once, with no way to pick another
+    prompt: "select_account",
   }).toString();
   return url.toString();
 }
