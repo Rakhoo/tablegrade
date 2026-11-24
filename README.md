@@ -513,8 +513,8 @@ the default:
   a Microsoft or Google sign-up; then the card shows the recovery key once (form that
   password managers offer to save, "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
   two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. The first upload or
-  download shows a progress bar in the active view (records, then photos; photos load four
-  at a time). A signed-in device
+  download shows a progress bar in the active view (decrypted records, then photos; photos
+  load four at a time; steps without a count, like fetching and writing, show a running bar). A signed-in device
   without the key offers up to three ways to unlock: passkey (only if the account has one that
   can unlock, `account.hasPrfPasskey`), linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).

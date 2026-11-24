@@ -60,9 +60,12 @@ async function runLimited(
   );
 }
 
+/** Decrypted records between two progress reports, so the UI is not redrawn for each. */
+const DECRYPT_REPORT_EVERY = 100;
+
 /**
- * Decrypts records and replaces photo references by data URLs. Photos take the most time, so
- * they count as a progress of their own.
+ * Decrypts records and replaces photo references by data URLs. Both count as a progress:
+ * records first, then photos, which take the most time.
  */
 async function decode(
   ctx: SyncContext,
@@ -72,6 +75,8 @@ async function decode(
   const decoded: Decoded[] = [];
   const photos: (() => Promise<void>)[] = [];
   for (const { id, seq, ciphertext } of records) {
+    if (decoded.length % DECRYPT_REPORT_EVERY == 0)
+      onProgress?.(decoded.length, records.length);
     const plain = await decryptRecord(ctx.key, ctx.userId, id, ciphertext);
     const { row } = plain;
     if (row && isBlobRef(row.image) && isSyncedKey(plain.t, plain.k)) {
@@ -203,7 +208,8 @@ async function countDeferred(db: SqlRunner): Promise<number> {
  * transaction, so a child row on an early page never misses its parent from a later page.
  * Own records are skipped; they are already in the local tables. `includeOwn` applies them
  * too, for the pull after a server restore, where the server may hold own rows the device has
- * deleted since. `onProgress` gets the fetched and the total `seq` range.
+ * deleted since. `onProgress` counts decrypted records, then downloaded photos, and gets a
+ * total of 0 while writing.
  */
 export async function pullChanges(
   ctx: SyncContext,
@@ -221,7 +227,6 @@ export async function pullChanges(
       latest.set(record.id, record);
       after = record.seq;
     }
-    onProgress?.(after - start, page.latestSeq - start);
     if (!page.more || !page.records.length) break;
   }
   const records = [...latest.values()];
@@ -236,7 +241,11 @@ export async function pullChanges(
     return { applied: 0, deferred: await countDeferred(ctx.db), ids };
   const applied = await applyDecoded(
     ctx,
-    await decode(ctx, fresh, onProgress),
+    await decode(ctx, fresh, onProgress).then((rows) => {
+      // Writing has no count; the UI shows a running bar meanwhile
+      onProgress?.(0, 0);
+      return rows;
+    }),
     async (tx) => {
       for (const record of newer)
         await tx.run(

@@ -55,10 +55,13 @@ describe("push and pull between two devices", () => {
     a.raw.exec("UPDATE Students SET nickname = 'Anni'");
     await a.sync();
     expect(server.blobUploads()).toBe(1);
-    // The photo download counts as a progress of its own after the records
+    // Decrypting counts records, then the photo download counts photos
     const progress = vi.fn();
     await pullChanges(b.ctx, progress);
-    expect(progress).toHaveBeenLastCalledWith(1, 1, "photos");
+    expect(progress).toHaveBeenCalledWith(0, expect.any(Number));
+    expect(progress).toHaveBeenCalledWith(1, 1, "photos");
+    // Writing has no count; the UI shows a running bar
+    expect(progress).toHaveBeenLastCalledWith(0, 0);
     expect(b.rows("SELECT image, nickname FROM Students")).toEqual([
       { image: PHOTO, nickname: "Anni" },
     ]);

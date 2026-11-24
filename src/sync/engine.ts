@@ -140,8 +140,9 @@ export function createSyncEngine(options: EngineOptions) {
       deviceId = ctx.deviceId;
       options.onStatus({ phase: "syncing", error: null });
       try {
+        // A total of 0 marks a step without a count; the UI then shows a running bar
         const run = await runSync(ctx, (done, total, unit = "records") =>
-          options.onStatus({ progress: { done, total, unit } }),
+          options.onStatus({ progress: total ? { done, total, unit } : null }),
         );
         options.onStatus({
           phase: run.deferred ? "upgradeRequired" : "idle",

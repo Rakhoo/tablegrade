@@ -112,6 +112,8 @@ function SyncState({ status }: SyncActiveProps) {
           Jetzt synchronisieren
         </Button>
       </div>
+      {/* Steps without a count (first page, decrypting) still show that work goes on */}
+      {phase == "syncing" && !progress && <LinearProgress />}
       {progress && (
         <div
           className="flex flex-col gap-1 text-sm"
