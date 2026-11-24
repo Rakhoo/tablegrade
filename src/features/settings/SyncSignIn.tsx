@@ -1,25 +1,13 @@
-import { Button, TextField } from "@mui/material";
+import { TextField } from "@mui/material";
 import { useState } from "react";
-import {
-  loginWithPasskey,
-  startOidcLogin,
-  startPasskeySignup,
-  type OidcProvider,
-  type SignInResult,
-} from "../../sync";
+import { startOidcLogin, type OidcProvider } from "../../sync";
+import { PROVIDER_LABELS } from "../../lib/syncView";
+import { OidcButton } from "./OidcButton";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { useSyncAction } from "./useSyncAction";
 
-type SyncSignInProps = {
-  /** Offers creating a new account; off when an existing sign-in expired. */
-  allowSignup: boolean;
-};
-
-/** Sign-in methods besides the passkey, with their button labels. */
-const OIDC_PROVIDERS: { provider: OidcProvider; label: string }[] = [
-  { provider: "microsoft", label: "Mit Microsoft anmelden" },
-  { provider: "google", label: "Mit Google anmelden" },
-];
+/** Providers in the order of the buttons. */
+const PROVIDERS: OidcProvider[] = ["google", "microsoft"];
 
 /** A name for this device that the list of devices shows until it is renamed. */
 function guessDeviceName() {
@@ -32,18 +20,13 @@ function guessDeviceName() {
 }
 
 /**
- * Choice of the sign-in method: a new account with a passkey, or signing in with a passkey,
- * Microsoft or Google. The device name tells the devices of the account apart.
+ * Sign-in with Microsoft or Google; the first sign-in creates the account. Passkeys come only
+ * after signing in, to unlock the data. The device name tells the devices apart.
  */
-export function SyncSignIn({ allowSignup }: SyncSignInProps) {
+export function SyncSignIn() {
   const [deviceName, setDeviceName] = useState(guessDeviceName);
   const { busy, error, run } = useSyncAction();
   const name = deviceName.trim();
-  const disabled = busy || !name;
-
-  /** Runs a passkey step; the sync status then leads to the next view. */
-  const signIn = (step: (deviceName: string) => Promise<SignInResult>) =>
-    run(() => step(name));
   return (
     <>
       <TextField
@@ -57,34 +40,17 @@ export function SyncSignIn({ allowSignup }: SyncSignInProps) {
       />
       <SyncErrorAlert error={error} />
       <div
-        className="flex flex-wrap gap-2"
-        data-help="Anmeldewege: Passkey (Face ID, Touch ID oder Gerätecode), privates Microsoft- oder Google-Konto."
+        className="flex flex-col items-start gap-2"
+        data-help="Anmeldung mit einem privaten Konto. Beim ersten Mal entsteht das Notenfeder-Konto. Die Daten bleiben verschlüsselt; der Anbieter sieht sie nie."
       >
-        {allowSignup && (
-          <Button
-            variant="contained"
-            disabled={disabled}
-            onClick={() => signIn(startPasskeySignup)}
-          >
-            Neues Konto mit Passkey
-          </Button>
-        )}
-        <Button
-          variant={allowSignup ? "outlined" : "contained"}
-          disabled={disabled}
-          onClick={() => signIn(loginWithPasskey)}
-        >
-          Mit Passkey anmelden
-        </Button>
-        {OIDC_PROVIDERS.map(({ provider, label }) => (
-          <Button
+        {PROVIDERS.map((provider) => (
+          <OidcButton
             key={provider}
-            variant="outlined"
-            disabled={disabled}
+            provider={provider}
+            label={`Mit ${PROVIDER_LABELS[provider]} anmelden`}
+            disabled={busy || !name}
             onClick={() => run(() => startOidcLogin(provider, name))}
-          >
-            {label}
-          </Button>
+          />
         ))}
       </div>
     </>

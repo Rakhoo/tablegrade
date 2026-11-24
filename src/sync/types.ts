@@ -34,6 +34,13 @@ export type Identity = {
 };
 
 /** The signed-in account as seen by this device. */
+/** The OIDC account this device signed in with, as shown to the user. */
+export type SignedInWith = {
+  provider: OidcProvider;
+  /** Email of the provider account; `null` if the provider sent none. */
+  email: string | null;
+};
+
 export type AccountInfo = {
   /** Server user id (UUID). */
   userId: string;
@@ -45,6 +52,8 @@ export type AccountInfo = {
   hasDataKey: boolean;
   /** Whether a passkey with PRF exists, so the device can unlock with a passkey. */
   hasPrfPasskey: boolean;
+  /** Sign-in of this device; `null` for sessions from before it was recorded. */
+  signedInWith: SignedInWith | null;
 };
 
 /** Progress of the first upload or download, counted in records. */
@@ -87,14 +96,6 @@ export type Device = {
   revokedAt: number | null;
   /** Whether this is the device the app runs on. */
   current: boolean;
-};
-
-/** Result of a sign-in or sign-up. */
-export type SignInResult = {
-  /** Whether the sign-in created a new account. */
-  isNewUser: boolean;
-  /** Whether the device still needs the data key (unlock or link). */
-  needsUnlock: boolean;
 };
 
 /** Device link as started on the new device (protocol.md 6). */

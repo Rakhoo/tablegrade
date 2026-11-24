@@ -60,16 +60,18 @@ describe("keyring", () => {
     const { api } = fakeApi();
     const first = createMemoryStore();
     expect(
-      await completeSignIn({ api, store: first }, grant(true), prf),
+      await completeSignIn({ api, store: first }, grant(true), null),
     ).toEqual({ needsUnlock: false });
     const recovery = await replaceRecoveryKey({ api, store: first });
+    await addPasskeyWrap({ api, store: first }, prf);
     expect(recovery).toMatch(/^([0-9A-Z]{4}-){8}[0-9A-Z]{4}$/);
 
-    // Second device: the passkey alone unlocks it
+    // Second device: signed in, then the passkey alone unlocks it
     const second = createMemoryStore();
     expect(
-      await completeSignIn({ api, store: second }, grant(false, "d2"), prf),
-    ).toEqual({ needsUnlock: false });
+      await completeSignIn({ api, store: second }, grant(false, "d2"), null),
+    ).toEqual({ needsUnlock: true });
+    await unlockWithPrf({ api, store: second }, prf);
     const firstKey = (await first.get("dataKey"))!.key;
     const secondKey = (await second.get("dataKey"))!.key;
     const raw = (key: CryptoKey) => crypto.subtle.exportKey("raw", key);

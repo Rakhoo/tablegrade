@@ -17,11 +17,11 @@ func TestExchange(t *testing.T) {
 	p := fake.Client()
 	ctx := context.Background()
 	fake.AddCode("good", oidctest.Grant{CodeVerifier: "v", RedirectURI: redirect,
-		Claims: map[string]any{"sub": "alice", "email_verified": true}})
+		Claims: map[string]any{"sub": "alice", "email": "alice@example.org", "email_verified": true}})
 
-	sub, err := p.Exchange(ctx, "good", "v", redirect)
-	if err != nil || sub != "alice" {
-		t.Fatalf("got %q, %v", sub, err)
+	id, err := p.Exchange(ctx, "good", "v", redirect)
+	if err != nil || id != (oidc.Identity{Subject: "alice", Email: "alice@example.org"}) {
+		t.Fatalf("got %+v, %v", id, err)
 	}
 	// Codes are single use.
 	if _, err := p.Exchange(ctx, "good", "v", redirect); !errors.Is(err, oidc.ErrRejected) {

@@ -152,6 +152,7 @@ describe("session check", () => {
         identities: SESSION.identities,
         hasDataKey: true,
         hasPrfPasskey: true,
+        signedInWith: null,
       },
       error: null,
     });

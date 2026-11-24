@@ -96,7 +96,11 @@ export async function finishOidcLogin(
   api: Api,
   callback: OidcCallback,
   storage: Storage,
-): Promise<{ grant: SessionGrant | undefined; returnTo: string }> {
+): Promise<{
+  grant: SessionGrant | undefined;
+  provider: OidcProvider;
+  returnTo: string;
+}> {
   const stored = storage.getItem(PENDING_KEY);
   storage.removeItem(PENDING_KEY);
   const pending = stored ? (JSON.parse(stored) as PendingLogin) : null;
@@ -110,7 +114,7 @@ export async function finishOidcLogin(
     redirectUri: pending.redirectUri,
     deviceName: pending.deviceName,
   });
-  return { grant, returnTo: pending.returnTo };
+  return { grant, provider: pending.provider, returnTo: pending.returnTo };
 }
 
 /** The URL without the OIDC query, keeping path and hash route. */

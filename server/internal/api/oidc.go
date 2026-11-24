@@ -11,8 +11,9 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// oidcScopes are requested by the browser; the server needs nothing but the subject.
-var oidcScopes = []string{"openid"}
+// oidcScopes are requested by the browser. The server keeps only the subject; the email is
+// passed on to the device for display.
+var oidcScopes = []string{"openid", "email"}
 
 // oidcRedirectPath is appended to an app origin to form the redirect URI (protocol.md 2).
 // No query string: Microsoft rejects redirect URIs with one.
@@ -113,7 +114,7 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	subject, err := p.Exchange(r.Context(), body.Code, body.CodeVerifier, body.RedirectURI)
+	id, err := p.Exchange(r.Context(), body.Code, body.CodeVerifier, body.RedirectURI)
 	if errors.Is(err, oidc.ErrRejected) {
 		slog.Info("oidc sign-in rejected", "provider", provider, "err", err)
 		writeError(w, errOIDCFailed)
@@ -124,10 +125,10 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if sess != nil {
-		s.linkIdentity(w, r, sess.UserID, provider, subject)
+		s.linkIdentity(w, r, sess.UserID, provider, id.Subject)
 		return
 	}
-	s.signInWithIdentity(w, r, provider, subject, name)
+	s.signInWithIdentity(w, r, provider, id, name)
 }
 
 // errIdentityTaken means the provider account already signs in to another account.
@@ -156,14 +157,15 @@ func (s *Server) linkIdentity(w http.ResponseWriter, r *http.Request, userID, pr
 
 // signInWithIdentity starts a device session for the identity's account, or creates the
 // account if the identity is new.
-func (s *Server) signInWithIdentity(w http.ResponseWriter, r *http.Request, provider, subject, deviceName string) {
-	found, err := s.store.FindIdentity(r.Context(), provider, subject)
+func (s *Server) signInWithIdentity(w http.ResponseWriter, r *http.Request, provider string, id oidc.Identity, deviceName string) {
+	found, err := s.store.FindIdentity(r.Context(), provider, id.Subject)
 	if err == nil {
 		res, err := s.startDeviceSession(r, found.UserID, deviceName, false)
 		if err != nil {
 			writeError(w, err)
 			return
 		}
+		res.Email = id.Email
 		writeJSON(w, http.StatusOK, res)
 		return
 	}
@@ -176,12 +178,13 @@ func (s *Server) signInWithIdentity(w http.ResponseWriter, r *http.Request, prov
 		writeError(w, err)
 		return
 	}
-	res, err := s.startNewAccount(r, user.ID, provider, subject, deviceName)
+	res, err := s.startNewAccount(r, user.ID, provider, id.Subject, deviceName)
 	if err != nil {
 		_ = s.store.DeleteUser(r.Context(), user.ID)
 		writeError(w, err)
 		return
 	}
+	res.Email = id.Email
 	writeJSON(w, http.StatusOK, res)
 }
 

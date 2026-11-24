@@ -75,31 +75,41 @@ func New(ep Endpoints, clientID, clientSecret string, client *http.Client) *Prov
 	}
 }
 
-// Exchange redeems an authorization code and returns the verified subject ("sub" claim).
-func (p *Provider) Exchange(ctx context.Context, code, codeVerifier, redirectURI string) (string, error) {
+// Identity is the verified result of a sign-in.
+type Identity struct {
+	// Subject is the "sub" claim, the stable id of the provider account.
+	Subject string
+	// Email is the "email" claim, empty if the provider sent none. Only shown to the user,
+	// never stored on the server.
+	Email string
+}
+
+// Exchange redeems an authorization code and returns the verified identity.
+func (p *Provider) Exchange(ctx context.Context, code, codeVerifier, redirectURI string) (Identity, error) {
 	raw, err := p.redeem(ctx, code, codeVerifier, redirectURI)
 	if err != nil {
-		return "", err
+		return Identity{}, err
 	}
 	token, err := p.verifier.Verify(ctx, raw)
 	if err != nil {
-		return "", fmt.Errorf("%w: %v", ErrRejected, err)
+		return Identity{}, fmt.Errorf("%w: %v", ErrRejected, err)
 	}
 	var claims struct {
-		EmailVerified *bool `json:"email_verified"`
+		Email         string `json:"email"`
+		EmailVerified *bool  `json:"email_verified"`
 	}
 	if err := token.Claims(&claims); err != nil {
-		return "", fmt.Errorf("%w: %v", ErrRejected, err)
+		return Identity{}, fmt.Errorf("%w: %v", ErrRejected, err)
 	}
-	// Only "openid" is requested, so the claim is normally absent. If a provider sends it as
-	// false, the account is not confirmed by its owner and is not trusted.
+	// If a provider sends the claim as false, the account is not confirmed by its owner and
+	// is not trusted.
 	if claims.EmailVerified != nil && !*claims.EmailVerified {
-		return "", fmt.Errorf("%w: email not verified", ErrRejected)
+		return Identity{}, fmt.Errorf("%w: email not verified", ErrRejected)
 	}
 	if token.Subject == "" {
-		return "", fmt.Errorf("%w: no subject", ErrRejected)
+		return Identity{}, fmt.Errorf("%w: no subject", ErrRejected)
 	}
-	return token.Subject, nil
+	return Identity{Subject: token.Subject, Email: claims.Email}, nil
 }
 
 // redeem posts the code to the token endpoint and returns the raw ID token.

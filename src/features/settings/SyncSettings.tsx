@@ -9,11 +9,11 @@ import { getSyncView, type SyncView } from "../../lib/syncView";
 import { reloadApp } from "../../services/pwa";
 import { SettingsSection } from "./SettingsSection";
 import { SyncAccountActions } from "./SyncAccountActions";
-import { SyncAddPasskey } from "./SyncAddPasskey";
 import { SyncApproveLink } from "./SyncApproveLink";
 import { SyncDevices } from "./SyncDevices";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIdentities } from "./SyncIdentities";
+import { SyncPasskeys } from "./SyncPasskeys";
 import { SyncIntro } from "./SyncIntro";
 import { SyncRecoveryKey } from "./SyncRecoveryKey";
 import { SyncReplaceCheck } from "./SyncReplaceCheck";
@@ -24,7 +24,7 @@ import { useSyncAction } from "./useSyncAction";
 const HINTS: Record<SyncView, string> = {
   off: "Aus. Alle Daten liegen nur auf diesem Gerät.",
   setup:
-    "Einrichtung: neues Konto anlegen oder mit einem bestehenden anmelden.",
+    "Einrichtung: mit Google oder Microsoft anmelden. Beim ersten Mal entsteht das Konto.",
   createKey: "Neues Konto: Wiederherstellungsschlüssel sichern.",
   missingKey:
     "Angemeldet. Dieses Gerät braucht noch den Schlüssel zu den Daten.",
@@ -49,7 +49,7 @@ export function SyncSettings() {
     off: <SyncIntro />,
     setup: (
       <>
-        <SyncSignIn allowSignup />
+        <SyncSignIn />
         <CancelSetup />
       </>
     ),
@@ -62,7 +62,7 @@ export function SyncSettings() {
           Die App arbeitet auf diesem Gerät normal weiter. Neu anmelden, um
           wieder zu synchronisieren.
         </Alert>
-        <SyncSignIn allowSignup={false} />
+        <SyncSignIn />
       </>
     ),
     upgrade: <SyncUpgrade />,
@@ -178,8 +178,8 @@ function SyncActive({ status }: SyncActiveProps) {
       </div>
       {status.account && (
         <>
-          <SyncAddPasskey account={status.account} />
           <SyncIdentities account={status.account} />
+          <SyncPasskeys account={status.account} />
         </>
       )}
       <SyncApproveLink />

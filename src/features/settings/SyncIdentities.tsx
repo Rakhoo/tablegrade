@@ -1,28 +1,24 @@
-import { Button } from "@mui/material";
 import { format } from "date-fns";
-import { PlusIcon } from "../../components/icons";
 import {
-  addPasskey,
   linkOidcIdentity,
   type AccountInfo,
-  type IdentityProvider,
+  type Identity,
   type OidcProvider,
 } from "../../sync";
+import { PROVIDER_LABELS } from "../../lib/syncView";
+import { OidcButton, ProviderLogo } from "./OidcButton";
 import { SyncErrorAlert } from "./SyncErrorAlert";
 import { useSyncAction } from "./useSyncAction";
 
-/** Names of the sign-in methods for the user. */
-const PROVIDER_NAMES: Record<IdentityProvider, string> = {
-  passkey: "Passkey",
-  microsoft: "Microsoft-Konto",
-  google: "Google-Konto",
-};
+/** Providers in the order of the buttons. */
+const PROVIDERS: OidcProvider[] = ["google", "microsoft"];
 
-/** Accounts that can be linked, with their button labels. */
-const OIDC_LINKS: { provider: OidcProvider; label: string }[] = [
-  { provider: "microsoft", label: "Microsoft verknüpfen" },
-  { provider: "google", label: "Google verknüpfen" },
-];
+/** An identity of Microsoft or Google; passkeys are listed apart. */
+type OidcIdentity = Identity & { provider: OidcProvider };
+
+/** Tells Microsoft and Google identities from passkeys. */
+const isOidc = (identity: Identity): identity is OidcIdentity =>
+  identity.provider != "passkey";
 
 type SyncIdentitiesProps = {
   /** The signed-in account. */
@@ -30,56 +26,66 @@ type SyncIdentitiesProps = {
 };
 
 /**
- * Sign-in methods linked to the account, each with the day it was added, and buttons to add
- * a passkey or link a Microsoft or Google account that is not linked yet.
+ * The sign-in of this device ("Angemeldet als …"), the linked Microsoft and Google accounts
+ * and buttons to link the missing ones.
  */
 export function SyncIdentities({ account }: SyncIdentitiesProps) {
   const { busy, error, run } = useSyncAction();
-  const linked = new Set(account.identities.map(({ provider }) => provider));
+  const { signedInWith } = account;
+  const linked = account.identities.filter(isOidc);
+  const missing = PROVIDERS.filter(
+    (provider) => !linked.some((identity) => identity.provider == provider),
+  );
   return (
-    <>
-      <div
-        className="text-sm"
-        data-help="Wege, mit denen sich ein Gerät bei diesem Konto anmelden kann."
+    <div className="flex flex-col gap-2">
+      <h3 className="text-sm font-semibold">Anmeldung</h3>
+      {signedInWith && (
+        <div
+          className="flex items-center gap-2 text-sm"
+          data-help="Konto, mit dem sich dieses Gerät angemeldet hat. Die E-Mail-Adresse liegt nur auf diesem Gerät, nicht auf dem Server."
+        >
+          <ProviderLogo provider={signedInWith.provider} />
+          <span>
+            Angemeldet als{" "}
+            <span className="font-medium">
+              {signedInWith.email ??
+                `${PROVIDER_LABELS[signedInWith.provider]}-Konto`}
+            </span>
+          </span>
+        </div>
+      )}
+      <ul
+        className="flex flex-col gap-1 text-sm text-muted"
+        data-help="Konten, mit denen sich ein Gerät bei diesem Notenfeder-Konto anmelden kann."
       >
-        <span className="font-medium">Anmeldewege: </span>
-        {account.identities
-          .map(
-            ({ provider, createdAt }) =>
-              `${PROVIDER_NAMES[provider]} (seit ${format(createdAt, "dd.MM.yyyy")})`,
-          )
-          .join(", ")}
-      </div>
-      <SyncErrorAlert error={error} />
-      <div className="flex flex-wrap gap-2">
-        {/* Without an unlocking passkey the offer in SyncAddPasskey has this button */}
-        {account.hasPrfPasskey && (
-          <Button
-            size="small"
-            startIcon={<PlusIcon size={16} />}
-            disabled={busy}
-            onClick={() => run(addPasskey)}
-            data-help="Fügt einen weiteren Passkey hinzu, z. B. für ein anderes Gerät. Er kann auch neue Geräte entsperren."
+        {linked.map(({ provider, createdAt }) => (
+          <li
+            key={`${provider}-${createdAt}`}
+            className="flex items-center gap-2"
           >
-            Passkey hinzufügen
-          </Button>
-        )}
-        {OIDC_LINKS.filter(({ provider }) => !linked.has(provider)).map(
-          ({ provider, label }) => (
-            <Button
+            <ProviderLogo provider={provider} size={14} />
+            {PROVIDER_LABELS[provider]} verknüpft seit{" "}
+            {format(createdAt, "dd.MM.yyyy")}
+          </li>
+        ))}
+      </ul>
+      <SyncErrorAlert error={error} />
+      {missing.length > 0 && (
+        <div
+          className="flex flex-col items-start gap-2"
+          data-help="Verknüpft ein weiteres privates Konto als Anmeldeweg. Die Daten bleiben verschlüsselt."
+        >
+          {missing.map((provider) => (
+            <OidcButton
               key={provider}
-              size="small"
-              startIcon={<PlusIcon size={16} />}
+              provider={provider}
+              label={`${PROVIDER_LABELS[provider]}-Konto verknüpfen`}
               disabled={busy}
               onClick={() => run(() => linkOidcIdentity(provider))}
-              data-help="Verknüpft ein privates Konto als weiteren Anmeldeweg. Die Daten bleiben verschlüsselt."
-              data-help-repeat
-            >
-              {label}
-            </Button>
-          ),
-        )}
-      </div>
-    </>
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

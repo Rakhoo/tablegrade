@@ -18,6 +18,7 @@ import {
 } from "../crypto/recoveryKey";
 import type { Api, KeyWrap, SessionGrant } from "./api";
 import type { DeviceStore } from "./deviceStore";
+import type { SignedInWith } from "./types";
 
 /** What the key functions need. */
 export type KeyringContext = { api: Api; store: DeviceStore };
@@ -65,31 +66,26 @@ async function newWrap(
 }
 
 /**
- * Stores the session of a sign-in and tries to unlock. Returns whether the device still needs
- * the data key. A new account gets a fresh data key here; it is uploaded with the first
- * recovery key and, with PRF, a passkey wrap.
+ * Stores the session of a sign-in and checks for the data key. Returns whether the device
+ * still needs it. A new account gets a fresh data key here; it is uploaded with the first
+ * recovery key.
  */
 export async function completeSignIn(
-  { api, store }: KeyringContext,
+  { store }: KeyringContext,
   grant: SessionGrant,
-  prf: PrfResult | null,
+  signedInWith: SignedInWith | null,
 ): Promise<{ needsUnlock: boolean }> {
   const { sessionToken: token, userId, deviceId } = grant;
-  await store.set("session", { token, userId, deviceId });
+  await store.set("session", {
+    token,
+    userId,
+    deviceId,
+    ...(signedInWith && { signedInWith }),
+  });
   if (await ownDataKey(store, userId)) return { needsUnlock: false };
-  if (grant.isNewUser) {
-    const key = await generateDataKey();
-    await keepDataKey(store, userId, key);
-    if (prf) await addPasskeyWrap({ api, store }, prf);
-    return { needsUnlock: false };
-  }
-  if (!prf) return { needsUnlock: true };
-  try {
-    await unlockWithPrf({ api, store }, prf);
-    return { needsUnlock: false };
-  } catch {
-    return { needsUnlock: true };
-  }
+  if (!grant.isNewUser) return { needsUnlock: true };
+  await keepDataKey(store, userId, await generateDataKey());
+  return { needsUnlock: false };
 }
 
 /** Credential ids of all passkey wraps, for `evaluatePrf`. */

@@ -61,6 +61,7 @@ export function accountInfo(info: SessionInfo, keys: KeyWrap[]): AccountInfo {
     identities: info.identities,
     hasDataKey: keys.length > 0,
     hasPrfPasskey: keys.some((wrap) => wrap.kind == "passkey"),
+    signedInWith: null,
   };
 }
 

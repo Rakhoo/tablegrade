@@ -14,7 +14,6 @@ import type {
   DeviceLinkApproval,
   OidcProvider,
   PendingDeviceLink,
-  SignInResult,
 } from "./types";
 
 export type * from "./types";
@@ -75,24 +74,6 @@ export async function enableSync(): Promise<void> {
 /** Turns sync off. Local data stays; the session on the server ends. */
 export async function disableSync(): Promise<void> {
   return DEMO ? demo.disableSync() : real().disableSync();
-}
-
-/** Creates a new account with a passkey on this device. */
-export async function startPasskeySignup(
-  deviceName: string,
-): Promise<SignInResult> {
-  return DEMO
-    ? demo.startPasskeySignup(deviceName)
-    : real().startPasskeySignup(deviceName);
-}
-
-/** Signs in with an existing passkey (discoverable credential). */
-export async function loginWithPasskey(
-  deviceName: string,
-): Promise<SignInResult> {
-  return DEMO
-    ? demo.loginWithPasskey(deviceName)
-    : real().loginWithPasskey(deviceName);
 }
 
 /**

@@ -1,22 +1,15 @@
 /**
- * Passkey sign-up, sign-in and adding a passkey (plan B4): server challenge, browser dialog,
- * server check, then the data key via `keyring`.
+ * Adding a passkey and unlocking with one (plan B4): server challenge, browser dialog, server
+ * check, then the data key via `keyring`. Signing in is left to Microsoft and Google.
  */
-import type { SignInResult } from "./types";
 import {
   addPasskeyWrap,
-  completeSignIn,
   passkeyWrapIds,
   unlockWithPrf,
   type KeyringContext,
   type PrfResult,
 } from "./keyring";
-import {
-  createPasskey,
-  evaluatePrf,
-  getPasskey,
-  type PasskeyResult,
-} from "./webauthn";
+import { createPasskey, evaluatePrf, type PasskeyResult } from "./webauthn";
 
 /**
  * PRF output of a passkey. Many authenticators report only `enabled` at registration; then a
@@ -30,44 +23,6 @@ async function prfOf(passkey: PasskeyResult): Promise<PrfResult | null> {
   return evaluated.prfOutput
     ? { credentialId, prfOutput: evaluated.prfOutput }
     : null;
-}
-
-/** Creates a new account with a passkey on this device. */
-export async function passkeySignUp(
-  context: KeyringContext,
-  deviceName: string,
-): Promise<SignInResult> {
-  const { challengeId, options } = await context.api.passkeyRegisterBegin();
-  const passkey = await createPasskey(options);
-  const grant = await context.api.passkeyRegisterFinish(
-    challengeId,
-    passkey.json,
-    deviceName,
-  );
-  if (!grant) throw new Error("Die Anmeldung ist fehlgeschlagen.");
-  // The account exists now: a failed PRF dialog must not skip storing session and data key
-  const prf = await prfOf(passkey).catch(() => null);
-  const { needsUnlock } = await completeSignIn(context, grant, prf);
-  return { isNewUser: grant.isNewUser, needsUnlock };
-}
-
-/** Signs in with an existing passkey; its PRF output unlocks the data key if it has a wrap. */
-export async function passkeySignIn(
-  context: KeyringContext,
-  deviceName: string,
-): Promise<SignInResult> {
-  const { challengeId, options } = await context.api.passkeyLoginBegin();
-  const passkey = await getPasskey(options);
-  const grant = await context.api.passkeyLoginFinish(
-    challengeId,
-    passkey.json,
-    deviceName,
-  );
-  const prf = passkey.prfOutput
-    ? { credentialId: passkey.credentialId, prfOutput: passkey.prfOutput }
-    : null;
-  const { needsUnlock } = await completeSignIn(context, grant, prf);
-  return { isNewUser: grant.isNewUser, needsUnlock };
 }
 
 /**

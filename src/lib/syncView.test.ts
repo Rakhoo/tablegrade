@@ -12,6 +12,7 @@ const account = (hasDataKey: boolean): AccountInfo => ({
   deviceId: "d",
   identities: [],
   hasDataKey,
+  signedInWith: null,
   hasPrfPasskey: false,
 });
 

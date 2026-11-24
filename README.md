@@ -151,8 +151,8 @@ Nobody but the user can read the data or reset the recovery key. Details:
     first one. Students sharing a given name get as much of the last name as needed ("Anna M.",
     "Anna Mü."), same names are numbered ("Anna 1", "Anna 2").
 
-- **Konto & Sync** (settings tab, off by default): an account with a passkey, Microsoft or
-  Google keeps several devices in sync, end-to-end encrypted. A recovery key, another device
+- **Konto & Sync** (settings tab, off by default): an account with Microsoft or Google
+  sign-in keeps several devices in sync, end-to-end encrypted. A recovery key, another device
   or a passkey unlocks the data on a new device. A badge next to the speed dial shows the sync
   state; an expired sign-in only shows a notice, the app keeps working offline. Details in
   [Settings](#settings).
@@ -488,9 +488,9 @@ the tab used last:
   ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
 - **Konto & Sync** (plan and protocol in [docs/sync-plan](docs/sync-plan/README.md)): one card
   whose content follows the sync status (`lib/syncView.ts`): off (explanation and
-  "Einrichten"), setup (device name, new account with a passkey, sign-in with a passkey,
-  Microsoft or Google), missing key on a new device, active (state, last sync, "Jetzt
-  synchronisieren", linked sign-in methods) and an expired sign-in (the app keeps working
+  "Einrichten"), setup (device name, branded buttons "Mit Google anmelden" and "Mit
+  Microsoft anmelden", `OidcButton.tsx`; the first sign-in creates the account), missing key on a new device, active (state, last sync, "Jetzt
+  synchronisieren", sign-in and passkeys) and an expired sign-in (the app keeps working
   locally). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
   locked account without a data key on the server is new (`account.hasDataKey`), also after
   a Microsoft or Google sign-up; then the card shows the recovery key once (form that
@@ -502,11 +502,13 @@ the tab used last:
   ways to unlock: passkey (only if the account has one that
   can unlock, `account.hasPrfPasskey`), linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).
-  Without such a passkey the active view offers "Passkey hinzufügen".
   The active view has "Gerät koppeln" to enter that code on a device that already syncs.
   "Geräte anzeigen" lists the devices of the account (last activity), renames them (pencil)
-  and revokes another one after a confirmation. Below the linked sign-in methods the card
-  offers "Passkey hinzufügen" and links a Microsoft or Google account not linked yet. Below: a new
+  and revokes another one after a confirmation. Two separate blocks follow: "Anmeldung"
+  ("Angemeldet als <email>" with the provider logo, from the sign-in of this device and kept
+  only on it; linked Microsoft/Google accounts; buttons to link a missing one) and "Passkeys
+  zum Entsperren" (hint or state, "Passkey hinzufügen"). Passkeys never sign in or create an
+  account; one without PRF is refused with a hint. Below: a new
   recovery key (same steps, the old one stops working), "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
   also delete the school data on this device).
   While sync is on, a badge next to the speed dial (`components/SyncBadge.tsx`, state from

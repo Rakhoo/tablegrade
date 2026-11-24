@@ -1,4 +1,10 @@
-import type { SyncStatus } from "../sync/types";
+import type { OidcProvider, SyncStatus } from "../sync/types";
+
+/** Display names of the sign-in providers. */
+export const PROVIDER_LABELS: Record<OidcProvider, string> = {
+  microsoft: "Microsoft",
+  google: "Google",
+};
 
 /**
  * What the account and sync settings show:

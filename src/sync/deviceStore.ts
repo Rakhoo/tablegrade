@@ -4,6 +4,7 @@
  * SQLite file and never end up in a backup export.
  */
 import type { DataKey } from "../crypto/keys";
+import type { SignedInWith } from "./types";
 
 /** The session of this device (protocol.md section 2). */
 export type StoredSession = {
@@ -13,6 +14,8 @@ export type StoredSession = {
   userId: string;
   /** Server device id (UUID). */
   deviceId: string;
+  /** OIDC account of the sign-in, shown in the settings; stays on the device. */
+  signedInWith?: SignedInWith;
 };
 
 /** The data key together with the account it belongs to. */

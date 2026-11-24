@@ -70,6 +70,8 @@ export type SessionGrant = {
   userId: string;
   deviceId: string;
   isNewUser: boolean;
+  /** Email of an OIDC sign-in, if the provider sent one; for display only. */
+  email?: string;
 };
 
 /** Response of `GET /auth/session`. */
@@ -219,19 +221,6 @@ export function createApi({ baseUrl, getToken, fetch: doFetch }: ApiOptions) {
       deviceName: string,
     ) =>
       call<SessionGrant | undefined>("/auth/passkey/register/finish", {
-        body: { challengeId, credential, deviceName },
-      }),
-    passkeyLoginBegin: () =>
-      call<WebAuthnChallenge<PublicKeyCredentialRequestOptionsJSON>>(
-        "/auth/passkey/login/begin",
-        { body: {} },
-      ),
-    passkeyLoginFinish: (
-      challengeId: string,
-      credential: unknown,
-      deviceName: string,
-    ) =>
-      call<SessionGrant>("/auth/passkey/login/finish", {
         body: { challengeId, credential, deviceName },
       }),
     oidcConfig: (provider: OidcProvider) =>

@@ -91,18 +91,22 @@ Antwort bei erfolgreicher Anmeldung:
   benutzte Challenge gibt `400 bad_request`.
 - Gerät: Jede neue Sitzung ohne bestehende Sitzung legt ein neues Gerät mit `deviceName` an.
 - `GET /auth/oidc/{provider}/config` liefert
-  `{ clientId, authorizeUrl, scopes: ["openid"], redirectUri }`. Der Browser nutzt PKCE
+  `{ clientId, authorizeUrl, scopes: ["openid", "email"], redirectUri }`. Der Browser nutzt PKCE
   (`S256`) und `state`; beides prüft nur der Browser.
 - `{provider}` ist `microsoft` oder `google`. Ein Anbieter ohne Client-ID ist aus: `404 not_found`.
   `redirectUri` gehört zur App-Origin aus dem `Origin`-Header (sonst die erste aus
   `APP_ORIGINS`). `exchange` nimmt nur diese Redirect-URIs an, sonst `bad_request`.
 - `exchange` mit Sitzung verknüpft die Identität mit dem Konto und antwortet `204` (auch, wenn
   sie schon verknüpft ist). Gehört sie zu einem anderen Konto: `conflict`. Ohne Sitzung: Login
-  oder neues Konto, Antwort wie jede Anmeldung. Abgelehnter Code oder ungültiges ID-Token:
+  oder neues Konto, Antwort wie jede Anmeldung, dazu `email` (Claim `email`, fehlt ohne
+  Claim). Das Gerät zeigt sie als „Angemeldet als …“ und speichert sie nur lokal. Abgelehnter Code oder ungültiges ID-Token:
   `401 unauthorized`. `deviceName` gilt wie bei Passkeys nur ohne Sitzung.
 - Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
   `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
-  speichert der Server nicht.
+  speichert und protokolliert der Server nicht.
+- Die App meldet sich nur mit Microsoft oder Google an. Passkeys legt sie nur mit Sitzung an,
+  zum Entsperren. Anmelden per Passkey und neues Konto per Passkey bietet der Server weiter
+  an, die App nutzt es nicht.
 - `GET /auth/session`: `identities` = `[{ provider, createdAt }]` (ohne `subject`), `devices` wie bei
   `GET /devices`. `POST /auth/logout`, `PATCH /devices/{id}` und `POST /devices/{id}/revoke`
   antworten mit `204` ohne Body. Gerätenamen: 1–80 Zeichen, Leerzeichen am Rand werden entfernt.
@@ -333,3 +337,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | 2026-11-23 | A | OIDC: Anbieter-Namen, `404` bei abgeschaltetem Anbieter, Redirect-URI aus dem `Origin`-Header, `204` beim Verknüpfen, `conflict` bei fremder Identität. |
 | 2026-11-23 | A | Fehlercode `internal` (500). Test-Login `POST /auth/dev/login`. Form von `identities` in `GET /auth/session`, `204` bei Logout, Sperren, Umbenennen, Länge der Gerätenamen. |
 | 2026-11-24 | – | OIDC: Redirect-URI ohne Query (`<Origin>/` statt `<Origin>/?oidc=callback`), weil Microsoft keine Query erlaubt. |
+| 2026-11-24 | – | OIDC: Scope `email`, `exchange` gibt `email` zurück (nur zur Anzeige, nicht gespeichert). App ohne Passkey-Login und -Registrierung ohne Sitzung. |

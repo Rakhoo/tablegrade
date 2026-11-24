@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"slices"
 	"testing"
 
 	"github.com/Rakhoo/tablegrade/server/internal/oidc/oidctest"
@@ -22,7 +23,7 @@ func newOIDCEnv(t *testing.T) (*testEnv, *oidctest.Provider) {
 func exchange(e *testEnv, fake *oidctest.Provider, code, subject, token string, out any) int {
 	e.t.Helper()
 	fake.AddCode(code, oidctest.Grant{CodeVerifier: "verifier", RedirectURI: testRedirect,
-		Claims: map[string]any{"sub": subject}})
+		Claims: map[string]any{"sub": subject, "email": subject + "@example.org"}})
 	body, _ := json.Marshal(map[string]string{"code": code, "codeVerifier": "verifier",
 		"redirectUri": testRedirect, "deviceName": "iPad"})
 	return e.do(http.MethodPost, "/api/v1/auth/oidc/google/exchange", token, string(body), out).Code
@@ -40,7 +41,7 @@ func TestOIDCConfig(t *testing.T) {
 		t.Fatalf("config: %d", rec.Code)
 	}
 	if cfg.ClientID != oidctest.ClientID || cfg.AuthorizeURL == "" || cfg.RedirectURI != testRedirect ||
-		len(cfg.Scopes) != 1 || cfg.Scopes[0] != "openid" {
+		!slices.Equal(cfg.Scopes, []string{"openid", "email"}) {
 		t.Errorf("config: %+v", cfg)
 	}
 	// Providers without client id are disabled.
@@ -50,7 +51,7 @@ func TestOIDCConfig(t *testing.T) {
 func TestOIDCSignInAndLink(t *testing.T) {
 	e, fake := newOIDCEnv(t)
 	var first signIn
-	if code := exchange(e, fake, "c1", "alice", "", &first); code != http.StatusOK || !first.IsNewUser {
+	if code := exchange(e, fake, "c1", "alice", "", &first); code != http.StatusOK || !first.IsNewUser || first.Email != "alice@example.org" {
 		t.Fatalf("new account: %d %+v", code, first)
 	}
 	var again signIn

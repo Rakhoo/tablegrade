@@ -83,6 +83,8 @@ type signIn struct {
 	UserID       string `json:"userId"`
 	DeviceID     string `json:"deviceId"`
 	IsNewUser    bool   `json:"isNewUser"`
+	// Email of an OIDC sign-in, for display on the device only (not stored).
+	Email string `json:"email,omitempty"`
 }
 
 // startDeviceSession creates a device and its session for a sign-in without session.

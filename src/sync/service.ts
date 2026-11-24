@@ -24,12 +24,7 @@ import {
   parseOidcCallback,
   withoutOidcQuery,
 } from "./oidc";
-import {
-  addPasskey,
-  passkeySignIn,
-  passkeySignUp,
-  unlockWithPasskey,
-} from "./passkeyFlow";
+import { addPasskey, unlockWithPasskey } from "./passkeyFlow";
 import {
   checkSession,
   sessionStatus,
@@ -44,7 +39,6 @@ import type {
   DeviceLinkApproval,
   OidcProvider,
   PendingDeviceLink,
-  SignInResult,
 } from "./types";
 
 /** Interval of the outbox check that sends local changes. */
@@ -135,7 +129,10 @@ export function createSyncService(deps: ServiceDeps) {
       return;
     }
     check ??= await checkSession(api);
-    updateStatus(sessionStatus(check));
+    const change = sessionStatus(check);
+    if (change.account)
+      change.account.signedInWith = session.signedInWith ?? null;
+    updateStatus(change);
     if (check.state == "revoked" || check.state == "signedOut")
       return dropSession();
     if (check.state == "upgradeRequired") return engine.stop();
@@ -162,25 +159,23 @@ export function createSyncService(deps: ServiceDeps) {
     return activateSync({ db, store, api }, session.userId, keys, replace);
   }
 
-  /** Refreshes after a sign-in, so activation and engine follow. */
-  async function afterSignIn(result: SignInResult): Promise<SignInResult> {
-    await refresh();
-    return result;
-  }
-
   /** Finishes an OIDC login or identity link when the provider redirects back. */
   async function handleOidcReturn() {
     const href = deps.currentUrl();
     const callback = parseOidcCallback(href);
     if (!callback) return;
     try {
-      const { grant, returnTo } = await finishOidcLogin(
+      const { grant, provider, returnTo } = await finishOidcLogin(
         api,
         callback,
         deps.storage,
       );
       deps.replaceUrl(withoutOidcQuery(href, returnTo));
-      if (grant) await completeSignIn(keyring, grant, null);
+      if (grant)
+        await completeSignIn(keyring, grant, {
+          provider,
+          email: grant.email ?? null,
+        });
     } catch (error) {
       deps.replaceUrl(withoutOidcQuery(href));
       updateStatus({ error: (error as Error).message });
@@ -249,16 +244,16 @@ export function createSyncService(deps: ServiceDeps) {
       for (const key of OFF_KEYS) await store.delete(key);
       updateStatus(OFF_STATUS);
     },
-    startPasskeySignup: async (deviceName: string) =>
-      afterSignIn(await passkeySignUp(keyring, deviceName)),
-    loginWithPasskey: async (deviceName: string) =>
-      afterSignIn(await passkeySignIn(keyring, deviceName)),
     startOidcLogin: redirectToProvider,
     linkOidcIdentity: (provider: OidcProvider) =>
       redirectToProvider(provider, ""),
     async addPasskey() {
-      await addPasskey(keyring);
+      const canUnlock = await addPasskey(keyring);
       await refresh();
+      if (!canUnlock)
+        throw new Error(
+          "Dieser Passkey kann die Daten nicht entsperren. Bitte einen anderen Speicherort wählen, z. B. iCloud-Schlüsselbund oder Google Passwortmanager.",
+        );
     },
     async unlockWithPasskey() {
       await unlockWithPasskey(keyring);

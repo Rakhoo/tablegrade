@@ -133,8 +133,8 @@ export async function createPasskey(
   }
 }
 
-/** Uses a passkey (login or local PRF evaluation). */
-export async function getPasskey(
+/** Uses a passkey for the local PRF evaluation. */
+async function getPasskey(
   options: PublicKeyCredentialRequestOptionsJSON,
 ): Promise<PasskeyResult> {
   try {

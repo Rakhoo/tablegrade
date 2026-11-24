@@ -5,7 +5,6 @@ import type {
   DeviceLinkApproval,
   OidcProvider,
   PendingDeviceLink,
-  SignInResult,
 } from "./types";
 
 /** Simulated network delay, so loading states show up in the UI. */
@@ -39,11 +38,13 @@ function wait() {
   return new Promise<void>((resolve) => setTimeout(resolve, DELAY_MS));
 }
 
-/** Marks the device as signed in to the sample account under the given device name. */
-async function signIn(
-  isNewUser: boolean,
-  deviceName: string,
-): Promise<SignInResult> {
+/**
+ * Marks the device as signed in to the sample account under the given device name. Microsoft
+ * stands for a new account (key setup), Google for an existing one (unlock), so the demo shows
+ * both flows.
+ */
+async function signIn(provider: OidcProvider, deviceName: string) {
+  const isNewUser = provider == "microsoft";
   await wait();
   devices = devices.map((d) => (d.current ? { ...d, name: deviceName } : d));
   updateStatus({
@@ -51,12 +52,12 @@ async function signIn(
     account: {
       userId: "a0000000-0000-4000-8000-000000000001",
       deviceId: devices[0].id,
-      identities: [{ provider: "passkey", createdAt: now - 30 * 86_400_000 }],
+      identities: [{ provider, createdAt: now - 30 * 86_400_000 }],
       hasDataKey: !isNewUser,
       hasPrfPasskey: !isNewUser,
+      signedInWith: { provider, email: "lehrerin@example.org" },
     },
   });
-  return { isNewUser, needsUnlock: !isNewUser };
 }
 
 /** Changes the signed-in account, if any. */
@@ -95,11 +96,9 @@ export const demo = {
     await wait();
     updateStatus(OFF_STATUS);
   },
-  startPasskeySignup: (deviceName: string) => signIn(true, deviceName),
-  loginWithPasskey: (deviceName: string) => signIn(false, deviceName),
   startOidcLogin: async (provider: OidcProvider, deviceName: string) => {
     console.info(`Demo: OIDC login with ${provider}`);
-    await signIn(false, deviceName);
+    await signIn(provider, deviceName);
   },
   unlockWithPasskey: unlock,
   unlockWithRecoveryKey: async (text: string) => {
