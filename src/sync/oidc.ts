@@ -4,6 +4,7 @@
  * `state` in the query; the hash route stays.
  */
 import { toBase64url } from "../crypto/encoding";
+import { isOidcReturn } from "../lib/oidcReturn";
 import { randomBytes, sha256 } from "../crypto/primitives";
 import type { Api, SessionGrant } from "./api";
 import type { OidcProvider } from "./types";
@@ -74,11 +75,9 @@ export async function beginOidcLogin(
 
 /** Reads the provider's answer from a URL; `null` if it is no OIDC return. */
 export function parseOidcCallback(href: string): OidcCallback | null {
+  // `finishOidcLogin` then checks `state` against the pending login
+  if (!isOidcReturn(href)) return null;
   const params = new URL(href).searchParams;
-  // The redirect URI carries no marker (Microsoft forbids a query), so `state` plus a result
-  // identifies the return; `finishOidcLogin` then checks `state` against the pending login.
-  if (!params.has("state") || !(params.has("code") || params.has("error")))
-    return null;
   return {
     code: params.get("code"),
     state: params.get("state"),

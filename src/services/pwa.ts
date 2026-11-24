@@ -1,3 +1,5 @@
+import { isOidcReturn } from "../lib/oidcReturn";
+
 /** The browser's deferred install prompt (Chromium only), captured as early as possible. */
 type InstallPromptEvent = Event & { prompt: () => Promise<void> };
 
@@ -25,13 +27,14 @@ export const isLocalRun = () =>
 /**
  * Lets a freshly launched app always start on the clean timetable. iPadOS may keep
  * the URL from the moment the app was added to the home screen instead of the manifest's
- * `start_url`. Reloads (update banner, "Neu laden") keep the current page.
+ * `start_url`. Reloads (update banner, "Neu laden") keep the current page, and so does the
+ * return from a Microsoft or Google sign-in, whose query the sync still has to read.
  */
 export function resetLaunchUrl() {
   const [navigation] = performance.getEntriesByType(
     "navigation",
   ) as PerformanceNavigationTiming[];
-  if (navigation?.type != "reload") {
+  if (navigation?.type != "reload" && !isOidcReturn(location.href)) {
     history.replaceState(null, "", "/#/timetable");
   }
 }
