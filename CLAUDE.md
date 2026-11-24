@@ -9,10 +9,16 @@
   Account-E-Mail gehört ihr – nicht verwenden.
 - Mit mir **Deutsch** sprechen. Code und Kommentare **Englisch**, JSDoc an exportierten
   Funktionen/Komponenten, nicht überladen. Alle UI-Texte **Deutsch**.
-- **Ich committe selbst.** Nicht committen. Commit-Messages **nur auf Nachfrage** liefern, nicht
-  ungefragt im Bericht – dann einzeilig, englisch, auf Basis der gestagten Änderungen
-  (`git diff --staged`). Ist nichts oder nicht alles gestagt, vorher fragen, ob gestagt werden
-  soll – als Auswahl mit Buttons (AskUserQuestion), nicht als Text-Frage.
+- **Commits:** Nie ungefragt committen. Erst wenn ich „committen“ oder Ähnliches sage:
+  committen **und** pushen (beides zusammen), Message einzeilig, englisch.
+  - **Auf `main`** behalte ich die Oberhand: Dort committe und pushe ich selbst. Auf Nachfrage
+    nur die Commit-Message liefern, auf Basis der gestagten Änderungen (`git diff --staged`).
+    Ist nichts oder nicht alles gestagt, vorher fragen, ob gestagt werden soll – als Auswahl
+    mit Buttons (AskUserQuestion), nicht als Text-Frage.
+  - Löst ein Push einen Workflow aus, obwohl der Commit nichts für ihn Relevantes ändert, die
+    Message mit `[skip deploy]` (Deploy, Server-Image; nur auf `main`) bzw. `[skip ci]`
+    (alle Workflows, z. B. CI bei reinen Doku-Änderungen auf `sync/**`) versehen.
+  - Keine Commit-Message ungefragt im Bericht.
 - Prüfen mit `npx tsc -b --noEmit`, `npm run lint`, `npm run build`. **Keine Browser-Tests**,
   außer ich melde ein konkretes Problem oder eine Änderung erfordert es ausdrücklich. Ehrlich
   sagen, was geprüft wurde und was nicht. Nach Code-Änderungen vor dem Bericht den

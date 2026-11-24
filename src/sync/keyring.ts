@@ -166,6 +166,21 @@ export async function unlockedKey(store: DeviceStore) {
 }
 
 /**
+ * The data key for a new recovery wrap. An account without any wrap has no data on the server
+ * (sync starts only with a recovery wrap), so a sign-up that broke off before storing its key
+ * gets a fresh one instead of staying stuck.
+ */
+async function keyForRecovery(store: DeviceStore, wraps: KeyWrap[]) {
+  const userId = await sessionUser(store);
+  const key = await ownDataKey(store, userId);
+  if (key) return { userId, key };
+  if (wraps.length) return unlockedKey(store);
+  const fresh = await generateDataKey();
+  await keepDataKey(store, userId, fresh);
+  return { userId, key: fresh };
+}
+
+/**
  * Creates a new recovery key, uploads its wrap and then deletes older recovery wraps (the
  * server keeps at least one). Returns the text to show once.
  */
@@ -173,10 +188,11 @@ export async function replaceRecoveryKey({
   api,
   store,
 }: KeyringContext): Promise<string> {
-  const { userId, key } = await unlockedKey(store);
+  const wraps = await api.listKeys();
+  const { userId, key } = await keyForRecovery(store, wraps);
   const bytes = generateRecoveryBytes();
   const wrap = await newWrap(key, await recoveryKek(bytes), "recovery", userId);
-  const old = (await api.listKeys()).filter((item) => item.kind == "recovery");
+  const old = wraps.filter((item) => item.kind == "recovery");
   await api.putKey(wrap);
   for (const item of old) await api.deleteKey(item.id);
   return formatRecoveryKey(bytes);

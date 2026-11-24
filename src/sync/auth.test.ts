@@ -87,6 +87,21 @@ describe("keyring", () => {
     expect(await third.get("dataKey")).toBeDefined();
   });
 
+  it("creates a key for a sign-up that broke off before storing it", async () => {
+    const { api } = fakeApi();
+    const store = createMemoryStore();
+    await store.set("session", { token: "t", userId: "u", deviceId: "d" });
+    await replaceRecoveryKey({ api, store });
+    expect((await store.get("dataKey"))?.userId).toBe("u");
+
+    // With a wrap on the server the key exists elsewhere: no second key
+    const other = createMemoryStore();
+    await other.set("session", { token: "t", userId: "u", deviceId: "x" });
+    await expect(replaceRecoveryKey({ api, store: other })).rejects.toThrow(
+      "gesperrt",
+    );
+  });
+
   it("rejects typos before the server and wrong keys with a message", async () => {
     const { api } = fakeApi();
     const store = createMemoryStore();

@@ -45,7 +45,8 @@ export async function passkeySignUp(
     deviceName,
   );
   if (!grant) throw new Error("Die Anmeldung ist fehlgeschlagen.");
-  const prf = await prfOf(passkey);
+  // The account exists now: a failed PRF dialog must not skip storing session and data key
+  const prf = await prfOf(passkey).catch(() => null);
   const { needsUnlock } = await completeSignIn(context, grant, prf);
   return { isNewUser: grant.isNewUser, needsUnlock };
 }
