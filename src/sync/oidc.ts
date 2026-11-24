@@ -50,8 +50,8 @@ export async function authorizeUrl(
 }
 
 /**
- * Starts the login: stores PKCE and `state`, then returns the URL to navigate to. With a
- * session token the server links the identity to the signed-in account instead.
+ * Starts the login: stores PKCE and `state`, then returns the URL to navigate to. An account
+ * has exactly one sign-in method, so this only runs while signed out.
  */
 export async function beginOidcLogin(
   api: Api,
@@ -87,7 +87,7 @@ export function parseOidcCallback(href: string): OidcCallback | null {
 
 /**
  * Finishes the login after the redirect: checks `state`, sends the code to the server and
- * removes the pending state. Returns the session (none after linking an identity) and where to
+ * removes the pending state. Returns the session and where to
  * go back to.
  * @throws {Error} With a German message if the login failed or was cancelled.
  */

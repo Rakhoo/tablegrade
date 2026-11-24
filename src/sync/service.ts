@@ -248,8 +248,6 @@ export function createSyncService(deps: ServiceDeps) {
       updateStatus(OFF_STATUS);
     },
     startOidcLogin: redirectToProvider,
-    linkOidcIdentity: (provider: OidcProvider) =>
-      redirectToProvider(provider, ""),
     async addPasskey() {
       const canUnlock = await addPasskey(keyring);
       await refresh();

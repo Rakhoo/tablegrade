@@ -98,11 +98,11 @@ Antwort bei erfolgreicher Anmeldung:
 - `{provider}` ist `microsoft` oder `google`. Ein Anbieter ohne Client-ID ist aus: `404 not_found`.
   `redirectUri` gehört zur App-Origin aus dem `Origin`-Header (sonst die erste aus
   `APP_ORIGINS`). `exchange` nimmt nur diese Redirect-URIs an, sonst `bad_request`.
-- `exchange` mit Sitzung verknüpft die Identität mit dem Konto und antwortet `204` (auch, wenn
-  sie schon verknüpft ist). Gehört sie zu einem anderen Konto: `conflict`. Ohne Sitzung: Login
+- Ein Konto hat genau einen Anmeldeweg (Microsoft oder Google). `exchange` mit Sitzung
+  antwortet darum `409 conflict`; zum Wechseln abmelden. Ohne Sitzung: Login
   oder neues Konto, Antwort wie jede Anmeldung, dazu `email` (Claim `email`, fehlt ohne
   Claim). Das Gerät zeigt sie als „Angemeldet als …“ und speichert sie nur lokal. Abgelehnter Code oder ungültiges ID-Token:
-  `401 unauthorized`. `deviceName` gilt wie bei Passkeys nur ohne Sitzung.
+  `401 unauthorized`.
 - Identität: `subject` ist bei OIDC der Claim `sub` (Google) bzw. `sub` mit Mandant
   `consumers` (Microsoft), bei Passkeys die `credentialId` (Base64url). E-Mail oder Name
   speichert und protokolliert der Server nicht.
@@ -354,3 +354,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | 2026-11-24 | – | OIDC: Scope `email`, `exchange` gibt `email` zurück (nur zur Anzeige, nicht gespeichert). App ohne Passkey-Login und -Registrierung ohne Sitzung. |
 | 2026-11-24 | – | Freischaltung (`approved`, `403 not_approved`), Kontakt-Adresse und Begründung (`PUT /account/contact`, Felder in `GET /auth/session`). |
 | 2026-11-24 | – | Kopplung: `POST /link/{linkId}/key` und Status `keyed`, damit beide Geräte den Prüfcode vor der Bestätigung zeigen. |
+| 2026-11-24 | – | Genau ein Anmeldeweg pro Konto: `exchange` mit Sitzung gibt `409 conflict` (kein Verknüpfen mehr). |

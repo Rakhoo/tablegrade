@@ -100,6 +100,7 @@ export function SyncDevices() {
       <div>
         <Button
           variant="outlined"
+          size="small"
           disabled={busy}
           onClick={load}
           data-help="Zeigt alle Geräte des Kontos. Ein verlorenes Gerät lässt sich dort sperren."

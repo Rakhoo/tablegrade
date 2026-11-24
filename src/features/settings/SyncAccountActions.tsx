@@ -5,7 +5,6 @@ import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { deleteSchoolData } from "../../db";
 import { deleteAccount, disableSync, logout } from "../../sync";
 import { SyncErrorAlert } from "./SyncErrorAlert";
-import { SyncRecoveryKey } from "./SyncRecoveryKey";
 import { useSyncAction } from "./useSyncAction";
 
 /** Word to type before the account is deleted, so it does not happen by a slip. */
@@ -15,11 +14,10 @@ const DELETE_WORD = "LÖSCHEN";
 type Confirmable = "disable" | "logout" | "delete";
 
 /**
- * Account management of an active sync: a new recovery key, turning sync off, signing out and
- * deleting the account.
+ * Ending the sync on this device or for the account: signing out, turning sync off and
+ * deleting the account, each behind a confirmation.
  */
 export function SyncAccountActions() {
-  const [newKey, setNewKey] = useState(false);
   const [confirming, setConfirming] = useState<Confirmable | null>(null);
   const [typedWord, setTypedWord] = useState("");
   const [deleteLocal, setDeleteLocal] = useState(false);
@@ -42,27 +40,12 @@ export function SyncAccountActions() {
       await revalidate();
     });
 
-  if (newKey)
-    return (
-      <SyncRecoveryKey
-        intro="Der bisherige Wiederherstellungsschlüssel wird dabei ungültig."
-        onDone={() => setNewKey(false)}
-        onCancel={() => setNewKey(false)}
-      />
-    );
   return (
     <>
       <SyncErrorAlert error={error} />
       <div className="flex flex-wrap gap-2">
         <Button
-          variant="outlined"
-          disabled={busy}
-          onClick={() => setNewKey(true)}
-          data-help="Ersetzt den Wiederherstellungsschlüssel, z. B. wenn der alte verloren ist. Der alte wird ungültig."
-        >
-          Neuer Wiederherstellungsschlüssel
-        </Button>
-        <Button
+          size="small"
           disabled={busy}
           onClick={() => setConfirming("logout")}
           data-help="Meldet dieses Gerät ab. Die Daten bleiben auf dem Gerät; zum Abgleich neu anmelden."
@@ -70,6 +53,7 @@ export function SyncAccountActions() {
           Abmelden
         </Button>
         <Button
+          size="small"
           disabled={busy}
           onClick={() => setConfirming("disable")}
           data-help="Schaltet die Synchronisierung auf diesem Gerät aus. Die Daten bleiben auf dem Gerät."
@@ -77,6 +61,7 @@ export function SyncAccountActions() {
           Synchronisierung ausschalten
         </Button>
         <Button
+          size="small"
           color="error"
           disabled={busy}
           onClick={() => setConfirming("delete")}

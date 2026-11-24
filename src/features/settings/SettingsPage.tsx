@@ -30,13 +30,13 @@ import { worstTone } from "../../lib/attention";
 
 /** The tabs of the settings, each with the cards of related topics. */
 const TABS = [
+  { key: "sync", label: "Konto & Sync" },
   { key: "school", label: "Schule" },
   { key: "lessons", label: "Unterricht" },
   { key: "grading", label: "Benotung" },
   { key: "students", label: "Schüler" },
   { key: "display", label: "Darstellung" },
   { key: "data", label: "Daten und Export" },
-  { key: "sync", label: "Konto & Sync" },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -85,7 +85,7 @@ export function SettingsPage() {
   // Opens on the first tab with an open point; fixed at opening, so the tab does not jump
   // when a point gets done meanwhile
   const [openingTab] = useState(
-    () => attention[0]?.tab ?? getStoredTab() ?? "school",
+    () => attention[0]?.tab ?? getStoredTab() ?? TABS[0].key,
   );
   const tab: TabKey = findTab(searchParams.get("tab")) ?? openingTab;
 

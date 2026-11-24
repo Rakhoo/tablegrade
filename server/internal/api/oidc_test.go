@@ -48,7 +48,7 @@ func TestOIDCConfig(t *testing.T) {
 	wantError(t, e.do(http.MethodGet, "/api/v1/auth/oidc/microsoft/config", "", "", nil), http.StatusNotFound, "not_found")
 }
 
-func TestOIDCSignInAndLink(t *testing.T) {
+func TestOIDCSignIn(t *testing.T) {
 	e, fake := newOIDCEnv(t)
 	var first signIn
 	if code := exchange(e, fake, "c1", "alice", "", &first); code != http.StatusOK || !first.IsNewUser || first.Email != "alice@example.org" {
@@ -60,30 +60,17 @@ func TestOIDCSignInAndLink(t *testing.T) {
 		t.Fatalf("login: %d %+v", code, again)
 	}
 
-	// Link a second Google account to the first account; linking it twice is fine.
-	if code := exchange(e, fake, "c3", "alice-2", first.SessionToken, nil); code != http.StatusNoContent {
-		t.Fatalf("link: %d", code)
-	}
-	if code := exchange(e, fake, "c4", "alice-2", first.SessionToken, nil); code != http.StatusNoContent {
-		t.Fatalf("link again: %d", code)
-	}
-	var linked signIn
-	if exchange(e, fake, "c5", "alice-2", "", &linked); linked.UserID != first.UserID {
-		t.Errorf("linked identity signs in to %q, want %q", linked.UserID, first.UserID)
+	// An account has exactly one sign-in method, so a second one cannot be linked.
+	var res apiError
+	if code := exchange(e, fake, "c3", "alice-2", first.SessionToken, &res); code != http.StatusConflict || res.Code != "conflict" {
+		t.Errorf("link: %d %+v", code, res)
 	}
 	var sess struct {
 		Identities []identityJSON `json:"identities"`
 	}
 	e.do(http.MethodGet, "/api/v1/auth/session", first.SessionToken, "", &sess)
-	if len(sess.Identities) != 2 || sess.Identities[0].Provider != "google" {
+	if len(sess.Identities) != 1 || sess.Identities[0].Provider != "google" {
 		t.Errorf("identities: %+v", sess.Identities)
-	}
-
-	// An identity of another account cannot be linked.
-	other := e.login("", "PC")
-	var res apiError
-	if code := exchange(e, fake, "c6", "alice", other.SessionToken, &res); code != http.StatusConflict || res.Code != "conflict" {
-		t.Errorf("foreign identity: %d %+v", code, res)
 	}
 }
 

@@ -50,6 +50,14 @@ export function getAttention({
   now,
 }: AttentionInput): Attention[] {
   const items: Attention[] = [];
+  const badge = getSyncBadge(sync);
+  if (
+    badge &&
+    badge.tone != "ok" &&
+    badge.tone != "busy" &&
+    sync.phase != "offline"
+  )
+    items.push({ tab: "sync", tone: badge.tone, label: badge.label });
   if (schoolYearCount == 0)
     items.push({
       tab: "school",
@@ -62,14 +70,6 @@ export function getAttention({
       tone: "warning",
       label: lastBackup ? "Sicherung fällig" : "Noch keine Sicherung",
     });
-  const badge = getSyncBadge(sync);
-  if (
-    badge &&
-    badge.tone != "ok" &&
-    badge.tone != "busy" &&
-    sync.phase != "offline"
-  )
-    items.push({ tab: "sync", tone: badge.tone, label: badge.label });
   return items;
 }
 

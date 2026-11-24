@@ -98,7 +98,6 @@ export function SyncContact({ account }: SyncContactProps) {
   const [editing, setEditing] = useState(false);
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold">Kontakt</h3>
       {editing ? (
         <SyncContactForm
           account={account}
@@ -113,7 +112,7 @@ export function SyncContact({ account }: SyncContactProps) {
           data-help={CONTACT_PURPOSE}
         >
           <span>
-            E-Mail:{" "}
+            Kontakt-E-Mail:{" "}
             <span className="font-medium">
               {account.contactEmail ?? "keine angegeben"}
             </span>

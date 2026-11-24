@@ -80,8 +80,8 @@ func (s *Server) handleOIDCConfig(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleOIDCExchange redeems the code. With session it links the identity to the account and
-// answers 204; without session it signs in or creates an account.
+// handleOIDCExchange redeems the code and signs in, or creates the account on the first sign-in.
+// With a session it refuses: an account has exactly one sign-in method.
 func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 	provider, p, err := s.provider(r)
 	if err != nil {
@@ -91,6 +91,10 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 	sess, err := s.optionalSession(r)
 	if err != nil {
 		writeError(w, err)
+		return
+	}
+	if sess != nil {
+		writeError(w, errOneSignIn)
 		return
 	}
 	var body struct {
@@ -107,12 +111,10 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		writeError(w, errBadRequest)
 		return
 	}
-	name := ""
-	if sess == nil {
-		if name, err = cleanDeviceName(body.DeviceName); err != nil {
-			writeError(w, err)
-			return
-		}
+	name, err := cleanDeviceName(body.DeviceName)
+	if err != nil {
+		writeError(w, err)
+		return
 	}
 	id, err := p.Exchange(r.Context(), body.Code, body.CodeVerifier, body.RedirectURI)
 	if errors.Is(err, oidc.ErrRejected) {
@@ -124,36 +126,12 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 		writeError(w, err)
 		return
 	}
-	if sess != nil {
-		s.linkIdentity(w, r, sess.UserID, provider, id.Subject)
-		return
-	}
 	s.signInWithIdentity(w, r, provider, id, name)
 }
 
-// errIdentityTaken means the provider account already signs in to another account.
-var errIdentityTaken = newError(http.StatusConflict, "conflict",
-	"Dieses Konto ist schon mit einem anderen Notenfeder-Konto verbunden.")
-
-// linkIdentity adds the identity to the session's account. Linking it again is a no-op.
-func (s *Server) linkIdentity(w http.ResponseWriter, r *http.Request, userID, provider, subject string) {
-	found, err := s.store.FindIdentity(r.Context(), provider, subject)
-	switch {
-	case err == nil && found.UserID != userID:
-		writeError(w, errIdentityTaken)
-		return
-	case errors.Is(err, store.ErrNotFound):
-		err = s.store.AddIdentity(r.Context(), store.Identity{UserID: userID, Provider: provider, Subject: subject})
-		if errors.Is(err, store.ErrConflict) {
-			err = errIdentityTaken
-		}
-	}
-	if err != nil {
-		writeError(w, err)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
+// errOneSignIn refuses a second sign-in method: an account has exactly one (protocol.md 2).
+var errOneSignIn = newError(http.StatusConflict, "conflict",
+	"Ein Konto hat genau einen Anmeldeweg. Zum Wechseln erst abmelden.")
 
 // signInWithIdentity starts a device session for the identity's account, or creates the
 // account if the identity is new.

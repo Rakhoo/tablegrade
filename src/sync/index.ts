@@ -99,16 +99,6 @@ export async function startOidcLogin(
     : real().startOidcLogin(provider, deviceName);
 }
 
-/**
- * Links a Microsoft or Google account to the signed-in account. Navigates away like
- * `startOidcLogin`; the return links the identity instead of signing in.
- */
-export async function linkOidcIdentity(provider: OidcProvider): Promise<void> {
-  return DEMO
-    ? demo.linkOidcIdentity(provider)
-    : real().linkOidcIdentity(provider);
-}
-
 /** Adds a passkey on this device and wraps the data key for it when it supports PRF. */
 export async function addPasskey(): Promise<void> {
   return DEMO ? demo.addPasskey() : real().addPasskey();

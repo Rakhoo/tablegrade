@@ -458,7 +458,8 @@ also the way to move data to another device. With sync on, the import turns sync
 `/settings`: one card per topic, in tabs of related topics below the header, so only one
 tab's cards are shown at a time; the tab is kept in the URL (`?tab=`), so a reload or a way
 back stays on it, and on the device (local storage), so opening the settings again returns to
-the tab used last:
+the tab used last (or the first tab with an open point). "Konto & Sync" is the first tab and
+the default:
 
 - **Schule**: federal state and school years; levels, letters and lessons per day; the
   lesson times (a switch whether the timetable shows them, on by default; while on, the start of
@@ -507,29 +508,32 @@ the tab used last:
   green state. A new account first waits for approval (`SyncPending.tsx`, view `pending`, badge
   "Freischaltung offen"): it sends the contact email (suggested from the sign-in) and a reason,
   then shows "Anfrage gesendet" with "Status prüfen" and "Anfrage ändern"; the server refuses
-  data until approval (`not_approved`). The active view shows and edits the contact email
-  ("Kontakt", `SyncContact.tsx`). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
+  data until approval (`not_approved`). A server that needs a newer app pauses sync ("Update nötig", "Neu laden"). A
   locked account without a data key on the server is new (`account.hasDataKey`), also after
   a Microsoft or Google sign-up; then the card shows the recovery key once (form that
   password managers offer to save, "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
   two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. The first upload or
-  download shows a progress bar in the active view. A signed-in device
+  download shows a progress bar in the active view (records, then photos; photos load four
+  at a time). A signed-in device
   without the key offers up to three ways to unlock: passkey (only if the account has one that
   can unlock, `account.hasPrfPasskey`), linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).
   After unlocking, school data already on the device needs consent before the account's data
   replaces it ("Daten ersetzen" or "Abbrechen"; merging is not possible).
-  The active view has "Gerät koppeln" to enter that code on a device that already syncs.
-  "Geräte anzeigen" lists the devices of the account (last activity), renames them (pencil)
-  and revokes another one after a confirmation. Two separate blocks follow: "Anmeldung"
-  ("Angemeldet als <email>" with the provider logo, from the sign-in of this device and kept
-  only on it; linked Microsoft/Google accounts; buttons to link a missing one) and "Passkeys
-  zum Entsperren" (hint or state, "Passkey hinzufügen"). Passkeys never sign in or create an
-  account; one without PRF is refused with a hint. If the authenticator already holds a
-  passkey of the account, "Passkey hinzufügen" lets the user pick it and sets it up for
-  unlocking instead. Below: a new
-  recovery key (same steps, the old one stops working), "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
-  also delete the school data on this device).
+  The active view (`SyncActive.tsx`) starts with the state (colored dot, last sync, open
+  changes, "Jetzt synchronisieren", progress) and then titled blocks (`SyncBlock.tsx`):
+  "Konto" ("Angemeldet mit Google als <email>", `SyncSignedIn.tsx`; the email comes from the
+  sign-in of this device and stays on it; contact email with "Ändern", `SyncContact.tsx`),
+  "Geräte" ("Geräte anzeigen" lists the devices with their last activity, renames them
+  (pencil) and revokes another one after a confirmation; "Gerät koppeln" enters the code of a
+  new device), "Entsperren & Wiederherstellung" (passkey hint or state with "Passkey
+  hinzufügen", `SyncPasskeys.tsx`; "Neuer Wiederherstellungsschlüssel", same steps, the old
+  one stops working) and "Abmelden & Löschen" ("Abmelden", "Synchronisierung ausschalten",
+  "Konto löschen": type „LÖSCHEN“, optionally also delete the school data on this device).
+  An account has exactly one sign-in method; there is no linking of a second one. Passkeys
+  never sign in or create an account; one without PRF is refused with a hint. If the
+  authenticator already holds a passkey of the account, "Passkey hinzufügen" lets the user
+  pick it and sets it up for unlocking instead.
   The sync state (`getSyncBadge` in `lib/syncView.ts`) feeds the hints on open points (see
   above); an expired sign-in or a needed update also shows a closable
   notice on every other page (`components/SyncNoticeBanner.tsx`). There is no lock screen.

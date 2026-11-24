@@ -14,10 +14,14 @@ import { openSocket, type SocketLike, type SocketMessage } from "./socket";
 import type { SqlRunner } from "./syncDb";
 import { writeSyncState } from "./syncState";
 import { isSyncedKey, recordChange, SYNCED_TABLES } from "./tables";
-import type { SyncStatus } from "./types";
+import type { ProgressUnit, SyncStatus } from "./types";
 
 /** Progress callback: records done and in total. */
-export type ProgressHandler = (done: number, total: number) => void;
+export type ProgressHandler = (
+  done: number,
+  total: number,
+  unit?: ProgressUnit,
+) => void;
 
 /** Result of one sync run. */
 export type SyncRun = {
@@ -136,8 +140,8 @@ export function createSyncEngine(options: EngineOptions) {
       deviceId = ctx.deviceId;
       options.onStatus({ phase: "syncing", error: null });
       try {
-        const run = await runSync(ctx, (done, total) =>
-          options.onStatus({ progress: { done, total } }),
+        const run = await runSync(ctx, (done, total, unit = "records") =>
+          options.onStatus({ progress: { done, total, unit } }),
         );
         options.onStatus({
           phase: run.deferred ? "upgradeRequired" : "idle",

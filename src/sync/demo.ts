@@ -73,7 +73,10 @@ function updateAccount(change: Partial<AccountInfo>) {
 /** Counts `progress` up to `total` in steps, like a first upload or download. */
 async function runProgress(total: number) {
   for (let done = 0; done < total; done += 25) {
-    updateStatus({ phase: "syncing", progress: { done, total } });
+    updateStatus({
+      phase: "syncing",
+      progress: { done, total, unit: "records" },
+    });
     await wait();
   }
   updateStatus({ phase: "idle", progress: null, lastSyncAt: Date.now() });
@@ -119,14 +122,6 @@ export const demo = {
   addPasskey: async () => {
     await wait();
     updateAccount({ hasPrfPasskey: true });
-  },
-  linkOidcIdentity: async (provider: OidcProvider) => {
-    await wait();
-    const { account } = readStatus();
-    if (!account) throw new Error("Nicht angemeldet");
-    updateAccount({
-      identities: [...account.identities, { provider, createdAt: Date.now() }],
-    });
   },
   replaceLocalData: () => runProgress(100),
   startDeviceLink: async (): Promise<PendingDeviceLink> => {

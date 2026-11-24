@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateDataKey } from "../crypto/keys";
 import { encryptRecord, recordId } from "../crypto/records";
 import { SCHEMA_VERSION } from "../db/migrations";
@@ -55,7 +55,10 @@ describe("push and pull between two devices", () => {
     a.raw.exec("UPDATE Students SET nickname = 'Anni'");
     await a.sync();
     expect(server.blobUploads()).toBe(1);
-    await b.sync();
+    // The photo download counts as a progress of its own after the records
+    const progress = vi.fn();
+    await pullChanges(b.ctx, progress);
+    expect(progress).toHaveBeenLastCalledWith(1, 1, "photos");
     expect(b.rows("SELECT image, nickname FROM Students")).toEqual([
       { image: PHOTO, nickname: "Anni" },
     ]);

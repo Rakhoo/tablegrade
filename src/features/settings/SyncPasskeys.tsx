@@ -17,7 +17,6 @@ export function SyncPasskeys({ account }: SyncPasskeysProps) {
   const { busy, error, run } = useSyncAction();
   return (
     <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold">Passkeys zum Entsperren</h3>
       {account.hasPrfPasskey ? (
         <p
           className="text-sm"

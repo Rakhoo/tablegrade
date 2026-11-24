@@ -42,6 +42,7 @@ export function SyncApproveLink() {
       <div>
         <Button
           variant="outlined"
+          size="small"
           onClick={() => setOpen(true)}
           data-help="Gibt einem neuen Gerät den Schlüssel zu den Daten. Das neue Gerät zeigt dafür einen Code."
         >

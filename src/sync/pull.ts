@@ -6,6 +6,7 @@ import { decryptRecord, type RecordPlaintext } from "../crypto/records";
 import { SCHEMA_VERSION } from "../db/migrations";
 import type { IncomingRecord } from "./api";
 import type { SyncContext } from "./context";
+import type { ProgressHandler } from "./engine";
 import { downloadPhoto, isBlobRef } from "./photos";
 import type { SqlRunner, SqlValue } from "./syncDb";
 import { readSyncState, writeSyncState } from "./syncState";
@@ -37,21 +38,56 @@ function outboxKey(table: string, pk: unknown[]) {
   return `${table}|${JSON.stringify(pk)}`;
 }
 
-/** Decrypts records and replaces photo references by data URLs. */
+/** Photos downloaded at the same time; one at a time is slow over the Funnel. */
+const PHOTO_DOWNLOADS = 4;
+
+/** Runs the jobs with at most `limit` at a time; `onDone` follows each finished job. */
+async function runLimited(
+  jobs: (() => Promise<void>)[],
+  limit: number,
+  onDone: () => void,
+) {
+  let next = 0;
+  /** Takes jobs until none are left. */
+  const worker = async () => {
+    while (next < jobs.length) {
+      await jobs[next++]();
+      onDone();
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(limit, jobs.length) }, worker),
+  );
+}
+
+/**
+ * Decrypts records and replaces photo references by data URLs. Photos take the most time, so
+ * they count as a progress of their own.
+ */
 async function decode(
   ctx: SyncContext,
   records: IncomingRecord[],
+  onProgress?: ProgressHandler,
 ): Promise<Decoded[]> {
   const decoded: Decoded[] = [];
+  const photos: (() => Promise<void>)[] = [];
   for (const { id, seq, ciphertext } of records) {
     const plain = await decryptRecord(ctx.key, ctx.userId, id, ciphertext);
     const { row } = plain;
     if (row && isBlobRef(row.image) && isSyncedKey(plain.t, plain.k)) {
-      const local = await readRow(ctx.db, plain.t, plain.k);
-      row.image = await downloadPhoto(ctx, row.image.blob, local?.image);
+      const { blob } = row.image;
+      photos.push(async () => {
+        const local = await readRow(ctx.db, plain.t, plain.k);
+        row.image = await downloadPhoto(ctx, blob, local?.image);
+      });
     }
     decoded.push({ id, seq, plain });
   }
+  let done = 0;
+  if (photos.length) onProgress?.(0, photos.length, "photos");
+  await runLimited(photos, PHOTO_DOWNLOADS, () =>
+    onProgress?.(++done, photos.length, "photos"),
+  );
   return decoded;
 }
 
@@ -171,7 +207,7 @@ async function countDeferred(db: SqlRunner): Promise<number> {
  */
 export async function pullChanges(
   ctx: SyncContext,
-  onProgress?: (done: number, total: number) => void,
+  onProgress?: ProgressHandler,
   includeOwn = false,
 ): Promise<PullOutcome> {
   const start = Number((await readSyncState(ctx.db, "lastSeq")) ?? 0);
@@ -200,7 +236,7 @@ export async function pullChanges(
     return { applied: 0, deferred: await countDeferred(ctx.db), ids };
   const applied = await applyDecoded(
     ctx,
-    await decode(ctx, fresh),
+    await decode(ctx, fresh, onProgress),
     async (tx) => {
       for (const record of newer)
         await tx.run(

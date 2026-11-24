@@ -68,11 +68,16 @@ export type AccountInfo = {
 
 /** Progress of the first upload or download, counted in records. */
 export type SyncProgress = {
-  /** Records done so far. */
+  /** Items done so far. */
   done: number;
-  /** Records in total. */
+  /** Items in total. */
   total: number;
+  /** What is counted: records first, then the photos they refer to. */
+  unit: ProgressUnit;
 };
+
+/** What a progress counts. */
+export type ProgressUnit = "records" | "photos";
 
 /** Snapshot of the sync state for the UI. Replaced as a whole on every change. */
 export type SyncStatus = {
