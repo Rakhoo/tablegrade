@@ -1,6 +1,7 @@
 package sqlite
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 
@@ -38,18 +39,31 @@ func (db *DB) GetLinkByCode(ctx context.Context, userID, code string) (store.Lin
 
 // CompleteLink implements store.Store.
 func (db *DB) CompleteLink(ctx context.Context, userID, linkID string, otherPublicKey, wrapped []byte) error {
+	return db.updateOpenLink(ctx, userID, linkID, otherPublicKey,
+		`UPDATE links SET other_public_key = ?, wrapped = ? WHERE id = ?`, otherPublicKey, wrapped, linkID)
+}
+
+// SetLinkKey implements store.Store.
+func (db *DB) SetLinkKey(ctx context.Context, userID, linkID string, otherPublicKey []byte) error {
+	return db.updateOpenLink(ctx, userID, linkID, otherPublicKey,
+		`UPDATE links SET other_public_key = ? WHERE id = ?`, otherPublicKey, linkID)
+}
+
+// updateOpenLink runs update on an unexpired, unfinished link whose old-device key is unset or
+// equal to otherPublicKey; otherwise ErrNotFound or ErrConflict.
+func (db *DB) updateOpenLink(ctx context.Context, userID, linkID string, otherPublicKey []byte, update string, args ...any) error {
 	return db.tx(ctx, func(tx *sql.Tx) error {
 		var done bool
-		err := tx.QueryRowContext(ctx, `SELECT wrapped IS NOT NULL FROM links
-			WHERE id = ? AND user_id = ? AND expires_at >= ?`, linkID, userID, db.ms()).Scan(&done)
+		var key []byte
+		err := tx.QueryRowContext(ctx, `SELECT wrapped IS NOT NULL, other_public_key FROM links
+			WHERE id = ? AND user_id = ? AND expires_at >= ?`, linkID, userID, db.ms()).Scan(&done, &key)
 		if err != nil {
 			return mapErr(err)
 		}
-		if done {
+		if done || (key != nil && !bytes.Equal(key, otherPublicKey)) {
 			return store.ErrConflict
 		}
-		_, err = tx.ExecContext(ctx, `UPDATE links SET other_public_key = ?, wrapped = ? WHERE id = ?`,
-			otherPublicKey, wrapped, linkID)
+		_, err = tx.ExecContext(ctx, update, args...)
 		return err
 	})
 }

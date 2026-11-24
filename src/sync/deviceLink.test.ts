@@ -11,7 +11,7 @@ import { findLink, startLink } from "./deviceLink";
 function fakeLinkApi() {
   const links = new Map<
     string,
-    { code: string; publicKey: string; answer?: [string, string] }
+    { code: string; publicKey: string; key?: string; wrapped?: string }
   >();
   let deleted = false;
   const notFound = () => new ApiError("not_found", 404);
@@ -27,6 +27,11 @@ function fakeLinkApi() {
       if (!entry) throw notFound();
       return { linkId: entry[0], publicKey: entry[1].publicKey };
     },
+    setLinkKey: async (linkId: string, publicKey: string) => {
+      const link = links.get(linkId);
+      if (!link) throw notFound();
+      link.key = publicKey;
+    },
     completeLink: async (
       linkId: string,
       publicKey: string,
@@ -34,15 +39,15 @@ function fakeLinkApi() {
     ) => {
       const link = links.get(linkId);
       if (!link) throw notFound();
-      link.answer = [publicKey, wrapped];
+      Object.assign(link, { key: publicKey, wrapped });
     },
     getLink: async (linkId: string) => {
       const link = links.get(linkId);
       if (!link) throw notFound();
-      if (!link.answer) return { status: "waiting" };
+      if (!link.key) return { status: "waiting" };
+      if (!link.wrapped) return { status: "keyed", publicKey: link.key };
       links.delete(linkId);
-      const [publicKey, wrapped] = link.answer;
-      return { status: "done", publicKey, wrapped };
+      return { status: "done", publicKey: link.key, wrapped: link.wrapped };
     },
     deleteAccount: async () => void (deleted = true),
   } as unknown as Api;
@@ -70,11 +75,12 @@ describe("device link", () => {
     const pending = await startLink({ api, store: newDevice }, 1);
     const approval = await findLink({ api, store: oldDevice }, pending.code);
     expect(approval.checkCode).toMatch(/^\d{6}$/);
-    await approval.approve();
-    pending.notify();
+    // Both devices show the code before the old device sends the data key
     expect(await pending.checkCode).toBe(approval.checkCode);
+    const accepted = pending.accept();
     expect(await newDevice.get("dataKey")).toBeUndefined();
-    await pending.accept();
+    await approval.approve();
+    await accepted;
     expect(await raw(newDevice)).toEqual(await raw(oldDevice));
   });
 
@@ -90,7 +96,7 @@ describe("device link", () => {
     ).rejects.toThrow("gesperrt");
     pending.cancel();
     await expect(pending.checkCode).rejects.toThrow("abgebrochen");
-    await expect(pending.accept()).rejects.toThrow("fehlgeschlagen");
+    await expect(pending.accept()).rejects.toThrow("abgebrochen");
   });
 
   it("reports an expired link", async () => {

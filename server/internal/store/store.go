@@ -254,7 +254,11 @@ type Store interface {
 	GetLink(ctx context.Context, userID, linkID string) (Link, error)
 	// GetLinkByCode returns an unexpired link of an account by code.
 	GetLinkByCode(ctx context.Context, userID, code string) (Link, error)
-	// CompleteLink stores the answer of the old device; ErrConflict if already done.
+	// SetLinkKey stores the old device's public key before it sends the data key, so both
+	// devices can show the check code; ErrConflict if done or another key is set.
+	SetLinkKey(ctx context.Context, userID, linkID string, otherPublicKey []byte) error
+	// CompleteLink stores the answer of the old device; ErrConflict if already done or if it
+	// differs from the key set by SetLinkKey.
 	CompleteLink(ctx context.Context, userID, linkID string, otherPublicKey, wrapped []byte) error
 	// DeleteLink removes a link.
 	DeleteLink(ctx context.Context, userID, linkID string) error

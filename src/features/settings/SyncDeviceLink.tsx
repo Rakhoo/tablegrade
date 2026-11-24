@@ -53,7 +53,8 @@ export function SyncDeviceLink() {
           data-help="Gleiche Prüfcodes zeigen, dass niemand dazwischen ist."
         >
           Prüfcode: <span className="font-mono text-lg">{checkCode}</span>.
-          Zeigt das andere Gerät denselben Prüfcode?
+          Zeigt das andere Gerät denselben Prüfcode? Dann auf beiden Geräten
+          bestätigen.
         </p>
       ) : (
         <p
@@ -72,9 +73,9 @@ export function SyncDeviceLink() {
             variant="contained"
             disabled={busy}
             onClick={() => run(link.accept)}
-            data-help="Übernimmt den Schlüssel vom anderen Gerät."
+            data-help="Übernimmt den Schlüssel, sobald das andere Gerät ebenfalls bestätigt hat."
           >
-            Stimmt überein
+            {busy ? "Warte auf das andere Gerät …" : "Stimmt überein"}
           </Button>
         )}
         <Button

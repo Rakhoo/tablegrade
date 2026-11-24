@@ -15,6 +15,7 @@ import {
 import {
   beginOidcLogin,
   finishOidcLogin,
+  oidcLaunchUrl,
   parseOidcCallback,
   withoutOidcQuery,
 } from "./oidc";
@@ -217,6 +218,16 @@ describe("oidc", () => {
         storage,
       ),
     ).rejects.toThrow("abgebrochen");
+  });
+
+  it("starts the app on the page the login began on, keeping the provider query", async () => {
+    const { api } = fakeApi();
+    const storage = memoryStorage();
+    await beginOidcLogin(api, "google", "iPad", storage, "/#/settings/sync");
+    expect(
+      oidcLaunchUrl("https://app.test/?code=c&state=s#/timetable", storage),
+    ).toBe("https://app.test/?code=c&state=s#/settings/sync");
+    expect(oidcLaunchUrl("https://app.test/#/timetable", storage)).toBeNull();
   });
 
   it("ignores URLs that are no provider return", () => {

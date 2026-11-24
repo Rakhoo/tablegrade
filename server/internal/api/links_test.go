@@ -67,6 +67,21 @@ func TestLinkFlow(t *testing.T) {
 		found["linkId"] != l.LinkID || found["publicKey"] != newKey {
 		t.Fatalf("by code: %d %v", rec.Code, found)
 	}
+	// The old device sends its key first, so the new device can show the check code.
+	keyBody := `{"publicKey":"` + oldKey + `"}`
+	if code := e.do(http.MethodPost, "/api/v1/link/"+l.LinkID+"/key", old.SessionToken, keyBody, nil).Code; code != http.StatusNoContent {
+		t.Fatalf("key: %d", code)
+	}
+	if msg := read(t, conn); msg["type"] != "link" || msg["linkId"] != l.LinkID {
+		t.Errorf("ws after key: %v", msg)
+	}
+	e.do(http.MethodGet, "/api/v1/link/"+l.LinkID, fresh.SessionToken, "", &status)
+	if status["status"] != "keyed" || status["publicKey"] != oldKey || status["wrapped"] != "" {
+		t.Errorf("keyed: %v", status)
+	}
+	if code := e.do(http.MethodPost, "/api/v1/link/"+l.LinkID+"/complete", old.SessionToken, completeBody(ecdhKey(t)), nil).Code; code != http.StatusConflict {
+		t.Errorf("complete with another key: %d", code)
+	}
 	if code := e.do(http.MethodPost, "/api/v1/link/"+l.LinkID+"/complete", old.SessionToken, completeBody(oldKey), nil).Code; code != http.StatusNoContent {
 		t.Fatalf("complete: %d", code)
 	}

@@ -14,10 +14,13 @@ const root = createRoot(document.getElementById("root")!);
 
 /** Starts the app. Loaded on demand, so a browser tab never opens the database. */
 async function startApp() {
-  const [{ createAppRouter }, { RouterProvider }] = await Promise.all([
-    import("./router"),
-    import("react-router/dom"),
-  ]);
+  const [{ createAppRouter }, { RouterProvider }, { restoreOidcRoute }] =
+    await Promise.all([
+      import("./router"),
+      import("react-router/dom"),
+      import("./sync"),
+    ]);
+  restoreOidcRoute();
   root.render(<RouterProvider router={createAppRouter()} />);
 }
 

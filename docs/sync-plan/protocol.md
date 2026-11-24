@@ -279,17 +279,18 @@ Client beim Push die Blob-Referenzen im Klartext-Feld `blobs: [<blobId>]` pro Ei
 2. Das neue Gerät zeigt den `code`.
 3. Altes Gerät (mit DEK) gibt den `code` ein, holt `GET /link/by-code/{code}` →
    `{ linkId, publicKey }`.
-4. Beide Geräte zeigen einen **Prüfcode**: die ersten 4 Bytes von `SHA-256(pubNeu ‖ pubAlt)`
+4. Das alte Gerät sendet sofort `POST /link/{linkId}/key` mit `{ publicKey }` (`pubAlt`). Das
+   neue Gerät bekommt ihn über `GET /link/{linkId}` (`status: "keyed"`) oder per WebSocket.
+   Beide Geräte zeigen dann einen **Prüfcode**: die ersten 4 Bytes von `SHA-256(pubNeu ‖ pubAlt)`
    als vorzeichenlose Zahl (Big Endian) modulo 1 000 000, mit führenden Nullen auf 6 Ziffern.
-   Das neue Gerät kennt `pubAlt` erst nach Schritt 5 und zeigt den Code dann. Die Nutzerin
-   bestätigt am alten Gerät, dass beide gleich sind; das neue Gerät übernimmt die DEK erst nach
-   eigener Bestätigung.
+   Die Nutzerin bestätigt am alten Gerät, dass beide gleich sind; erst dann folgt Schritt 5.
+   Das neue Gerät übernimmt die DEK erst nach eigener Bestätigung.
 5. Altes Gerät leitet per ECDH (gemeinsames Geheimnis = x-Koordinate, 32 Bytes) plus
    `HKDF(secret, salt="", info="notenfeder/link/v1")` einen Schlüssel ab, wrappt die DEK wie in 3
    mit `kind = link` (AAD `notenfeder/wrap/v1/link/<userId>`) und sendet
    `POST /link/{linkId}/complete` mit `{ publicKey, wrapped }`.
 6. Neues Gerät holt das Ergebnis (`GET /link/{linkId}` →
-   `{ status: "waiting" | "done", publicKey?, wrapped? }`, oder per WebSocket-Nachricht), packt
+   `{ status: "waiting" | "keyed" | "done", publicKey?, wrapped? }`, oder per WebSocket-Nachricht), packt
    die DEK aus. Nach dem ersten Abruf mit `done` löscht der Server die Kopplung.
 
 `linkId` ist eine UUID vom Server. Ein falscher `code` zählt zum Rate-Limit der
@@ -300,7 +301,9 @@ Nur Geräte desselben Kontos dürfen eine Kopplung abschließen.
 - Alle `/link`-Endpunkte brauchen eine Sitzung. Unbekannte, abgelaufene und fremde Kopplungen
   geben gleich `not_found`. Der Server normalisiert den eingegebenen `code` (siehe 1).
 - `publicKey` muss ein gültiger P-256-Punkt sein, `wrapped` genau 60 Bytes, sonst
-  `bad_request`. `complete` antwortet `204`, ein zweites `complete`: `conflict`.
+  `bad_request`. `key` und `complete` antworten `204`, ein zweites `complete`: `conflict`.
+  `complete` (und ein weiteres `key`) mit einem anderen `publicKey` als bei `key`: `conflict`.
+  Das neue Gerät bricht ab, wenn sich `publicKey` zwischen `keyed` und `done` ändert.
 - Die WebSocket-Nachricht `link` geht an alle Geräte des Kontos; das neue Gerät erkennt seine
   `linkId`.
 
@@ -350,3 +353,4 @@ Server. Bei Abbruch verbindet der Client neu mit Backoff (1 s bis 60 s).
 | 2026-11-24 | – | OIDC: Redirect-URI ohne Query (`<Origin>/` statt `<Origin>/?oidc=callback`), weil Microsoft keine Query erlaubt. |
 | 2026-11-24 | – | OIDC: Scope `email`, `exchange` gibt `email` zurück (nur zur Anzeige, nicht gespeichert). App ohne Passkey-Login und -Registrierung ohne Sitzung. |
 | 2026-11-24 | – | Freischaltung (`approved`, `403 not_approved`), Kontakt-Adresse und Begründung (`PUT /account/contact`, Felder in `GET /auth/session`). |
+| 2026-11-24 | – | Kopplung: `POST /link/{linkId}/key` und Status `keyed`, damit beide Geräte den Prüfcode vor der Bestätigung zeigen. |

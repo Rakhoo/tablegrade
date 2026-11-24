@@ -1,7 +1,7 @@
 /**
  * Device link (protocol.md 6, plan B6): the new device shows a code, the old device enters it
- * and sends the data key wrapped with an ECDH key. Both show a check code; the new device takes
- * the key only after the user confirmed that both codes match.
+ * and sends its ECDH key, so both show the check code. After the user confirmed on the old
+ * device it sends the wrapped data key; the new device takes it only after its own confirmation.
  */
 import { fromBase64url, toBase64url, type Bytes } from "../crypto/encoding";
 import { unwrapDataKey, wrapDataKey } from "../crypto/keys";
@@ -44,6 +44,10 @@ async function linkKeys() {
   return { pair, publicKey: await exportPublicKey(pair.publicKey) };
 }
 
+/** Whether two byte arrays are equal. */
+const equalBytes = (a: Bytes, b: Bytes) =>
+  a.length == b.length && a.every((value, index) => value == b[index]);
+
 /** Replaces `not_found` with the hint that the code is wrong or expired. */
 function linkError(error: unknown, message: string): unknown {
   return error instanceof ApiError && error.code == "not_found"
@@ -65,7 +69,8 @@ export async function startLink(
   const deadline = Date.now() + LINK_LIFETIME;
   let cancelled = false;
   let wake: (() => void) | null = null;
-  let answer: { publicKey: Bytes; wrapped: Bytes } | null = null;
+  let otherKey: Bytes | null = null;
+  let wrapped: Bytes | null = null;
 
   /** Waits for the next poll or an early `notify`. */
   const pause = () =>
@@ -80,27 +85,32 @@ export async function startLink(
       wake = done;
     });
 
-  /** Polls until the old device approved, the code expired or the user cancelled. */
-  async function waitForOldDevice(): Promise<string> {
+  /** Polls until `ready` holds, the code expired or the user cancelled. */
+  async function pollUntil(ready: () => boolean): Promise<void> {
     for (;;) {
       if (cancelled) throw new Error(CANCELLED);
+      // The server deletes a finished link after the first read, so never ask again then
+      if (ready()) return;
       if (Date.now() > deadline) throw new Error(EXPIRED);
       const result = await api.getLink(linkId).catch((error: unknown) => {
         if (error instanceof ApiError && error.code == "offline") return null;
         throw linkError(error, EXPIRED);
       });
-      if (result?.status == "done") {
-        answer = {
-          publicKey: fromBase64url(result.publicKey),
-          wrapped: fromBase64url(result.wrapped),
-        };
-        return linkCheckCode(own.publicKey, answer.publicKey);
+      if (result && result.status != "waiting") {
+        const key = fromBase64url(result.publicKey);
+        // The key behind the shown check code must not change before the data key arrives
+        if (otherKey && !equalBytes(otherKey, key)) throw new Error(FAILED);
+        otherKey = key;
+        if (result.status == "done") wrapped = fromBase64url(result.wrapped);
       }
-      await pause();
+      if (!ready()) await pause();
     }
   }
 
-  const checkCode = waitForOldDevice();
+  // The old device sends its key before the user confirms there, so both show the code
+  const checkCode = pollUntil(() => otherKey != null).then(() =>
+    linkCheckCode(own.publicKey, otherKey!),
+  );
   // The UI may cancel without awaiting the code; avoid an unhandled rejection then.
   checkCode.catch(() => {});
 
@@ -114,16 +124,14 @@ export async function startLink(
       wake?.();
     },
     accept: async () => {
-      if (!answer) throw new Error(FAILED);
-      const kek = await deriveLinkKek(own.pair.privateKey, answer.publicKey);
-      const key = await unwrapDataKey(
-        answer.wrapped,
-        kek,
-        "link",
-        userId,
-      ).catch(() => {
-        throw new Error(FAILED);
-      });
+      // Waits until the old device confirmed the same check code and sent the data key
+      await pollUntil(() => wrapped != null);
+      const kek = await deriveLinkKek(own.pair.privateKey, otherKey!);
+      const key = await unwrapDataKey(wrapped!, kek, "link", userId).catch(
+        () => {
+          throw new Error(FAILED);
+        },
+      );
       await keepDataKey(store, userId, key);
     },
   };
@@ -144,6 +152,11 @@ export async function findLink(
   });
   const newPublic = fromBase64url(found.publicKey);
   const own = await linkKeys();
+  await api
+    .setLinkKey(found.linkId, toBase64url(own.publicKey))
+    .catch((error: unknown) => {
+      throw linkError(error, EXPIRED);
+    });
   return {
     checkCode: await linkCheckCode(newPublic, own.publicKey),
     approve: async () => {

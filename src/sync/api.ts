@@ -141,6 +141,7 @@ export type PullResult = {
 /** State of a device link as seen by the new device. */
 export type LinkResult =
   | { status: "waiting" }
+  | { status: "keyed"; publicKey: string }
   | { status: "done"; publicKey: string; wrapped: string };
 
 /** Dependencies of the client; tests pass a fake `fetch`. */
@@ -287,6 +288,8 @@ export function createApi({ baseUrl, getToken, fetch: doFetch }: ApiOptions) {
       call<{ linkId: string; publicKey: string }>(
         `/link/by-code/${segment(code)}`,
       ),
+    setLinkKey: (linkId: string, publicKey: string) =>
+      call<void>(`/link/${segment(linkId)}/key`, { body: { publicKey } }),
     completeLink: (linkId: string, publicKey: string, wrapped: string) =>
       call<void>(`/link/${segment(linkId)}/complete`, {
         body: { publicKey, wrapped },

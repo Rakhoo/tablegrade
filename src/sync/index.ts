@@ -6,6 +6,7 @@ import { syncDb } from "../db/queries/syncDb";
 import { createApi } from "./api";
 import { SYNC_URL } from "./config";
 import { demo } from "./demo";
+import { oidcLaunchUrl } from "./oidc";
 import { createIndexedDbStore } from "./deviceStore";
 import { createSyncService, type SyncService } from "./service";
 import { addStatusListener, readStatus } from "./status";
@@ -74,6 +75,15 @@ export async function enableSync(): Promise<void> {
 /** Turns sync off. Local data stays; the session on the server ends. */
 export async function disableSync(): Promise<void> {
   return DEMO ? demo.disableSync() : real().disableSync();
+}
+
+/**
+ * After a Microsoft or Google return, puts the page the login started on into the URL. Call
+ * before the router starts; the sign-in itself finishes in `startSync`.
+ */
+export function restoreOidcRoute(): void {
+  const url = DEMO ? null : oidcLaunchUrl(location.href, localStorage);
+  if (url) history.replaceState(null, "", url);
 }
 
 /**

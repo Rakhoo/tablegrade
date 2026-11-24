@@ -109,6 +109,41 @@ func (s *Server) handleLinkByCode(w http.ResponseWriter, r *http.Request, sess s
 	})
 }
 
+// handleLinkKey stores the old device's public key, so the new device can show the check code
+// before the old device sends the data key (protocol.md 6).
+func (s *Server) handleLinkKey(w http.ResponseWriter, r *http.Request, sess store.Session) {
+	var body struct {
+		PublicKey string `json:"publicKey"`
+	}
+	if err := readJSON(w, r, maxJSONBody, &body); err != nil {
+		writeError(w, err)
+		return
+	}
+	key, ok := decodePublicKey(body.PublicKey)
+	if !ok {
+		writeError(w, errBadRequest)
+		return
+	}
+	id := r.PathValue("linkId")
+	if err := linkStoreError(s.store.SetLinkKey(r.Context(), sess.UserID, id, key)); err != nil {
+		writeError(w, err)
+		return
+	}
+	s.hub.Publish(sess.UserID, "", hub.Link(id))
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// linkStoreError maps store errors of a link update to API errors.
+func linkStoreError(err error) error {
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		return errLinkNotFound
+	case errors.Is(err, store.ErrConflict):
+		return newError(http.StatusConflict, "conflict", "Diese Kopplung ist schon abgeschlossen.")
+	}
+	return err
+}
+
 // handleCompleteLink stores the wrapped data key from the old device and tells the account's
 // devices; the new device recognizes its linkId.
 func (s *Server) handleCompleteLink(w http.ResponseWriter, r *http.Request, sess store.Session) {
@@ -127,14 +162,7 @@ func (s *Server) handleCompleteLink(w http.ResponseWriter, r *http.Request, sess
 		return
 	}
 	id := r.PathValue("linkId")
-	err = s.store.CompleteLink(r.Context(), sess.UserID, id, key, wrapped)
-	switch {
-	case errors.Is(err, store.ErrNotFound):
-		err = errLinkNotFound
-	case errors.Is(err, store.ErrConflict):
-		err = newError(http.StatusConflict, "conflict", "Diese Kopplung ist schon abgeschlossen.")
-	}
-	if err != nil {
+	if err := linkStoreError(s.store.CompleteLink(r.Context(), sess.UserID, id, key, wrapped)); err != nil {
 		writeError(w, err)
 		return
 	}
@@ -153,8 +181,14 @@ func (s *Server) handleGetLink(w http.ResponseWriter, r *http.Request, sess stor
 		writeError(w, err)
 		return
 	}
-	if !l.Done() {
+	if !l.Done() && l.OtherPublicKey == nil {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "waiting"})
+		return
+	}
+	if !l.Done() {
+		writeJSON(w, http.StatusOK, map[string]string{
+			"status": "keyed", "publicKey": base64.RawURLEncoding.EncodeToString(l.OtherPublicKey),
+		})
 		return
 	}
 	if err := s.store.DeleteLink(r.Context(), sess.UserID, l.ID); err != nil {

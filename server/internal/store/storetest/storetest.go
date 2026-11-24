@@ -433,8 +433,17 @@ func testLinks(t *testing.T, s store.Store, clock *Clock) {
 	wantErr(t, err, store.ErrNotFound)
 	wantErr(t, s.CompleteLink(ctx, other.ID, l.ID, []byte{5}, []byte{6}), store.ErrNotFound)
 
+	// The old device's key comes first; another key or a later change is refused.
+	check(t, s.SetLinkKey(ctx, u.ID, l.ID, []byte{5}))
+	check(t, s.SetLinkKey(ctx, u.ID, l.ID, []byte{5}))
+	wantErr(t, s.SetLinkKey(ctx, u.ID, l.ID, []byte{7}), store.ErrConflict)
+	wantErr(t, s.CompleteLink(ctx, u.ID, l.ID, []byte{7}, []byte{6}), store.ErrConflict)
+	if got := must(s.GetLink(ctx, u.ID, l.ID)); got.Done() || !bytes.Equal(got.OtherPublicKey, []byte{5}) {
+		t.Errorf("keyed link = %+v", got)
+	}
 	check(t, s.CompleteLink(ctx, u.ID, l.ID, []byte{5}, []byte{6}))
 	wantErr(t, s.CompleteLink(ctx, u.ID, l.ID, []byte{5}, []byte{6}), store.ErrConflict)
+	wantErr(t, s.SetLinkKey(ctx, u.ID, l.ID, []byte{5}), store.ErrConflict)
 	got = must(s.GetLink(ctx, u.ID, l.ID))
 	if !got.Done() || !bytes.Equal(got.OtherPublicKey, []byte{5}) || !bytes.Equal(got.Wrapped, []byte{6}) {
 		t.Errorf("GetLink = %+v", got)

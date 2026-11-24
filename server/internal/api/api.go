@@ -115,6 +115,7 @@ func (s *Server) Handler() http.Handler {
 
 	mux.Handle("POST /api/v1/link", s.withApproved(s.handleCreateLink))
 	mux.Handle("GET /api/v1/link/by-code/{code}", s.withAuthLimit(s.withApproved(s.handleLinkByCode).ServeHTTP))
+	mux.Handle("POST /api/v1/link/{linkId}/key", s.withApproved(s.handleLinkKey))
 	mux.Handle("POST /api/v1/link/{linkId}/complete", s.withApproved(s.handleCompleteLink))
 	mux.Handle("GET /api/v1/link/{linkId}", s.withApproved(s.handleGetLink))
 

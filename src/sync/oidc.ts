@@ -116,6 +116,22 @@ export async function finishOidcLogin(
   return { grant, provider: pending.provider, returnTo: pending.returnTo };
 }
 
+/**
+ * The URL to start the app with after a provider return: the page the login started on, with
+ * the provider's query kept for `finishOidcLogin`. `null` if the URL is no provider return.
+ * The hash router reads the route only once, so it must be in place before the router starts.
+ */
+export function oidcLaunchUrl(href: string, storage: Storage): string | null {
+  if (!isOidcReturn(href)) return null;
+  const stored = storage.getItem(PENDING_KEY);
+  const url = new URL(href);
+  const target = new URL(
+    stored ? (JSON.parse(stored) as PendingLogin).returnTo : "/",
+    url.origin,
+  );
+  return url.origin + target.pathname + url.search + target.hash;
+}
+
 /** The URL without the OIDC query, keeping path and hash route. */
 export function withoutOidcQuery(href: string, returnTo?: string): string {
   const url = new URL(href);
