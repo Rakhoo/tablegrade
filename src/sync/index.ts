@@ -173,14 +173,6 @@ export async function revokeDevice(id: string): Promise<void> {
 }
 
 /**
- * Whether this device has own data (classes, students, lessons). A new device asks before the
- * first download replaces it.
- */
-export async function hasLocalData(): Promise<boolean> {
-  return DEMO ? demo.hasLocalData() : real().hasLocalData();
-}
-
-/**
  * Confirms that the account data replaces the local data and starts the first download.
  * Until then, a new device with local data does not download.
  */

@@ -110,12 +110,18 @@ function result(credential: PublicKeyCredential): PasskeyResult {
 }
 
 /** German message for a cancelled or failed passkey dialog. */
+/** The authenticator already holds a passkey of this account (excluded at registration). */
+export class PasskeyExistsError extends Error {
+  constructor() {
+    super("Dieser Passkey ist schon eingerichtet.");
+  }
+}
+
 function passkeyError(error: unknown): Error {
   const name = (error as Error)?.name;
   if (name == "NotAllowedError")
     return new Error("Der Passkey-Dialog wurde abgebrochen.");
-  if (name == "InvalidStateError")
-    return new Error("Dieser Passkey ist schon eingerichtet.");
+  if (name == "InvalidStateError") return new PasskeyExistsError();
   return new Error("Der Passkey konnte nicht verwendet werden.");
 }
 

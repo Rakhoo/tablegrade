@@ -134,7 +134,8 @@ describe("sync service", () => {
     b.device.raw.exec("UPDATE Classes SET subject = 'Kunst'");
     await b.service.enableSync();
     await b.service.unlockWithRecoveryKey(recovery);
-    expect(await b.service.hasLocalData()).toBe(true);
+    // Unlocked, but waiting for the consent instead of looking like a working sync
+    expect(readStatus().phase).toBe("setupIncomplete");
     expect(b.device.rows("SELECT * FROM _outbox")).toEqual([]);
 
     await b.service.replaceLocalData();

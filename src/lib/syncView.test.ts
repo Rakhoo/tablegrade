@@ -12,6 +12,7 @@ const account = (hasDataKey: boolean): AccountInfo => ({
   deviceId: "d",
   identities: [],
   hasDataKey,
+  hasRecoveryKey: hasDataKey,
   signedInWith: null,
   approved: true,
   contactEmail: null,

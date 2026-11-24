@@ -24,6 +24,9 @@ import { SyncSettings } from "./SyncSettings";
 import { TimetableSettings } from "./TimetableSettings";
 import { TraitSettings } from "./TraitSettings";
 import { paths } from "../../lib/paths";
+import { AttentionDot } from "../../components/AttentionDot";
+import { useAttention } from "../../hooks/useAttention";
+import { worstTone } from "../../lib/attention";
 
 /** The tabs of the settings, each with the cards of related topics. */
 const TABS = [
@@ -78,8 +81,13 @@ export function SettingsPage() {
   // Unlocked only while the settings page is open
   const [devUnlocked, setDevUnlocked] = useState(false);
   const devTaps = useRef(0);
-  const tab: TabKey =
-    findTab(searchParams.get("tab")) ?? getStoredTab() ?? "school";
+  const attention = useAttention();
+  // Opens on the first tab with an open point; fixed at opening, so the tab does not jump
+  // when a point gets done meanwhile
+  const [openingTab] = useState(
+    () => attention[0]?.tab ?? getStoredTab() ?? "school",
+  );
+  const tab: TabKey = findTab(searchParams.get("tab")) ?? openingTab;
 
   /** Counts taps on the data tab while it is open; enough of them unlock the dev options. */
   const countDevTap = () => {
@@ -152,17 +160,25 @@ export function SettingsPage() {
         variant="scrollable"
         scrollButtons="auto"
         className="card shrink-0 px-2"
-        data-help="Themen der Einstellungen; ein Tab zeigt seine Karten."
+        data-help="Themen der Einstellungen; ein Tab zeigt seine Karten. Ein Punkt zeigt, dass dort etwas zu tun ist (gelb) oder etwas fehlgeschlagen ist (rot)."
       >
-        {TABS.map(({ key, label }) => (
-          <Tab
-            key={key}
-            value={key}
-            label={label}
-            // Hidden: tapping the active data tab often enough shows the developer options
-            onClick={key == "data" ? countDevTap : undefined}
-          />
-        ))}
+        {TABS.map(({ key, label }) => {
+          const tone = worstTone(attention.filter((item) => item.tab == key));
+          return (
+            <Tab
+              key={key}
+              value={key}
+              label={
+                <span className="flex items-center gap-1.5">
+                  {label}
+                  {tone && <AttentionDot tone={tone} />}
+                </span>
+              }
+              // Hidden: tapping the active data tab often enough shows the developer options
+              onClick={key == "data" ? countDevTap : undefined}
+            />
+          );
+        })}
       </Tabs>
       <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4">
         {cards[tab]}

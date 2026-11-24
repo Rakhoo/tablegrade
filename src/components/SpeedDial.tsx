@@ -4,7 +4,10 @@ import { rememberReturnPage } from "../lib/returnPage";
 import { HelpOverlay } from "./help/HelpOverlay";
 import { ChevronDownIcon, HelpIcon, SettingsIcon } from "./icons";
 import { paths } from "../lib/paths";
-import { SyncBadge } from "./SyncBadge";
+import { AttentionDot } from "./AttentionDot";
+import { useAttention } from "../hooks/useAttention";
+import { useSyncStatus } from "../hooks/useSyncStatus";
+import { worstTone, type AttentionTone } from "../lib/attention";
 
 /** An entry of the speed dial: a link, an action or a toggle. */
 export type SpeedDialEntry = {
@@ -26,6 +29,8 @@ export type SpeedDialEntry = {
   keepOpen?: boolean;
   /** Marks an entry that deletes something in red. */
   danger?: boolean;
+  /** Dot on the icon, e.g. on the settings while something there needs a step. */
+  attention?: AttentionTone | null;
 };
 
 /** A page of the class, linked next to the help instead of inside the dial. */
@@ -73,6 +78,7 @@ function SpeedDialItem({
     checked,
     keepOpen,
     danger,
+    attention,
   } = entry;
   const isToggle = checked != undefined;
   const content = (
@@ -119,11 +125,14 @@ function SpeedDialItem({
       ) : (
         <span
           className={
-            "flex h-11 w-[5.5rem] shrink-0 items-center justify-center rounded-full " +
+            "relative flex h-11 w-[5.5rem] shrink-0 items-center justify-center rounded-full " +
             (danger ? "bg-red-600 text-white" : "bg-brand-50 text-brand-700")
           }
         >
           {icon}
+          {attention && (
+            <AttentionDot tone={attention} className="absolute top-1 right-5" />
+          )}
         </span>
       )}
     </>
@@ -203,15 +212,18 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
   const [helpOpen, setHelpOpen] = useState(false);
   // The help explains the entries while open, and the page with the permanent buttons otherwise
   const [dial, setDial] = useState<HTMLElement | null>(null);
+  const attention = worstTone(useAttention());
+  const syncing = useSyncStatus().phase == "syncing";
   const all: SpeedDialEntry[] = [
     ...entries,
     {
       key: "settings",
       label: "Einstellungen",
       icon: <SettingsIcon />,
-      help: "Schuljahre, Darstellung, Benotung, Sicherung und mehr.",
+      help: "Schuljahre, Darstellung, Benotung, Sicherung und mehr. Ein Punkt zeigt, dass dort etwas zu tun ist.",
       to: paths.settings(),
       disabled: pathname == paths.settings(),
+      attention,
     },
   ];
   // Without a usable entry the dial stays closed and empty, its button visibly disabled
@@ -250,7 +262,6 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
               </span>
             </Link>
           ))}
-          <SyncBadge />
           <button
             type="button"
             aria-label="Hilfe"
@@ -266,13 +277,16 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
             aria-expanded={open}
             disabled={!usable}
             className={
-              usable
+              "relative " +
+              (usable
                 ? `${roundButton} bg-brand-600 text-white`
-                : `${circle} bg-line text-muted`
+                : `${circle} bg-line text-muted`) +
+              // A running sync only tints the ring, so it stays unobtrusive
+              (syncing ? " ring-2 ring-brand-300 animate-pulse" : "")
             }
             data-help={
               usable
-                ? "Öffnet das Menü mit allen weiteren Funktionen."
+                ? "Öffnet das Menü mit allen weiteren Funktionen. Ein Punkt zeigt, dass in den Einstellungen etwas zu tun ist; ein pulsierender Rand, dass gerade abgeglichen wird."
                 : "Hier gibt es gerade keine weiteren Funktionen."
             }
             onClick={() => setOpen(!open)}
@@ -283,6 +297,12 @@ function SpeedDial({ entries, links = NO_LINKS, guard }: SpeedDialProps) {
                 "transition-transform duration-200 " + (open ? "" : "rotate-90")
               }
             />
+            {attention && !open && (
+              <AttentionDot
+                tone={attention}
+                className="absolute -top-0.5 -right-0.5"
+              />
+            )}
           </button>
         </div>
         {/* Always rendered, so closing can be animated as well; hidden once the entries are */}

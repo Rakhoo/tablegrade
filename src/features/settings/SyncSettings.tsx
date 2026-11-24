@@ -4,7 +4,7 @@ import { useState, type ReactNode } from "react";
 import { RefreshIcon } from "../../components/icons";
 import { SyncImportNotice } from "../../components/SyncImportNotice";
 import { useSyncStatus } from "../../hooks/useSyncStatus";
-import { disableSync, syncNow, type SyncStatus } from "../../sync";
+import { syncNow, type SyncStatus } from "../../sync";
 import { getSyncView, type SyncView } from "../../lib/syncView";
 import { reloadApp } from "../../services/pwa";
 import { SettingsSection } from "./SettingsSection";
@@ -16,48 +16,52 @@ import { SyncErrorAlert } from "./SyncErrorAlert";
 import { SyncIdentities } from "./SyncIdentities";
 import { SyncIntro } from "./SyncIntro";
 import { SyncPasskeys } from "./SyncPasskeys";
-import { SyncPending } from "./SyncPending";
-import { SyncRecoveryKey } from "./SyncRecoveryKey";
-import { SyncReplaceCheck } from "./SyncReplaceCheck";
+import { SyncSetupWizard, type SetupView } from "./SyncSetupWizard";
 import { SyncSignIn } from "./SyncSignIn";
 import { useSyncAction } from "./useSyncAction";
 
 /** Short line under the card title for each view. */
 const HINTS: Record<SyncView, string> = {
   off: "Aus. Alle Daten liegen nur auf diesem Gerät.",
-  setup:
-    "Einrichtung: mit Google oder Microsoft anmelden. Beim ersten Mal entsteht das Konto.",
-  createKey: "Neues Konto: Wiederherstellungsschlüssel sichern.",
-  missingKey:
-    "Angemeldet. Dieses Gerät braucht noch den Schlüssel zu den Daten.",
+  setup: "Einrichtung: Schritt für Schritt bis zur Synchronisierung.",
+  pending: "Einrichtung: Das Konto wartet auf Freischaltung.",
+  createKey: "Einrichtung: Wiederherstellungsschlüssel sichern.",
+  missingKey: "Einrichtung: Dieses Gerät braucht den Schlüssel zu den Daten.",
+  replace: "Einrichtung: Vor dem ersten Abgleich zustimmen.",
   active: "Aktiv. Die Daten werden verschlüsselt abgeglichen.",
   expired: "Abgemeldet oder Anmeldung abgelaufen.",
   upgrade: "Pausiert. Diese App-Version ist zu alt.",
-  pending: "Angemeldet. Das Konto wartet auf Freischaltung.",
 };
 
+/** Views handled by the setup wizard instead of a view of their own. */
+const SETUP_VIEWS: readonly SyncView[] = [
+  "setup",
+  "pending",
+  "createKey",
+  "missingKey",
+  "replace",
+];
+
+/** Whether the view is a step of the setup. */
+const isSetupView = (view: SyncView): view is SetupView =>
+  SETUP_VIEWS.includes(view);
+
 /**
- * Account and sync settings. Shows the step that fits the sync status: the explanation while
- * it is off, the setup, the key of a new account, unlocking a new device, the active sync, an
- * expired sign-in and a needed update.
+ * Account and sync settings: the explanation while sync is off, the setup wizard until the
+ * device syncs, then the active sync with its settings; also an expired sign-in and a needed
+ * update.
  */
 export function SyncSettings() {
   const status = useSyncStatus();
-  const view = getSyncView(status);
+  const syncView = getSyncView(status);
   // Creating the key ends the "createKey" view at once; keep the key on screen until it is checked
   const [keySetup, setKeySetup] = useState(false);
-  if (view == "createKey" && !keySetup) setKeySetup(true);
+  if (syncView == "createKey" && !keySetup) setKeySetup(true);
+  const view = keySetup ? "createKey" : syncView;
 
-  const content: Record<SyncView, ReactNode> = {
+  /** The views that are no setup step. */
+  const content: Record<Exclude<SyncView, SetupView>, ReactNode> = {
     off: <SyncIntro />,
-    setup: (
-      <>
-        <SyncSignIn />
-        <CancelSetup />
-      </>
-    ),
-    createKey: null,
-    missingKey: <SyncReplaceCheck />,
     active: <SyncActive status={status} />,
     expired: (
       <>
@@ -69,48 +73,20 @@ export function SyncSettings() {
       </>
     ),
     upgrade: <SyncUpgrade />,
-    pending: (
-      <>
-        <SyncPending />
-        <CancelSetup />
-      </>
-    ),
   };
   return (
     <SettingsSection
       title="Konto & Synchronisierung"
-      hint={HINTS[keySetup ? "createKey" : view]}
+      hint={HINTS[view]}
       help="Konto für den verschlüsselten Abgleich der Daten zwischen eigenen Geräten: einrichten, Gerät hinzufügen, Status."
     >
       {status.importNotice && <SyncImportNotice />}
-      {keySetup ? (
-        <SyncRecoveryKey
-          intro="Das Konto ist angelegt. Jetzt den Wiederherstellungsschlüssel erstellen und sicher aufbewahren."
-          onDone={() => setKeySetup(false)}
-        />
+      {isSetupView(view) ? (
+        <SyncSetupWizard view={view} onKeyDone={() => setKeySetup(false)} />
       ) : (
         content[view]
       )}
     </SettingsSection>
-  );
-}
-
-/** Ends an unfinished setup; sync is then off again. */
-function CancelSetup() {
-  const { busy, error, run } = useSyncAction();
-  return (
-    <>
-      <SyncErrorAlert error={error} />
-      <div>
-        <Button
-          disabled={busy}
-          onClick={() => run(disableSync)}
-          data-help="Bricht die Einrichtung ab; die Daten bleiben nur auf diesem Gerät."
-        >
-          Einrichtung abbrechen
-        </Button>
-      </div>
-    </>
   );
 }
 

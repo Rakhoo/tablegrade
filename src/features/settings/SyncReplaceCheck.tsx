@@ -1,45 +1,28 @@
 import { Alert, Button } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRevalidator } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { disableSync, hasLocalData, replaceLocalData } from "../../sync";
+import { disableSync, replaceLocalData } from "../../sync";
 import { SyncErrorAlert } from "./SyncErrorAlert";
-import { SyncUnlock } from "./SyncUnlock";
 import { useSyncAction } from "./useSyncAction";
 
 /**
  * Asks before the first download whether school data already on this device may be replaced
- * by the data of the account; merging both is not possible. Then shows the ways to unlock.
+ * by the data of the account; merging both is not possible. Shown after unlocking, when the
+ * activation waits for this consent.
  */
 export function SyncReplaceCheck() {
-  // null while the check runs
-  const [localData, setLocalData] = useState<boolean | null>(null);
   const [confirming, setConfirming] = useState(false);
   const { busy, error, run } = useSyncAction();
   const { revalidate } = useRevalidator();
-
-  useEffect(() => {
-    let active = true;
-    hasLocalData().then(
-      (found) => active && setLocalData(found),
-      // Unknown: ask anyway, losing data by mistake is worse than one question
-      () => active && setLocalData(true),
-    );
-    return () => {
-      active = false;
-    };
-  }, []);
 
   /** Deletes the local school data, so the download fills the device. */
   const replace = () =>
     run(async () => {
       await replaceLocalData();
       await revalidate();
-      setLocalData(false);
     });
 
-  if (localData == null) return null;
-  if (!localData) return <SyncUnlock />;
   return (
     <>
       <Alert severity="warning">

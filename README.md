@@ -153,11 +153,17 @@ Nobody but the user can read the data or reset the recovery key. Details:
 
 - **Konto & Sync** (settings tab, off by default): an account with Microsoft or Google
   sign-in keeps several devices in sync, end-to-end encrypted. A recovery key, another device
-  or a passkey unlocks the data on a new device. A badge next to the speed dial shows the sync
-  state; an expired sign-in only shows a notice, the app keeps working offline. New accounts
+  or a passkey unlocks the data on a new device. A wizard leads through the required steps;
+  an expired sign-in only shows a notice, the app keeps working offline. New accounts
   ask for access (contact email and a short reason) and wait until Mario approves them on the
   server. Details in
   [Settings](#settings).
+- **Hints on open points** (`lib/attention.ts`, `hooks/useAttention.ts`): no school year, a
+  due backup (`isBackupDue`, also used by the backup reminder) and a sync that needs a step
+  or failed put a dot (`components/AttentionDot.tsx`, yellow or red) on the speed dial
+  button, on its "Einstellungen" entry and on the settings tab concerned; a running sync
+  only pulses the ring of the speed dial button. The settings open on the first tab with an
+  open point (fixed at opening).
 
 ### Installed app (PWA)
 
@@ -490,10 +496,15 @@ the tab used last:
   ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
 - **Konto & Sync** (plan and protocol in [docs/sync-plan](docs/sync-plan/README.md)): one card
   whose content follows the sync status (`lib/syncView.ts`): off (explanation and
-  "Einrichten"), setup (device name, branded buttons "Mit Google anmelden" and "Mit
-  Microsoft anmelden", `OidcButton.tsx`; the first sign-in creates the account), missing key on a new device, active (state, last sync, "Jetzt
-  synchronisieren", sign-in and passkeys) and an expired sign-in (the app keeps working
-  locally). A new account first waits for approval (`SyncPending.tsx`, view `pending`, badge
+  "Einrichten"), the setup wizard (`SyncSetupWizard.tsx`, vertical stepper with the required
+  steps in order, only the current one open: "Anmelden" with device name and branded buttons
+  "Mit Google anmelden"/"Mit Microsoft anmelden" (`OidcButton.tsx`; the first sign-in creates
+  the account), "Freischaltung", "Schlüssel" (save the recovery key of a new account or
+  unlock this device) and "Daten abgleichen" (consent to replace own local data), then
+  active (state, last sync, "Jetzt synchronisieren", sign-in, passkeys, contact) and an
+  expired sign-in (the app keeps working locally). An unlocked device that cannot start yet
+  (no recovery key, or the consent is missing) has the phase `setupIncomplete`, never a
+  green state. A new account first waits for approval (`SyncPending.tsx`, view `pending`, badge
   "Freischaltung offen"): it sends the contact email (suggested from the sign-in) and a reason,
   then shows "Anfrage gesendet" with "Status prüfen" and "Anfrage ändern"; the server refuses
   data until approval (`not_approved`). The active view shows and edits the contact email
@@ -503,28 +514,29 @@ the tab used last:
   password managers offer to save, "Kopieren", "Drucken", "Als Datei speichern", warning that nobody can reset it) and asks for
   two random groups of it (`lib/recoveryKeyCheck.ts`) before going on. The first upload or
   download shows a progress bar in the active view. A signed-in device
-  without the key first asks before school data already on it is replaced by the account's
-  data ("Daten ersetzen" or "Abbrechen"; merging is not possible), then offers up to three
-  ways to unlock: passkey (only if the account has one that
+  without the key offers up to three ways to unlock: passkey (only if the account has one that
   can unlock, `account.hasPrfPasskey`), linking with another device (code,
   then comparing the check code) and typing the recovery key (password managers can fill it).
+  After unlocking, school data already on the device needs consent before the account's data
+  replaces it ("Daten ersetzen" or "Abbrechen"; merging is not possible).
   The active view has "Gerät koppeln" to enter that code on a device that already syncs.
   "Geräte anzeigen" lists the devices of the account (last activity), renames them (pencil)
   and revokes another one after a confirmation. Two separate blocks follow: "Anmeldung"
   ("Angemeldet als <email>" with the provider logo, from the sign-in of this device and kept
   only on it; linked Microsoft/Google accounts; buttons to link a missing one) and "Passkeys
   zum Entsperren" (hint or state, "Passkey hinzufügen"). Passkeys never sign in or create an
-  account; one without PRF is refused with a hint. Below: a new
+  account; one without PRF is refused with a hint. If the authenticator already holds a
+  passkey of the account, "Passkey hinzufügen" lets the user pick it and sets it up for
+  unlocking instead. Below: a new
   recovery key (same steps, the old one stops working), "Abmelden", "Synchronisierung ausschalten" and "Konto löschen" (type „LÖSCHEN“, optionally
   also delete the school data on this device).
-  While sync is on, a badge next to the speed dial (`components/SyncBadge.tsx`, state from
-  `getSyncBadge` in `lib/syncView.ts`) shows the state and opens this tab
-  (`paths.settings("sync")`); an expired sign-in or a needed update also shows a closable
+  The sync state (`getSyncBadge` in `lib/syncView.ts`) feeds the hints on open points (see
+  above); an expired sign-in or a needed update also shows a closable
   notice on every other page (`components/SyncNoticeBanner.tsx`). There is no lock screen.
   Importing a backup while sync is on turns sync off (`sync/importGuard.ts`), so the old data
   cannot overwrite the other devices. The notice and the card then say so
   (`components/SyncImportNotice.tsx`) until "Verstanden" hides it (`dismissImportNotice`).
-  The explainable elements of the card, the badge and the notice have `data-help` texts, so *Hilfe*
+  The explainable elements of the card, the dots and the notice have `data-help` texts, so *Hilfe*
   explains them. The card's views are small components in `features/settings/Sync*.tsx`;
   `useSyncAction` runs a facade call and shows its German error (`SyncErrorAlert`).
 

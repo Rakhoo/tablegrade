@@ -154,6 +154,7 @@ describe("session check", () => {
         deviceId: "d",
         identities: SESSION.identities,
         hasDataKey: true,
+        hasRecoveryKey: false,
         hasPrfPasskey: true,
         signedInWith: null,
         approved: true,

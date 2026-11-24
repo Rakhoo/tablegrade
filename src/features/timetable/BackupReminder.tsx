@@ -1,9 +1,9 @@
 import { Button, Snackbar } from "@mui/material";
-import { differenceInDays, parseISO } from "date-fns";
 import { useState } from "react";
 import { useRevalidator } from "react-router";
 import { useSettings } from "../../hooks/useSettings";
 import { saveBackup } from "../../services/backup";
+import { isBackupDue } from "../../lib/attention";
 
 /** Reminds of a backup once the last one is older than set; all data is only on this device. */
 export function BackupReminder() {
@@ -11,10 +11,7 @@ export function BackupReminder() {
   const { revalidate } = useRevalidator();
   const [dismissed, setDismissed] = useState(false);
 
-  const isDue =
-    backupReminderDays > 0 &&
-    (!lastBackup ||
-      differenceInDays(new Date(), parseISO(lastBackup)) >= backupReminderDays);
+  const isDue = isBackupDue(backupReminderDays, lastBackup);
 
   return (
     <Snackbar

@@ -24,7 +24,8 @@ export type SyncPhase =
   | "offline"
   | "error"
   | "upgradeRequired"
-  | "notApproved";
+  | "notApproved"
+  | "setupIncomplete";
 
 /** A sign-in method linked to the account. */
 export type Identity = {
@@ -51,6 +52,8 @@ export type AccountInfo = {
   identities: Identity[];
   /** Whether the server already holds a wrapped data key, i.e. the account is not new. */
   hasDataKey: boolean;
+  /** Whether the account has a recovery key; sync starts only after it was created. */
+  hasRecoveryKey: boolean;
   /** Whether a passkey with PRF exists, so the device can unlock with a passkey. */
   hasPrfPasskey: boolean;
   /** Sign-in of this device; `null` for sessions from before it was recorded. */

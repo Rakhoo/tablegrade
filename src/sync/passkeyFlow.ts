@@ -9,7 +9,12 @@ import {
   type KeyringContext,
   type PrfResult,
 } from "./keyring";
-import { createPasskey, evaluatePrf, type PasskeyResult } from "./webauthn";
+import {
+  createPasskey,
+  evaluatePrf,
+  PasskeyExistsError,
+  type PasskeyResult,
+} from "./webauthn";
 
 /**
  * PRF output of a passkey. Many authenticators report only `enabled` at registration; then a
@@ -31,11 +36,25 @@ async function prfOf(passkey: PasskeyResult): Promise<PrfResult | null> {
  */
 export async function addPasskey(context: KeyringContext): Promise<boolean> {
   const { challengeId, options } = await context.api.passkeyRegisterBegin();
-  const passkey = await createPasskey(options);
+  const passkey = await createPasskey(options).catch((error: unknown) => {
+    if (error instanceof PasskeyExistsError) return null;
+    throw error;
+  });
+  if (!passkey) return wrapExistingPasskey(context);
   await context.api.passkeyRegisterFinish(challengeId, passkey.json, "");
   const prf = await prfOf(passkey);
   if (prf) await addPasskeyWrap(context, prf);
   return !!prf;
+}
+
+/**
+ * Sets up a passkey that already exists on this authenticator (e.g. added before PRF wraps
+ * existed) for unlocking: the user picks it, its PRF output gets a wrap.
+ */
+async function wrapExistingPasskey(context: KeyringContext): Promise<boolean> {
+  const { credentialId, prfOutput } = await evaluatePrf([]);
+  if (prfOutput) await addPasskeyWrap(context, { credentialId, prfOutput });
+  return !!prfOutput;
 }
 
 /** Unlocks the data key with any passkey of the account that has a wrap. */

@@ -54,6 +54,7 @@ async function signIn(provider: OidcProvider, deviceName: string) {
       deviceId: devices[0].id,
       identities: [{ provider, createdAt: now - 30 * 86_400_000 }],
       hasDataKey: !isNewUser,
+      hasRecoveryKey: !isNewUser,
       hasPrfPasskey: !isNewUser,
       signedInWith: { provider, email: "lehrerin@example.org" },
       approved: true,
@@ -111,7 +112,7 @@ export const demo = {
   },
   createRecoveryKey: async () => {
     await wait();
-    updateAccount({ hasDataKey: true });
+    updateAccount({ hasDataKey: true, hasRecoveryKey: true });
     if (readStatus().phase == "locked") void runProgress(100);
     return RECOVERY_KEY;
   },
@@ -126,10 +127,6 @@ export const demo = {
     updateAccount({
       identities: [...account.identities, { provider, createdAt: Date.now() }],
     });
-  },
-  hasLocalData: async () => {
-    await wait();
-    return true;
   },
   replaceLocalData: () => runProgress(100),
   startDeviceLink: async (): Promise<PendingDeviceLink> => {

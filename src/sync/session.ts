@@ -66,6 +66,7 @@ export function accountInfo(info: SessionInfo, keys: KeyWrap[]): AccountInfo {
     deviceId: info.deviceId,
     identities: info.identities,
     hasDataKey: keys.length > 0,
+    hasRecoveryKey: keys.some((wrap) => wrap.kind == "recovery"),
     hasPrfPasskey: keys.some((wrap) => wrap.kind == "passkey"),
     signedInWith: null,
     approved: info.approved,

@@ -5,7 +5,7 @@
  */
 import { deleteAccount as removeAccount } from "./account";
 import { turnOff } from "./activation";
-import { activateSync, hasLocalRows, isActivated } from "./activationFlow";
+import { activateSync, isActivated } from "./activationFlow";
 import type { Api, KeyWrap } from "./api";
 import { findLink, startLink, type StartedLink } from "./deviceLink";
 import type { DeviceStore } from "./deviceStore";
@@ -144,8 +144,10 @@ export function createSyncService(deps: ServiceDeps) {
     }
     if (!(await isActivated(db, store, session.userId))) {
       if (check.state != "valid") return;
+      // Unlocked but not syncing yet: the recovery key or the consent to replace local data
+      // is missing, so the status must not look like a working sync
       if (!(await activate(check.keys, false))) {
-        updateStatus({ phase: "idle", progress: null });
+        updateStatus({ phase: "setupIncomplete", progress: null });
         return;
       }
     }
@@ -295,7 +297,6 @@ export function createSyncService(deps: ServiceDeps) {
       await refresh();
     },
     revokeDevice: (id: string) => api.revokeDevice(id),
-    hasLocalData: () => hasLocalRows(db),
     async replaceLocalData() {
       engine.stop();
       await activate(await api.listKeys(), true);
