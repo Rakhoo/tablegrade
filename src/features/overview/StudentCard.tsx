@@ -19,8 +19,8 @@ type StudentCardProps = {
   typesOf: TypesOf;
   isCancelled: (date: string) => boolean;
   rules: MarkRules;
-  /** Covers all other students in the table; large screens only. */
-  onCover?: () => void;
+  /** Closes the card, keeping the table covered but for this student. */
+  onCover: () => void;
   onClose: () => void;
 };
 
@@ -48,7 +48,7 @@ function Line({
 /**
  * All entries of one student, newest first: oral grades, marks of exams, retakes and projects,
  * the comments and the partial and half year grades. Shows a student their own entries without
- * the others', e.g. on a phone.
+ * the others'; the table behind it is covered but for this student.
  */
 export function StudentCard({
   student,
@@ -147,16 +147,7 @@ export function StudentCard({
         )}
       </DialogContent>
       <DialogActions>
-        {onCover && (
-          <Button
-            onClick={() => {
-              onCover();
-              onClose();
-            }}
-          >
-            In der Tabelle zeigen
-          </Button>
-        )}
+        <Button onClick={onCover}>In der Tabelle zeigen</Button>
         <Button variant="contained" onClick={onClose}>
           Schließen
         </Button>

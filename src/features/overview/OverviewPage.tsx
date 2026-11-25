@@ -88,11 +88,14 @@ export function OverviewPage() {
   const grading = mode == "grade";
   /** Student whose entries alone stay visible, e.g. to show them to the student. */
   const [shownStudent, setShownStudent] = useState<string | null>(null);
+  /** Whether the shown student's entries are listed on a card above the table. */
+  const [cardOpen, setCardOpen] = useState(false);
   // The arrows switch the class without leaving the page, the student may not be in the new one
   const [shownClass, setShownClass] = useState(cls.id);
   if (shownClass != cls.id) {
     setShownClass(cls.id);
     setShownStudent(null);
+    setCardOpen(false);
   }
   // Looked up instead of trusted, as the render that resets it still sees the old id
   const shown = students.find((student) => student.id == shownStudent);
@@ -108,8 +111,6 @@ export function OverviewPage() {
   const [sortByLastName] = lastNameSortOption;
   const showPhotos = photosOption[0] && !compact;
   const showTraits = traitsOption[0] && !compact;
-  /** Student whose entries the card shows. */
-  const [cardStudent, setCardStudent] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [commenting, setCommenting] = useState<{
@@ -271,8 +272,37 @@ export function OverviewPage() {
   const hint =
     mode == "comment"
       ? "Zelle antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"
-      : "Ein Tipp auf einen Namen zeigt alle Einträge des Schülers";
-  const cardFor = students.find((student) => student.id == cardStudent);
+      : shown
+        ? "Ein Tipp auf einen anderen Namen zeigt dessen Einträge"
+        : "Ein Tipp auf einen Namen zeigt nur die Einträge des Schülers";
+  /**
+   * A tap on a name shows only that student's entries, with the card on top; while one student
+   * is shown, another name switches to them and the shown name opens the card again.
+   */
+  const showStudent = (studentId: string) => {
+    if (!shown || studentId == shown.id) setCardOpen(true);
+    setShownStudent(studentId);
+  };
+  const showAll = () => {
+    setShownStudent(null);
+    setCardOpen(false);
+  };
+  /** Who alone is shown, with the way to the card and back to all; slim on small screens. */
+  const shownNotice = shown && (
+    <>
+      <span className="min-w-0 truncate">
+        {compact ? "Nur " : "Nur die Einträge von "}
+        <span className="font-semibold text-ink">{nameOf(shown)}</span>
+        {compact ? "" : " sind sichtbar."}
+      </span>
+      <Button size="small" onClick={() => setCardOpen(true)}>
+        Karte
+      </Button>
+      <Button size="small" onClick={showAll}>
+        Alle zeigen
+      </Button>
+    </>
+  );
 
   return (
     <PointsContext value={points}>
@@ -297,20 +327,7 @@ export function OverviewPage() {
             current={currentMode?.label ?? ""}
             modes={modes("row")}
             history={<HistoryButtons history={history} />}
-            footer={
-              shown && (
-                <>
-                  Nur die Einträge von{" "}
-                  <span className="font-semibold text-ink">
-                    {nameOf(shown)}
-                  </span>{" "}
-                  sind sichtbar.
-                  <Button size="small" onClick={() => setShownStudent(null)}>
-                    Alle zeigen
-                  </Button>
-                </>
-              )
-            }
+            footer={shownNotice}
             hint={grading ? null : hint}
           >
             {grading &&
@@ -324,6 +341,12 @@ export function OverviewPage() {
                 />
               ))}
           </ModeBar>
+        )}
+
+        {compact && shown && (
+          <div className="card flex shrink-0 items-center gap-1 py-0.5 pr-1 pl-3 text-sm text-muted">
+            {shownNotice}
+          </div>
         )}
 
         <div className="relative min-h-0 flex-1">
@@ -369,9 +392,7 @@ export function OverviewPage() {
             showPhotos={showPhotos && hasPhotos}
             showTraits={showTraits}
             shown={shown}
-            onShow={(studentId) =>
-              studentId ? setCardStudent(studentId) : setShownStudent(null)
-            }
+            onShow={showStudent}
             entryOf={entryOf}
             typesOf={typesOf}
             isCancelled={isCancelled}
@@ -394,18 +415,18 @@ export function OverviewPage() {
           </BottomBar>
         )}
 
-        {cardFor && (
+        {shown && cardOpen && (
           <StudentCard
-            student={cardFor}
-            name={nameOf(cardFor)}
-            traits={traitsOf(cardFor)}
+            student={shown}
+            name={nameOf(shown)}
+            traits={traitsOf(shown)}
             columns={columns}
             entryOf={entryOf}
             typesOf={typesOf}
             isCancelled={isCancelled}
             rules={rules}
-            onCover={compact ? undefined : () => setShownStudent(cardFor.id)}
-            onClose={() => setCardStudent(null)}
+            onCover={() => setCardOpen(false)}
+            onClose={showAll}
           />
         )}
 

@@ -67,7 +67,7 @@ export function NameCell({
       <button
         type="button"
         aria-pressed={shown}
-        data-help="Name antippen zeigt alle Einträge des Schülers auf einer Karte, etwa für ihn selbst."
+        data-help="Name antippen zeigt nur die Einträge dieses Schülers, dazu eine Karte mit allen; ist schon einer gezeigt, wechselt der Tipp zu diesem Schüler."
         data-help-repeat
         data-help-place="below"
         onClick={onTap}

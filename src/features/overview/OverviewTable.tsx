@@ -54,7 +54,8 @@ type OverviewTableProps = {
   showTraits: boolean;
   /** Student whose entries alone stay visible. */
   shown: SeatedStudent | undefined;
-  onShow: (studentId: string | null) => void;
+  /** Tap on a student's name. */
+  onShow: (studentId: string) => void;
   entryOf: (studentId: string, date: string) => GradeEntry | undefined;
   typesOf: TypesOf;
   isCancelled: (date: string) => boolean;
@@ -290,9 +291,7 @@ export function OverviewTable({
                     nameWidth={nameWidth}
                     shown={shown?.id == student.id}
                     hidden={hidden}
-                    onTap={() =>
-                      onShow(shown?.id == student.id ? null : student.id)
-                    }
+                    onTap={() => onShow(student.id)}
                   />
                   {columns.map((column, columnIndex) =>
                     hidden ? (

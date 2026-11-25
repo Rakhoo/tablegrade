@@ -242,10 +242,13 @@ Nobody but the user can read the data or reset the recovery key.
   with the seating plan), and nicknames, and after them the sorting switch (rows sorted by last name,
   shown or not, else by the shown names; exports follow it). Rows and columns are tinted,
   comments are marked with a small symbol, and a long press on a date cancels that lesson. A
-  tap on a name opens a card with all entries of the student, newest first
+  tap on a name covers the entries of all other students (and hides all traits) and opens a
+  card with all entries of the student, newest first
   ([src/features/overview/StudentCard.tsx](src/features/overview/StudentCard.tsx)), to show a
-  student their own; on large screens "In der Tabelle zeigen" covers the entries of all other
-  students and hides all traits instead.
+  student their own. "In der Tabelle zeigen" closes only the card, "Schließen" shows all
+  again. While one student is shown, a notice names them with "Karte" and "Alle zeigen" (on
+  phones a slim strip above the table), and a tap on another name switches to that student
+  without the card.
 - **Lesson types**: a lesson can be a *Klausur* (classic marks 1 to 6 with tendencies, plus
   "abwesend", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
   on the date in the overview and in the grading tool bar of the seating plan; a second tap
