@@ -56,8 +56,21 @@ const root = createRoot(container, {
   onUncaughtError: (error) => showFatalError(error),
 });
 
-/** Starts the app. Loaded on demand, so a browser tab never opens the database. */
+/** Time after which a start that shows nothing yet counts as stuck. */
+const START_TIMEOUT_MS = 15000;
+
+/**
+ * Starts the app. Loaded on demand, so a browser tab never opens the database. A start that
+ * hangs before the first screen, e.g. on an outdated offline copy, shows the error screen.
+ */
 async function startApp() {
+  setTimeout(
+    () =>
+      showFatalError(
+        new Error("Der Start hängt (keine Anzeige nach 15 Sekunden)."),
+      ),
+    START_TIMEOUT_MS,
+  );
   const [{ createAppRouter }, { RouterProvider }, { restoreOidcRoute }] =
     await Promise.all([
       import("./router"),
