@@ -87,7 +87,10 @@ export function HistoryButtons({
   round = false,
   stacked = false,
 }: HistoryButtonsProps) {
-  const [notice, setNotice] = useState<string | null>(null);
+  /** The step's text with a running number, so each step restarts the notice. */
+  const [notice, setNotice] = useState<{ text: string; id: number } | null>(
+    null,
+  );
   const help =
     "Rückgängig und Wiederholen, auch für Änderungen auf anderen Seiten (der erste Tipp öffnet sie).";
   if (round) {
@@ -98,7 +101,11 @@ export function HistoryButtons({
       elsewhere: boolean,
       action: () => void,
     ) => {
-      if (step) setNotice(`${label}: ${describeStep(step, elsewhere)}`);
+      if (step)
+        setNotice({
+          text: `${label}: ${describeStep(step, elsewhere)}`,
+          id: (notice?.id ?? 0) + 1,
+        });
       action();
     };
     const buttonClass =
@@ -144,10 +151,12 @@ export function HistoryButtons({
           <RedoIcon size={20} />
         </IconButton>
         <Snackbar
+          key={notice?.id}
           open={!!notice}
-          message={notice}
+          message={notice?.text}
           autoHideDuration={2500}
-          onClose={() => setNotice(null)}
+          // A tap elsewhere, like the next undo, must not close it; the next step replaces it
+          onClose={(_, reason) => reason != "clickaway" && setNotice(null)}
           anchorOrigin={{ vertical: "top", horizontal: "center" }}
         />
       </div>
