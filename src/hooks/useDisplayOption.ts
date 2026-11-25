@@ -14,6 +14,10 @@ const DISPLAY_OPTIONS = {
   lastNameSort: false,
   /** Seating plan zoomed in on the seated students. */
   zoom: true,
+  /** The side bar of the seating plan in landscape sits on the left instead of the right. */
+  railLeft: false,
+  /** Grading with one tool button on large screens too; small screens always use it. */
+  gradeButton: false,
 };
 
 export type DisplayOption = keyof typeof DISPLAY_OPTIONS;
@@ -26,8 +30,10 @@ const STORAGE_KEYS: Record<DisplayOption, string> = {
   nicknames: "overviewNicknames",
   lastNameSort: "overviewLastNameSort",
   zoom: "seatZoom",
+  railLeft: "railLeft",
+  gradeButton: "gradeButton",
 };
 
-/** A display option shared by seating plan and overview table, kept on the device. */
+/** A display option of the class pages, kept on the device. */
 export const useDisplayOption = (option: DisplayOption) =>
   useStoredBoolean(STORAGE_KEYS[option], DISPLAY_OPTIONS[option]);

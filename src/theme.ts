@@ -3,6 +3,9 @@ import { deDE as coreDeDE } from "@mui/material/locale";
 import { deDE as pickersDeDE } from "@mui/x-date-pickers/locales";
 import type { getThemeTokens } from "./lib/themes";
 
+/** Narrow screens (phones in portrait), on which dialogs become sheets. */
+const NARROW = "@media (max-width: 599.98px)";
+
 /** Creates the MUI theme for the selected colors: pill buttons, rounded surfaces, German texts. */
 export const createAppTheme = (
   tokens: ReturnType<typeof getThemeTokens>,
@@ -35,10 +38,22 @@ export const createAppTheme = (
         },
         MuiDialog: {
           styleOverrides: {
+            // Narrow screens show dialogs as a sheet from the bottom, as wide as the screen
+            container: {
+              [NARROW]: { alignItems: "flex-end" },
+            },
             paper: {
               borderRadius: 28,
               backgroundImage: "none",
               boxShadow: "0 24px 64px -16px rgb(43 37 64 / 0.3)",
+              [NARROW]: {
+                margin: 0,
+                width: "100%",
+                maxWidth: "100%",
+                maxHeight: "calc(100% - env(safe-area-inset-top) - 1.5rem)",
+                borderRadius: "28px 28px 0 0",
+                paddingBottom: "env(safe-area-inset-bottom)",
+              },
             },
           },
         },

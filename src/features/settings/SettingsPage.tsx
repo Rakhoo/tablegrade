@@ -6,6 +6,7 @@ import { ReturnButton } from "../../components/ReturnButton";
 import { resetEditHistory } from "../../hooks/useEditHistory";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { BackupSettings } from "./BackupSettings";
+import { ControlSettings } from "./ControlSettings";
 import { DataSettings } from "./DataSettings";
 import { DevSettings } from "./DevSettings";
 import { DutySettings } from "./DutySettings";
@@ -130,6 +131,7 @@ export function SettingsPage() {
     display: (
       <>
         <AppearanceSettings />
+        <ControlSettings />
         <GradeColorSettings />
         <TimetableSettings />
         <OverviewTableSettings />
