@@ -146,8 +146,10 @@ Nobody but the user can read the data or reset the recovery key.
   - *Kommentieren*: the only place for comments. Speech bubbles show their first words, a tap
     edits the comment or starts a new one.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
-  - In landscape a side bar holds way back, title with the lesson arrows (swiping the title
-    switches too), undo/redo, the modes and their tools, so the plan gets the whole height
+  - In landscape a side bar holds the way back (an arrow in its top left corner, level with
+    the speed dial), title with the lesson arrows (swiping the title
+    switches too), undo/redo, the modes and their tools (the tool button above the lesson
+    type), so the plan gets the whole height
     ([src/features/classroom/ClassroomRail.tsx](src/features/classroom/ClassroomRail.tsx)). It
     sits on the right, below the speed dial with the switch to the overview.
   - Seats under 44 px show no photo, under 64 px smaller badges, so names stay readable.

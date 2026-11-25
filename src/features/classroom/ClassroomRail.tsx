@@ -63,13 +63,13 @@ export function ClassroomRail({
   });
   return (
     <aside
-      className="card flex w-64 shrink-0 flex-col gap-2 overflow-y-auto p-2 compact:w-48"
+      // No padding at the top: the way back sits level with the speed dial in the corner
+      className="card flex w-72 shrink-0 flex-col gap-2 overflow-y-auto p-2 pt-0 compact:w-48"
       data-help-group
       data-help="Seitenleiste: Stunde, Modus, Rückgängig und die Werkzeuge des Modus."
     >
-      {/* Room for the speed dial in the corner above */}
-      <div className="h-12 shrink-0" />
-      <div className="self-start">{back}</div>
+      {/* The way back in the top left corner, the speed dial covers the rest of the row */}
+      <div className="flex h-11 shrink-0 items-center compact:h-10">{back}</div>
       <div
         {...swipe}
         className="flex touch-pan-y flex-col items-center gap-1 text-center"

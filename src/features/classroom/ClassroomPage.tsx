@@ -283,7 +283,7 @@ export function ClassroomPage() {
       >
         {rail ? (
           <ClassroomRail
-            back={back}
+            back={<BackButton timetableUrl={paths.timetable(date)} iconOnly />}
             title={title}
             subtitle={format(lessonDate, "EEE, d. MMM yyyy", { locale: de })}
             previous={previousUrl}
@@ -297,7 +297,7 @@ export function ClassroomPage() {
             }
             modes={modes("grid")}
           >
-            {modeContent(compact ? "bar" : "rail")}
+            {modeContent("rail")}
           </ClassroomRail>
         ) : (
           <PageHeader
