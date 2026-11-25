@@ -44,6 +44,8 @@ type TimetableGridProps = {
   onDayLongPress: (date: Date) => void;
   /** Long press on a lesson, to toggle "Ausfall" for it. */
   onLessonLongPress: (date: Date, schoolClass: SchoolClass) => void;
+  /** Shows only this weekday (1 = Monday), without the day headers, e.g. on phones. */
+  day?: number;
 };
 
 type Slot = { day: number; weekday: string; date: Date };
@@ -86,7 +88,7 @@ function freeBlock(
         <Link
           key={`${key}-${h}`}
           {...newClassLink(slot, h)}
-          className="m-1 rounded-xl border border-dashed border-brand-300 transition-colors active:bg-brand-100/70"
+          className="m-1 rounded-xl border border-dashed border-brand-300 transition-colors active:bg-brand-100/70 short:m-0.5"
           style={{ gridColumn: column, gridRow: row + h - hour }}
         />,
       );
@@ -120,13 +122,13 @@ function LessonTile({
   const { levels } = useSettings();
   const pressHandlers = useLongPress(onLongPress);
   const className =
-    "relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-xl border-l-4 px-3 py-1 select-none ";
+    "relative flex min-h-0 flex-1 flex-col justify-center overflow-hidden rounded-xl border-l-4 px-3 py-1 select-none short:rounded-lg short:px-2 short:py-0 ";
   const texts = (
     <>
-      <span className="truncate text-base leading-tight font-bold">
+      <span className="truncate text-base leading-tight font-bold short:text-sm">
         {formatClassName(schoolClass)}
       </span>
-      <span className="truncate text-sm leading-tight opacity-80">
+      <span className="truncate text-sm leading-tight opacity-80 short:hidden">
         {schoolClass.subject}
       </span>
     </>
@@ -200,7 +202,7 @@ function DayHeader({
   return (
     <div
       className={
-        "flex flex-col items-center gap-0.5 bg-surface px-1 py-2 " +
+        "flex flex-col items-center gap-0.5 bg-surface px-1 py-2 short:flex-row short:justify-center short:gap-1.5 short:py-0.5 " +
         (onLongPress ? "transition-colors active:bg-brand-50" : "")
       }
       style={{ gridColumn: column, gridRow: 1, WebkitTouchCallout: "none" }}
@@ -211,7 +213,7 @@ function DayHeader({
       </span>
       <span
         className={
-          "flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-base font-semibold " +
+          "flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-base font-semibold short:h-6 short:text-sm " +
           (isToday(date) ? "bg-brand-600 text-white " : "") +
           (isDayOff ? "line-through decoration-2 opacity-60" : "")
         }
@@ -236,10 +238,15 @@ export function TimetableGrid({
   lessonTypes,
   onDayLongPress,
   onLessonLongPress,
+  day: onlyDay,
 }: TimetableGridProps) {
   const settings = useSettings();
   const { lessonsPerDay, compactTimetable } = settings;
-  const cells: ReactNode[] = [<div key="corner" className="bg-surface" />];
+  // A single day has its own day choice, so it needs no header row
+  const headless = onlyDay != undefined;
+  const cells: ReactNode[] = headless
+    ? []
+    : [<div key="corner" className="bg-surface" />];
 
   // The classes taking place on each weekday of this week, double lessons as two hours
   const week = WEEKDAY_NAMES.map((weekday, index) => {
@@ -260,14 +267,16 @@ export function TimetableGrid({
   // Compact: only days with classes and the lessons from the first to the last one; a week
   // without any classes stays complete, so new classes can still be placed
   const compact = compactTimetable && taughtHours.length > 0;
-  const shownDays = compact
-    ? week.filter(({ classes }) => classes.length > 0)
-    : week;
+  const shownDays = headless
+    ? week.filter(({ day }) => day == onlyDay)
+    : compact
+      ? week.filter(({ classes }) => classes.length > 0)
+      : week;
   const lastHour = compact
     ? Math.min(Math.max(...taughtHours), lessonsPerDay)
     : lessonsPerDay;
   const firstHour = compact ? Math.min(Math.min(...taughtHours), lastHour) : 1;
-  const rowOf = (hour: number) => hour - firstHour + 2;
+  const rowOf = (hour: number) => hour - firstHour + (headless ? 1 : 2);
   /** Start and end of a lesson, while the times are switched on in the settings. */
   const timeOf = (hour: number) =>
     settings.showLessonTimes ? getLessonTime(settings, hour) : null;
@@ -308,7 +317,7 @@ export function TimetableGrid({
       >
         {hour}
         {time && (
-          <span className="text-[10px] leading-tight font-medium">
+          <span className="text-[10px] leading-tight font-medium short:hidden">
             {time.start}
             <br />
             {time.end}
@@ -322,17 +331,19 @@ export function TimetableGrid({
     const column = index + 2;
     const holiday = getHoliday(date, calendar);
     const isCancelled = cancelledDays.includes(toIsoDate(date));
-    cells.push(
-      <DayHeader
-        key={`head-${day}`}
-        weekday={weekday}
-        date={date}
-        column={column}
-        isDayOff={isCancelled || !!holiday}
-        // Holidays are fixed; only regular and cancelled days can be toggled
-        onLongPress={holiday ? undefined : () => onDayLongPress(date)}
-      />,
-    );
+    if (!headless) {
+      cells.push(
+        <DayHeader
+          key={`head-${day}`}
+          weekday={weekday}
+          date={date}
+          column={column}
+          isDayOff={isCancelled || !!holiday}
+          // Holidays are fixed; only regular and cancelled days can be toggled
+          onLongPress={holiday ? undefined : () => onDayLongPress(date)}
+        />,
+      );
+    }
 
     if (holiday) {
       const label = holiday.publicHoliday ? "FEIERTAG" : "FERIEN";
@@ -340,7 +351,7 @@ export function TimetableGrid({
         ...freeBlock(
           `holiday-${day}`,
           column,
-          2,
+          rowOf(firstHour),
           firstHour,
           lastHour - firstHour + 1,
           label,
@@ -353,7 +364,7 @@ export function TimetableGrid({
         ...freeBlock(
           `cancelled-${day}`,
           column,
-          2,
+          rowOf(firstHour),
           firstHour,
           lastHour - firstHour + 1,
           "AUSFALL",
@@ -388,7 +399,7 @@ export function TimetableGrid({
         cells.push(
           <div
             key={`${day}-${hour}`}
-            className="flex flex-col gap-1 bg-surface p-1"
+            className="flex flex-col gap-1 bg-surface p-1 short:gap-0.5 short:p-0.5"
             style={{
               gridColumn: column,
               gridRow: `${rowOf(hour)} / span ${block.span}`,
@@ -433,10 +444,11 @@ export function TimetableGrid({
 
   return (
     <div
-      className="grid h-full gap-px overflow-hidden rounded-2xl border border-line bg-line"
+      // Rows get lower on short screens, so a whole day still fits
+      className="grid h-full gap-px overflow-hidden rounded-2xl border border-line bg-line [--row-min:2.5rem] short:[--row-min:1.5rem]"
       style={{
         gridTemplateColumns: `${hasTimes ? "3.25rem" : "2.75rem"} repeat(${shownDays.length}, minmax(0, 1fr))`,
-        gridTemplateRows: `auto repeat(${lastHour - firstHour + 1}, minmax(2.5rem, 1fr))`,
+        gridTemplateRows: `${headless ? "" : "auto "}repeat(${lastHour - firstHour + 1}, minmax(var(--row-min), 1fr))`,
       }}
     >
       {cells}

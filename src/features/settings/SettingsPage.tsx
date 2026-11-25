@@ -1,4 +1,4 @@
-import { Tab, Tabs } from "@mui/material";
+import { Button, Tab, Tabs } from "@mui/material";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLoaderData, useSearchParams } from "react-router";
 import { SpeedDialLayout } from "../../components/SpeedDial";
@@ -28,6 +28,8 @@ import { paths } from "../../lib/paths";
 import { AttentionDot } from "../../components/AttentionDot";
 import { useAttention } from "../../hooks/useAttention";
 import { worstTone } from "../../lib/attention";
+import { useCompact } from "../../hooks/useCompact";
+import { ChevronLeftIcon, ChevronRightIcon } from "../../components/icons";
 
 /** The tabs of the settings, each with the cards of related topics. */
 const TABS = [
@@ -88,7 +90,11 @@ export function SettingsPage() {
   const [openingTab] = useState(
     () => attention[0]?.tab ?? getStoredTab() ?? TABS[0].key,
   );
-  const tab: TabKey = findTab(searchParams.get("tab")) ?? openingTab;
+  const chosenTab = findTab(searchParams.get("tab"));
+  const tab: TabKey = chosenTab ?? openingTab;
+  // Small screens first list the topics and show one topic's cards on a page of its own
+  const compact = useCompact();
+  const showList = compact && !chosenTab;
 
   /** Counts taps on the data tab while it is open; enough of them unlock the dev options. */
   const countDevTap = () => {
@@ -147,44 +153,97 @@ export function SettingsPage() {
     sync: <SyncSettings />,
   };
 
+  /** Opens a tab and remembers it; on small screens as a new step, so going back lists them. */
+  const openTab = (key: TabKey) => {
+    storeTab(key);
+    setSearchParams({ tab: key }, { replace: !compact });
+  };
+  const toneOf = (key: TabKey) =>
+    worstTone(attention.filter((item) => item.tab == key));
+
   return (
     <SpeedDialLayout entries={[]}>
       <header className="flex items-center gap-3">
-        <ReturnButton fallback={paths.timetable()} />
-        <h1 className="text-xl font-bold tracking-tight">Einstellungen</h1>
+        {compact && chosenTab ? (
+          <Button
+            startIcon={<ChevronLeftIcon />}
+            className="pl-2"
+            data-help="Zurück zur Liste der Themen."
+            onClick={() => setSearchParams({}, { replace: true })}
+          >
+            Themen
+          </Button>
+        ) : (
+          <ReturnButton fallback={paths.timetable()} />
+        )}
+        <h1
+          className="text-xl font-bold tracking-tight"
+          // Hidden: tapping the title of "Daten und Export" often enough shows the developer options
+          onClick={compact ? countDevTap : undefined}
+        >
+          {compact && chosenTab
+            ? TABS.find((option) => option.key == chosenTab)?.label
+            : "Einstellungen"}
+        </h1>
       </header>
-      <Tabs
-        value={tab}
-        onChange={(_, value: TabKey) => {
-          storeTab(value);
-          setSearchParams({ tab: value }, { replace: true });
-        }}
-        variant="scrollable"
-        scrollButtons="auto"
-        className="card shrink-0 px-2"
-        data-help="Themen der Einstellungen; ein Tab zeigt seine Karten. Ein Punkt zeigt, dass dort etwas zu tun ist (gelb) oder etwas fehlgeschlagen ist (rot)."
-      >
-        {TABS.map(({ key, label }) => {
-          const tone = worstTone(attention.filter((item) => item.tab == key));
-          return (
-            <Tab
-              key={key}
-              value={key}
-              label={
+      {showList ? (
+        <nav
+          className="card flex flex-col px-2 py-1"
+          data-help="Themen der Einstellungen; ein Punkt zeigt, dass dort etwas zu tun ist (gelb) oder etwas fehlgeschlagen ist (rot)."
+        >
+          {TABS.map(({ key, label }) => {
+            const tone = toneOf(key);
+            return (
+              <button
+                key={key}
+                type="button"
+                className="flex min-h-12 items-center justify-between gap-2 border-b border-line px-2 text-left font-medium last:border-0 active:bg-brand-50"
+                onClick={() => openTab(key)}
+              >
                 <span className="flex items-center gap-1.5">
                   {label}
                   {tone && <AttentionDot tone={tone} />}
                 </span>
-              }
-              // Hidden: tapping the active data tab often enough shows the developer options
-              onClick={key == "data" ? countDevTap : undefined}
-            />
-          );
-        })}
-      </Tabs>
-      <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4">
-        {cards[tab]}
-      </main>
+                <ChevronRightIcon size={18} className="text-muted" />
+              </button>
+            );
+          })}
+        </nav>
+      ) : (
+        <>
+          {!compact && (
+            <Tabs
+              value={tab}
+              onChange={(_, value: TabKey) => openTab(value)}
+              variant="scrollable"
+              scrollButtons="auto"
+              className="card shrink-0 px-2"
+              data-help="Themen der Einstellungen; ein Tab zeigt seine Karten. Ein Punkt zeigt, dass dort etwas zu tun ist (gelb) oder etwas fehlgeschlagen ist (rot)."
+            >
+              {TABS.map(({ key, label }) => {
+                const tone = toneOf(key);
+                return (
+                  <Tab
+                    key={key}
+                    value={key}
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        {label}
+                        {tone && <AttentionDot tone={tone} />}
+                      </span>
+                    }
+                    // Hidden: tapping the active data tab often enough shows the developer options
+                    onClick={key == "data" ? countDevTap : undefined}
+                  />
+                );
+              })}
+            </Tabs>
+          )}
+          <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4 compact:pb-20">
+            {cards[tab]}
+          </main>
+        </>
+      )}
     </SpeedDialLayout>
   );
 }

@@ -1,4 +1,4 @@
-import { Button, IconButton } from "@mui/material";
+import { Button, Dialog, IconButton } from "@mui/material";
 import { StaticDatePicker } from "@mui/x-date-pickers";
 import {
   addDays,
@@ -23,13 +23,17 @@ import {
   useSearchParams,
 } from "react-router";
 import type { SchoolClass } from "../../db";
-import { SpeedDialLayout } from "../../components/SpeedDial";
+import {
+  SpeedDialLayout,
+  type SpeedDialEntry,
+} from "../../components/SpeedDial";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PlusIcon,
   TableIcon,
 } from "../../components/icons";
+import { useCompact, useLandscape } from "../../hooks/useCompact";
 import { useRememberMainPage } from "../../hooks/useRememberMainPage";
 import { rememberCurrentPageFor } from "../../lib/returnPage";
 import { useSwipe } from "../../hooks/useSwipe";
@@ -39,6 +43,7 @@ import { CALENDAR_START, getCalendarEnd } from "../../lib/schoolYear";
 import { CancelDialog } from "../../components/CancelDialog";
 import { Raven } from "../../components/brand/Raven";
 import { BackupReminder } from "./BackupReminder";
+import { DayChips } from "./DayChips";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
 import "./TimetablePage.css";
@@ -56,6 +61,11 @@ export function TimetablePage() {
   } = useLoaderData<TimetableLoaderData>();
   const { revalidate } = useRevalidator();
   useRememberMainPage("timetable");
+  const compact = useCompact();
+  const landscape = useLandscape();
+  // Phones in portrait show one day, the week bar opens the calendar
+  const dayView = compact && !landscape;
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [cancelTarget, setCancelTarget] = useState<{
     date: Date;
@@ -125,7 +135,17 @@ export function TimetablePage() {
     }
   };
 
-  const timetableSwipe = useSwipe(switchWeek);
+  /** Switches to the previous or next school day, across weekends and weeks. */
+  const switchDay = (direction: 1 | -1) => {
+    const weekday = anchor.getDay();
+    const step =
+      direction == 1 ? (weekday == 5 ? 3 : 1) : weekday == 1 ? -3 : -1;
+    const target = addDays(anchor, step);
+    if (target >= CALENDAR_START && target <= addDays(maxDate, 4))
+      selectDate(target);
+  };
+
+  const timetableSwipe = useSwipe(dayView ? switchDay : switchWeek);
   const calendarSwipe = useSwipe(switchMonth);
 
   /**
@@ -176,13 +196,19 @@ export function TimetablePage() {
       >
         <ChevronLeftIcon />
       </IconButton>
-      <div className="text-center leading-tight">
+      <button
+        type="button"
+        disabled={!compact}
+        className="rounded-2xl px-2 text-center leading-tight text-ink active:bg-brand-100"
+        onClick={() => setCalendarOpen(true)}
+        data-help={compact ? "Öffnet den Kalender." : undefined}
+      >
         <div className="font-semibold">KW {getISOWeek(monday)}</div>
         <div className="text-sm text-muted">
           {format(monday, "d. MMM", { locale: de })} –{" "}
           {format(addDays(monday, 4), "d. MMM yyyy", { locale: de })}
         </div>
-      </div>
+      </button>
       <IconButton
         aria-label="Nächste Woche"
         disabled={addWeeks(monday, 1) > maxDate}
@@ -193,6 +219,158 @@ export function TimetablePage() {
       </IconButton>
     </div>
   );
+
+  /** The month calendar choosing the week; `onPick` runs after a day was picked. */
+  const monthCalendar = (className: string, onPick?: () => void) => (
+    <div
+      {...calendarSwipe}
+      className={`touch-pan-y ${className}`}
+      data-help="Ein Tag wählt seine Woche; Wischen wechselt den Monat."
+    >
+      <StaticDatePicker
+        displayStaticWrapperAs="desktop"
+        value={anchor}
+        onChange={(value) => {
+          if (!value) return;
+          handleDayChange(value);
+          onPick?.();
+        }}
+        showDaysOutsideCurrentMonth
+        onMonthChange={handleMonthChange}
+        slotProps={{
+          day: ({ day, isDayOutsideMonth }) => ({
+            className: weekDayClass(day, isDayOutsideMonth),
+          }),
+        }}
+        shouldDisableDate={(day) => day.getDay() == 6 || day.getDay() == 0}
+        minDate={CALENDAR_START}
+        maxDate={maxDate}
+      />
+    </div>
+  );
+  const timetable = (
+    <section
+      {...timetableSwipe}
+      className="card relative min-h-0 flex-1 touch-pan-y p-3 compact:p-1.5"
+      data-help={
+        dayView
+          ? "Eine Stunde öffnet ihren Sitzplan, ein freies Feld legt eine Klasse an; lange drücken setzt Ausfall. Wischen wechselt den Tag. ✓ = vollständig bewertet."
+          : "Eine Stunde öffnet ihren Sitzplan, ein freies Feld legt eine Klasse an; lange drücken setzt Ausfall. ✓ = vollständig bewertet."
+      }
+    >
+      <TimetableGrid
+        day={dayView ? anchor.getDay() || 1 : undefined}
+        monday={monday}
+        schoolClasses={schoolClasses}
+        calendar={calendar}
+        cancelledDays={cancelledDays}
+        cancelledLessons={cancelledLessons}
+        completedLessons={completedLessons}
+        lessonTypes={lessonTypes}
+        onDayLongPress={(date) => setCancelTarget({ date })}
+        onLessonLongPress={(date, schoolClass) =>
+          setCancelTarget({ date, schoolClass })
+        }
+      />
+    </section>
+  );
+  const dialogs = (
+    <>
+      <BackupReminder />
+
+      {cancelTarget && (
+        <CancelDialog
+          date={cancelTarget.date}
+          schoolClass={cancelTarget.schoolClass}
+          isCancelled={
+            cancelTarget.schoolClass
+              ? cancelledLessons.includes(
+                  lessonKey(
+                    cancelTarget.schoolClass.id,
+                    toIsoDate(cancelTarget.date),
+                  ),
+                )
+              : cancelledDays.includes(toIsoDate(cancelTarget.date))
+          }
+          onClose={() => setCancelTarget(null)}
+          onChanged={revalidate}
+        />
+      )}
+    </>
+  );
+  const todayButton = (
+    <Button
+      variant="outlined"
+      size="small"
+      // Without a date the current week is shown, the clean start state
+      onClick={() => setSearchParams({}, { replace: true })}
+      data-help="Springt zurück zur aktuellen Woche."
+    >
+      Heute
+    </Button>
+  );
+
+  if (compact) {
+    // New classes and the overviews move into the speed dial, the calendar into a dialog
+    const entries: SpeedDialEntry[] = [
+      {
+        key: "new",
+        label: "Neue Klasse",
+        icon: <PlusIcon />,
+        help: "Legt eine Klasse mit Fach, Stunden und Schülerliste an.",
+        to: newClassUrl,
+        onClick: () => rememberCurrentPageFor(paths.newClass()),
+      },
+      {
+        key: "classes",
+        label: "Übersichten",
+        icon: <TableIcon />,
+        help: "Alle Klassen mit ihren Notentabellen.",
+        to: paths.classes(),
+      },
+    ];
+    return (
+      <SpeedDialLayout
+        entries={entries}
+        className="timetable-page flex-col gap-2"
+      >
+        <div className="flex items-center gap-2">
+          {!landscape && (
+            <h1 className="flex flex-1 items-center gap-2 text-xl font-bold tracking-tight">
+              <Raven className="h-8 shrink-0 text-brand-500" />
+              Stundenplan
+            </h1>
+          )}
+          {landscape && <div className="w-80">{weekBar}</div>}
+          {todayButton}
+        </div>
+        {dayView && (
+          <>
+            {weekBar}
+            <DayChips
+              monday={monday}
+              selected={anchor}
+              calendar={calendar}
+              cancelledDays={cancelledDays}
+              onSelect={selectDate}
+              onLongPress={(date) => setCancelTarget({ date })}
+            />
+          </>
+        )}
+        {timetable}
+        <Dialog
+          open={calendarOpen}
+          onClose={() => setCalendarOpen(false)}
+          className="timetable-page"
+        >
+          {monthCalendar("flex justify-center p-2", () =>
+            setCalendarOpen(false),
+          )}
+        </Dialog>
+        {dialogs}
+      </SpeedDialLayout>
+    );
+  }
 
   return (
     <SpeedDialLayout
@@ -214,15 +392,7 @@ export function TimetablePage() {
               <Raven className="h-9 shrink-0 text-brand-500" />
               Stundenplan
             </h1>
-            <Button
-              variant="outlined"
-              size="small"
-              // Without a date the current week is shown, the clean start state
-              onClick={() => setSearchParams({}, { replace: true })}
-              data-help="Springt zurück zur aktuellen Woche."
-            >
-              Heute
-            </Button>
+            {todayButton}
           </div>
 
           <div className="landscape:hidden">{weekBar}</div>
@@ -253,74 +423,17 @@ export function TimetablePage() {
         </div>
 
         {/* Portrait: lower, so the speed dial above it covers nothing */}
-        <div
-          {...calendarSwipe}
-          className="touch-pan-y portrait:mt-12"
-          data-help="Ein Tag wählt seine Woche; Wischen wechselt den Monat."
-        >
-          <StaticDatePicker
-            displayStaticWrapperAs="desktop"
-            value={anchor}
-            onChange={(value) => value && handleDayChange(value)}
-            showDaysOutsideCurrentMonth
-            onMonthChange={handleMonthChange}
-            slotProps={{
-              day: ({ day, isDayOutsideMonth }) => ({
-                className: weekDayClass(day, isDayOutsideMonth),
-              }),
-            }}
-            shouldDisableDate={(day) => day.getDay() == 6 || day.getDay() == 0}
-            minDate={CALENDAR_START}
-            maxDate={maxDate}
-          />
-        </div>
+        {monthCalendar("portrait:mt-12")}
       </aside>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3">
         <div className="flex min-h-11 items-center justify-center pr-28 portrait:hidden">
           <div className="w-80">{weekBar}</div>
         </div>
-        <section
-          {...timetableSwipe}
-          className="card relative min-h-0 flex-1 touch-pan-y p-3"
-          data-help="Eine Stunde öffnet ihren Sitzplan, ein freies Feld legt eine Klasse an; lange drücken setzt Ausfall. ✓ = vollständig bewertet."
-        >
-          <TimetableGrid
-            monday={monday}
-            schoolClasses={schoolClasses}
-            calendar={calendar}
-            cancelledDays={cancelledDays}
-            cancelledLessons={cancelledLessons}
-            completedLessons={completedLessons}
-            lessonTypes={lessonTypes}
-            onDayLongPress={(date) => setCancelTarget({ date })}
-            onLessonLongPress={(date, schoolClass) =>
-              setCancelTarget({ date, schoolClass })
-            }
-          />
-        </section>
+        {timetable}
       </div>
 
-      <BackupReminder />
-
-      {cancelTarget && (
-        <CancelDialog
-          date={cancelTarget.date}
-          schoolClass={cancelTarget.schoolClass}
-          isCancelled={
-            cancelTarget.schoolClass
-              ? cancelledLessons.includes(
-                  lessonKey(
-                    cancelTarget.schoolClass.id,
-                    toIsoDate(cancelTarget.date),
-                  ),
-                )
-              : cancelledDays.includes(toIsoDate(cancelTarget.date))
-          }
-          onClose={() => setCancelTarget(null)}
-          onChanged={revalidate}
-        />
-      )}
+      {dialogs}
     </SpeedDialLayout>
   );
 }
