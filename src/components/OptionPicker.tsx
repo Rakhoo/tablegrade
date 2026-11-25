@@ -44,9 +44,6 @@ export type PickRequest = {
 /** Room in pixels kept to the screen edges and the anchor. */
 const MARGIN = 8;
 
-/** Movement in pixels after which releasing outside cancels instead of keeping it open. */
-const MOVE_TOLERANCE = 10;
-
 /** Distance in pixels from the choice to the bottom of its preview, above the fingertip. */
 const BUBBLE_GAP = 56;
 
@@ -93,8 +90,9 @@ type OptionPickerProps = {
 
 /**
  * Choices in a panel next to their anchor. While the finger is down (`held`) sliding marks a
- * choice, shown enlarged above the finger, and releasing picks it; releasing elsewhere cancels.
- * Releasing without sliding keeps the panel open, so choices can be tapped as well.
+ * choice, shown enlarged above the finger, and releasing picks it. Releasing outside cancels once
+ * the finger was in the panel; before that, e.g. after a tap on the anchor, the panel stays open,
+ * so choices can be tapped as well.
  */
 export function OptionPicker({ request, onClose }: OptionPickerProps) {
   const { anchor, title, sections, selected, onPick } = request;
@@ -104,9 +102,8 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
   const [hover, setHover] = useState<{ key: string; rect: DOMRect } | null>(
     null,
   );
-  /** Where the finger was when the panel opened, and whether it left that point since. */
-  const start = useRef<{ x: number; y: number } | null>(null);
-  const moved = useRef(false);
+  /** Whether the held finger has been in the panel, after which releasing outside cancels. */
+  const entered = useRef(false);
 
   useLayoutEffect(() => {
     if (!panel.current) return;
@@ -119,10 +116,15 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
   useEffect(() => {
     if (!held) return;
     const handleMove = (event: PointerEvent) => {
-      start.current ??= { x: event.clientX, y: event.clientY };
-      const { x, y } = start.current;
-      if (Math.hypot(event.clientX - x, event.clientY - y) > MOVE_TOLERANCE)
-        moved.current = true;
+      const box = panel.current?.getBoundingClientRect();
+      if (
+        box &&
+        event.clientX >= box.left &&
+        event.clientX <= box.right &&
+        event.clientY >= box.top &&
+        event.clientY <= box.bottom
+      )
+        entered.current = true;
       const option = optionAt(event.clientX, event.clientY);
       setHover(
         option
@@ -136,7 +138,7 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
       if (key) {
         onPick(key);
         onClose();
-      } else if (moved.current) onClose();
+      } else if (entered.current) onClose();
       else setHeld(false);
     };
     window.addEventListener("pointermove", handleMove);
