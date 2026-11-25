@@ -42,7 +42,6 @@ import { lessonKey } from "../../lib/lessons";
 import { CALENDAR_START, getCalendarEnd } from "../../lib/schoolYear";
 import { CancelDialog } from "../../components/CancelDialog";
 import { Raven } from "../../components/brand/Raven";
-import { BackupReminder } from "./BackupReminder";
 import { DayChips } from "./DayChips";
 import { TimetableGrid } from "./TimetableGrid";
 import type { TimetableLoaderData } from "./timetableLoader";
@@ -276,8 +275,6 @@ export function TimetablePage() {
   );
   const dialogs = (
     <>
-      <BackupReminder />
-
       {cancelTarget && (
         <CancelDialog
           date={cancelTarget.date}

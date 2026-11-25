@@ -194,12 +194,12 @@ Nobody but the user can read the data or reset the recovery key.
   ask for access (contact email and a short reason) and wait until Mario approves them on the
   server. Details in
   [Settings](#settings).
-- **Hints on open points** (`lib/attention.ts`, `hooks/useAttention.ts`): no school year, a
-  due backup (`isBackupDue`, also used by the backup reminder) and a sync that needs a step
-  or failed put a dot (`components/AttentionDot.tsx`, yellow or red) on the speed dial
+- **Hints on open points** (`lib/attention.ts`, `hooks/useAttention.ts`): no school year and a
+  sync that needs a step or failed put a dot (`components/AttentionDot.tsx`, yellow or red) on the speed dial
   button, on its "Einstellungen" entry and on the settings tab concerned; a running sync
   only pulses the ring of the speed dial button. The settings open on the first tab with an
-  open point (fixed at opening).
+  open point (fixed at opening). Backups have no reminder and no date of the last one; they
+  stay possible in *Daten und Export*.
 
 ### Installed app (PWA)
 
@@ -344,7 +344,7 @@ src/
 │   └── help/                       help overlay and the step-by-step help of small screens:
 │                                   components, targets, placement, geometry
 ├── features/
-│   ├── timetable/                  timetable page, grid, backup reminder
+│   ├── timetable/                  timetable page, grid, day chips
 │   ├── classroom/                  seating plan page, seat grid, its dialogs
 │   ├── classList/                  class selection of the overviews
 │   ├── overview/                   overview table with its headers, cells and type menu
@@ -527,7 +527,7 @@ the default:
   timetable leaves out weekdays without classes and the lessons before the first and after
   the last one of the week (free lessons in between stay; a week without classes stays
   complete).
-- **Daten und Export**: backup, restore, backup reminder and "Neu laden"; the PDF export format.
+- **Daten und Export**: backup, restore and "Neu laden"; the PDF export format.
   Tapping the open tab "Daten und Export" seven times unlocks a hidden card *Entwickler* (while
   the settings page stays open): *Mit Beispieldaten füllen* deletes all classes, students, entries, reports,
   cancellations, traits and duties (settings, holidays and school years stay) after a warning,

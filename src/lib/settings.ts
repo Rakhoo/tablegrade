@@ -101,8 +101,7 @@ export const DEFAULT_SETTINGS = {
   compactTimetable: false,
   suggestions: true,
   startMode: "warn" as ClassroomMode,
-  /** Days after which a backup is due; 0 turns the reminder off. */
-  backupReminderDays: 14,
+  /** No longer written or read; kept as migration 23 lists it among the device settings. */
   lastBackup: null as string | null,
   pinHash: null as string | null,
   /** Seats for new students; `null` uses the built-in layout. */

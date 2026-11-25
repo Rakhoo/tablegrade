@@ -1,34 +1,24 @@
-import { Button, MenuItem, Snackbar, TextField } from "@mui/material";
-import { format, parseISO } from "date-fns";
+import { Button, Snackbar } from "@mui/material";
 import { useRef, useState } from "react";
-import { useRevalidator } from "react-router";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { DownloadIcon, RefreshIcon, UploadIcon } from "../../components/icons";
 import { BackupError, importDatabase } from "../../db";
-import { useSettings } from "../../hooks/useSettings";
 import { describeFile, isSqliteFile, saveBackup } from "../../services/backup";
 import { reloadApp } from "../../services/pwa";
 import { SettingsSection } from "./SettingsSection";
-import { useSaveSettings } from "./useSaveSettings";
 
 /**
- * Backup and restore of the on-device database (e.g. to move to another iPad), the backup
- * reminder and a manual reload for updates.
+ * Backup and restore of the on-device database (e.g. to move to another iPad) and a manual
+ * reload for updates.
  */
 export function BackupSettings() {
-  const { backupReminderDays, lastBackup } = useSettings();
-  const save = useSaveSettings();
-  const { revalidate } = useRevalidator();
   const [pendingImport, setPendingImport] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const handleExport = async () => {
     try {
-      if (await saveBackup()) {
-        setMessage("Die Sicherung wurde gespeichert.");
-        revalidate();
-      }
+      if (await saveBackup()) setMessage("Die Sicherung wurde gespeichert.");
     } catch (error) {
       console.error(error);
       const { name, message: reason } = error as Error;
@@ -60,8 +50,8 @@ export function BackupSettings() {
   return (
     <SettingsSection
       title="Sicherung"
-      hint={`Alle Daten liegen nur auf diesem Gerät. Letzte Sicherung: ${lastBackup ? format(parseISO(lastBackup), "dd.MM.yyyy") : "noch keine"}.`}
-      help="Sicherung aller Daten als Datei und Wiederherstellen (auch für ein neues Gerät), Erinnerung und Neustart für Updates."
+      hint="Alle Daten liegen nur auf diesem Gerät."
+      help="Sicherung aller Daten als Datei und Wiederherstellen (auch für ein neues Gerät) und Neustart für Updates."
     >
       <div className="flex flex-wrap gap-2">
         <Button
@@ -79,21 +69,6 @@ export function BackupSettings() {
           Sicherung importieren
         </Button>
       </div>
-      <TextField
-        select
-        size="small"
-        label="An Sicherung erinnern"
-        value={backupReminderDays}
-        className="max-w-72"
-        onChange={(event) =>
-          save({ backupReminderDays: Number(event.target.value) })
-        }
-      >
-        <MenuItem value={0}>Nie</MenuItem>
-        <MenuItem value={7}>Nach 7 Tagen</MenuItem>
-        <MenuItem value={14}>Nach 14 Tagen</MenuItem>
-        <MenuItem value={30}>Nach 30 Tagen</MenuItem>
-      </TextField>
       <div className="flex flex-wrap items-center gap-3 border-t border-line pt-3">
         <Button
           variant="outlined"

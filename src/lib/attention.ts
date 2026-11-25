@@ -1,4 +1,3 @@
-import { differenceInDays, parseISO } from "date-fns";
 import type { SyncStatus } from "../sync/types";
 import { getSyncBadge } from "./syncView";
 
@@ -6,36 +5,21 @@ import { getSyncBadge } from "./syncView";
 export type AttentionTone = "warning" | "error";
 
 /** Settings tabs that can need attention. */
-export type AttentionTab = "school" | "data" | "sync";
+export type AttentionTab = "school" | "sync";
 
 /** One thing the user should do in the settings. */
 export type Attention = {
   /** Tab of the settings where it is done. */
   tab: AttentionTab;
   tone: AttentionTone;
-  /** Short German label, e.g. "Noch keine Sicherung". */
+  /** Short German label, e.g. "Noch kein Schuljahr eingerichtet". */
   label: string;
 };
 
-/** Whether the backup reminder is due: never backed up or longer ago than set; 0 turns it off. */
-export function isBackupDue(
-  reminderDays: number,
-  lastBackup: string | null,
-  now = new Date(),
-): boolean {
-  if (reminderDays <= 0) return false;
-  return (
-    !lastBackup || differenceInDays(now, parseISO(lastBackup)) >= reminderDays
-  );
-}
-
-/** Inputs of `getAttention`, taken from the settings, the school years and the sync status. */
+/** Inputs of `getAttention`, taken from the school years and the sync status. */
 export type AttentionInput = {
   sync: SyncStatus;
-  backupReminderDays: number;
-  lastBackup: string | null;
   schoolYearCount: number;
-  now?: Date;
 };
 
 /**
@@ -44,10 +28,7 @@ export type AttentionInput = {
  */
 export function getAttention({
   sync,
-  backupReminderDays,
-  lastBackup,
   schoolYearCount,
-  now,
 }: AttentionInput): Attention[] {
   const items: Attention[] = [];
   const badge = getSyncBadge(sync);
@@ -63,12 +44,6 @@ export function getAttention({
       tab: "school",
       tone: "warning",
       label: "Noch kein Schuljahr eingerichtet",
-    });
-  if (isBackupDue(backupReminderDays, lastBackup, now))
-    items.push({
-      tab: "data",
-      tone: "warning",
-      label: lastBackup ? "Sicherung fällig" : "Noch keine Sicherung",
     });
   return items;
 }

@@ -1,4 +1,4 @@
-import { exportDatabase, saveSettings } from "../db";
+import { exportDatabase } from "../db";
 import { toIsoDate } from "../lib/dates";
 import { isMobileDevice } from "./pwa";
 
@@ -52,7 +52,7 @@ export async function saveFile(file: File) {
 }
 
 /**
- * Exports the database as `notenfeder-YYYY-MM-DD.sqlite3` and notes the date of the backup.
+ * Exports the database as `notenfeder-YYYY-MM-DD.sqlite3`.
  * @returns `false` if the backup was cancelled.
  */
 export async function saveBackup() {
@@ -67,6 +67,5 @@ export async function saveBackup() {
       type: "application/x-sqlite3",
     }),
   );
-  if (saved) await saveSettings({ lastBackup: today });
   return saved;
 }
