@@ -31,7 +31,7 @@ export function BackButton({
       component={Link}
       to={url}
       startIcon={<ChevronLeftIcon />}
-      className="pl-2 compact:min-w-0 compact:px-2"
+      className="pl-2 compact:h-10 compact:min-w-0 compact:px-2"
       data-help={
         page == "timetable"
           ? "Zurück zum Stundenplan."

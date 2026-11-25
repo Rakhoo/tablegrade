@@ -22,7 +22,7 @@ export function ReturnButton({
   return (
     <Button
       startIcon={<ChevronLeftIcon />}
-      className="pl-2 compact:min-w-0 compact:px-2"
+      className="pl-2 compact:h-10 compact:min-w-0 compact:px-2"
       data-help={`Zurück zur vorherigen Seite (${back.name}).`}
       onClick={() => (onBack ? onBack(goBack) : goBack())}
     >

@@ -305,7 +305,7 @@ export function ClassroomPage() {
             title={title}
             subtitle={
               compact
-                ? format(lessonDate, "EEE, d. MMM yyyy", { locale: de })
+                ? format(lessonDate, "EEE, dd.MM.yy", { locale: de })
                 : dateLabel
             }
           />

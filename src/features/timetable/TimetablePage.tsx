@@ -189,35 +189,41 @@ export function TimetablePage() {
 
   const weekBar = (
     <div
-      className="flex items-center justify-between rounded-full bg-brand-50 p-1"
+      // Short screens: as high as the speed dial's buttons, with the dates in one line
+      className="flex items-center justify-between gap-1 rounded-full bg-brand-50 p-1 short:p-0.5"
       data-help="Die gezeigte Woche; Pfeile oder Wischen über den Stundenplan wechseln sie."
     >
       <IconButton
         aria-label="Vorherige Woche"
         disabled={addDays(monday, -3) < CALENDAR_START}
         onClick={() => selectWeekAround(addWeeks(monday, -1))}
-        className="bg-surface shadow-tile"
+        className="bg-surface shadow-tile short:p-1.5"
       >
         <ChevronLeftIcon />
       </IconButton>
       <button
         type="button"
         disabled={!compact}
-        className="rounded-2xl px-2 text-center leading-tight text-ink active:bg-brand-100"
+        className="rounded-2xl px-2 text-center leading-tight text-ink active:bg-brand-100 short:flex short:items-baseline short:gap-2"
         onClick={() => setCalendarOpen(true)}
         data-help={compact ? "Öffnet den Kalender." : undefined}
       >
-        <div className="font-semibold">KW {getISOWeek(monday)}</div>
-        <div className="text-sm text-muted">
+        <div className="font-semibold whitespace-nowrap">
+          KW {getISOWeek(monday)}
+        </div>
+        <div className="text-sm whitespace-nowrap text-muted">
           {format(monday, "d. MMM", { locale: de })} –{" "}
-          {format(addDays(monday, 4), "d. MMM yyyy", { locale: de })}
+          {format(addDays(monday, 4), "d. MMM", { locale: de })}
+          <span className="short:hidden">
+            {format(addDays(monday, 4), " yyyy", { locale: de })}
+          </span>
         </div>
       </button>
       <IconButton
         aria-label="Nächste Woche"
         disabled={addWeeks(monday, 1) > maxDate}
         onClick={() => selectWeekAround(addWeeks(monday, 1))}
-        className="bg-surface shadow-tile"
+        className="bg-surface shadow-tile short:p-1.5"
       >
         <ChevronRightIcon />
       </IconButton>
@@ -304,6 +310,7 @@ export function TimetablePage() {
     <Button
       variant="outlined"
       size="small"
+      className="compact:h-10"
       // Without a date the current week is shown, the clean start state
       onClick={() => setSearchParams({}, { replace: true })}
       data-help="Springt zurück zur aktuellen Woche."
@@ -336,16 +343,21 @@ export function TimetablePage() {
         entries={entries}
         className="timetable-page flex-col gap-2"
       >
-        {/* The right end stays free for the speed dial */}
-        <div className="flex items-center gap-2 pr-24">
-          {!landscape && (
-            <h1 className="flex flex-1 items-center gap-2 text-xl font-bold tracking-tight">
-              <Raven className="h-8 shrink-0 text-brand-500" />
-              Stundenplan
-            </h1>
+        {/* As high as the speed dial's buttons; in landscape the week in the middle, the right
+            end free for the speed dial */}
+        <div className="grid h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 portrait:flex portrait:pr-24">
+          <h1 className="flex flex-1 items-center gap-2 text-xl font-bold tracking-tight">
+            <Raven className="h-8 shrink-0 text-brand-500" />
+            Stundenplan
+          </h1>
+          {landscape ? (
+            <div className="flex items-center gap-2">
+              {weekBar}
+              {todayButton}
+            </div>
+          ) : (
+            todayButton
           )}
-          {landscape && <div className="w-80">{weekBar}</div>}
-          {todayButton}
         </div>
         {dayView && (
           <>

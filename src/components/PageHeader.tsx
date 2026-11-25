@@ -36,7 +36,7 @@ function Arrow({
       replace
       disabled={!to}
       aria-label={label}
-      className="shrink-0 bg-surface shadow-tile disabled:opacity-40 compact:p-1.5"
+      className="shrink-0 bg-surface shadow-tile disabled:opacity-40 compact:h-10 compact:w-10"
     >
       {icon}
     </IconButton>
@@ -65,10 +65,10 @@ export function PageHeader({
   });
   return (
     // Equal outer columns keep the title centered
-    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 compact:flex compact:gap-1">
+    <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 compact:flex compact:items-start compact:gap-1">
       <div className="justify-self-start">{back}</div>
       <div
-        className="flex items-center gap-3 compact:mx-2 compact:min-w-0 compact:flex-1 compact:gap-1"
+        className="flex items-center gap-3 compact:mx-1 compact:min-w-0 compact:flex-1 compact:items-start compact:gap-1"
         data-help={
           help && arrows
             ? `${help} Wischen über den Titel wechselt ebenso.`
@@ -84,9 +84,9 @@ export function PageHeader({
         )}
         <div
           {...(arrows ? swipe : {})}
-          className="min-w-56 touch-pan-y text-center portrait:min-w-44 compact:min-w-0 compact:flex-1"
+          className="min-w-56 touch-pan-y text-center portrait:min-w-44 compact:flex compact:min-h-10 compact:min-w-0 compact:flex-1 compact:flex-col compact:justify-center"
         >
-          <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight compact:flex-wrap compact:gap-x-1.5 compact:gap-y-0 compact:text-base compact:leading-tight">
+          <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight compact:flex-wrap compact:gap-x-1.5 compact:gap-y-0 compact:text-[0.9375rem] compact:leading-tight">
             {title}
           </div>
           {subtitle && (
