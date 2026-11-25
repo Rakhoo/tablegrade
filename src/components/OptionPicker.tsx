@@ -154,7 +154,9 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
   const hovered = hover && findOption(sections, hover.key);
   return createPortal(
     <div className="fixed inset-0 z-[1400] touch-none select-none">
-      <div className="absolute inset-0" onClick={onClose} />
+      {/* Closes on a new touch outside: the click that follows the opening tap lands here too,
+          as the panel now covers the spot, and must not close it */}
+      <div className="absolute inset-0" onPointerDown={onClose} />
       <div
         ref={panel}
         role="dialog"
