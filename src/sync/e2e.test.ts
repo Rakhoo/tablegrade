@@ -1,5 +1,5 @@
 /**
- * End-to-end test of client and Go server (plan D2): two or three simulated devices with
+ * End-to-end test of client and Go server: two or three simulated devices with
  * `node:sqlite` talk to a real server over HTTP and WebSocket. Runs with `npm run test:e2e`;
  * needs Go. Each device loads its own copy of the sync modules, because the status is a
  * module-level value per app.
@@ -224,7 +224,7 @@ describe("client and server end to end", () => {
       expect(
         device.rows(`SELECT image FROM Students WHERE id = '${BEN}'`),
       ).toEqual([{ image: PHOTO }]);
-      // Deletions after the backup come back on all devices (blockers.md)
+      // Deletions after the backup come back on all devices (accepted for this rare case)
       expect(gradeOf(device)).toEqual([{ grade: 2 }]);
     }
   });

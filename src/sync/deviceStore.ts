@@ -6,7 +6,7 @@
 import type { DataKey } from "../crypto/keys";
 import type { SignedInWith } from "./types";
 
-/** The session of this device (protocol.md section 2). */
+/** The session of this device (docs/protocol.md section 2). */
 export type StoredSession = {
   /** Bearer token, Base64url. */
   token: string;

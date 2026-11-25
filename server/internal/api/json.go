@@ -13,7 +13,7 @@ import (
 // maxJSONBody is the size limit of request bodies without a larger limit of their own.
 const maxJSONBody = 64 << 10
 
-// apiError is an error response with a code from protocol.md 1 and a German message.
+// apiError is an error response with a code from docs/protocol.md 1 and a German message.
 type apiError struct {
 	Status  int    `json:"-"`
 	Code    string `json:"error"`

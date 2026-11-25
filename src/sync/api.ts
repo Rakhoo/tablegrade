@@ -1,5 +1,5 @@
 /**
- * Typed client of the sync server (docs/sync-plan/protocol.md). Every failure becomes an
+ * Typed client of the sync server. Every failure becomes an
  * `ApiError` with a German message for the UI.
  */
 import type { Device, IdentityProvider, OidcProvider } from "./types";
@@ -103,7 +103,7 @@ export type OidcConfig = {
   redirectUri: string;
 };
 
-/** A key wrap as stored on the server (protocol.md 3). */
+/** A key wrap as stored on the server (docs/protocol.md 3). */
 export type KeyWrap = {
   id: string;
   kind: "passkey" | "recovery";
@@ -297,7 +297,7 @@ export function createApi({ baseUrl, getToken, fetch: doFetch }: ApiOptions) {
         body: { publicKey, wrapped },
       }),
     getLink: (linkId: string) => call<LinkResult>(`/link/${segment(linkId)}`),
-    /** WebSocket URL with the token in the query (protocol.md 1). */
+    /** WebSocket URL with the token in the query (docs/protocol.md 1). */
     socketUrl: (token: string) =>
       `${root.replace(/^http/, "ws")}/ws?token=${segment(token)}`,
   };

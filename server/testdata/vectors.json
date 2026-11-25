@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "_format": "Raw bytes as lowercase hex (*Hex). Wire values (ids, wrapped, ciphertext, public keys) as base64url without padding. See docs/sync-plan/protocol.md.",
+  "_format": "Raw bytes as lowercase hex (*Hex). Wire values (ids, wrapped, ciphertext, public keys) as base64url without padding.",
   "keys": {
     "dekHex": "26cd2a19799d5e9f82f0d86b349710422d95175813f28cfea9d2d6498487394e",
     "idkInfo": "notenfeder/record-id/v1",

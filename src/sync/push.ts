@@ -1,5 +1,5 @@
 /**
- * Push (plan B5): sends the rows behind the outbox keys as encrypted records. The outbox only
+ * Push: sends the rows behind the outbox keys as encrypted records. The outbox only
  * holds keys; the current row is read at send time, a missing row is sent as deleted.
  */
 import { encryptRecord, recordId, type KeyValue } from "../crypto/records";

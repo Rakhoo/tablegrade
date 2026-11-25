@@ -15,7 +15,7 @@ import (
 // passed on to the device for display.
 var oidcScopes = []string{"openid", "email"}
 
-// oidcRedirectPath is appended to an app origin to form the redirect URI (protocol.md 2).
+// oidcRedirectPath is appended to an app origin to form the redirect URI (docs/protocol.md 2).
 // No query string: Microsoft rejects redirect URIs with one.
 const oidcRedirectPath = "/"
 
@@ -129,7 +129,7 @@ func (s *Server) handleOIDCExchange(w http.ResponseWriter, r *http.Request) {
 	s.signInWithIdentity(w, r, provider, id, name)
 }
 
-// errOneSignIn refuses a second sign-in method: an account has exactly one (protocol.md 2).
+// errOneSignIn refuses a second sign-in method: an account has exactly one (docs/protocol.md 2).
 var errOneSignIn = newError(http.StatusConflict, "conflict",
 	"Ein Konto hat genau einen Anmeldeweg. Zum Wechseln erst abmelden.")
 

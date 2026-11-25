@@ -1,6 +1,6 @@
 // Package api wires the HTTP routes under /api/v1 and applies the rules every response follows:
 // CORS for the app origins, the protocol version header, size and rate limits and the JSON
-// error format (protocol.md 1 and 8).
+// error format (docs/protocol.md 1 and 8).
 package api
 
 import (
@@ -27,7 +27,7 @@ import (
 // ProtocolVersion is the major protocol version this server speaks.
 const ProtocolVersion = 1
 
-// Limits from protocol.md 8.
+// Limits from docs/protocol.md 8.
 const (
 	authPerMinute = 10
 	maxDevices    = 10

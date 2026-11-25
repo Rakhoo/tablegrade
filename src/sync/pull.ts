@@ -1,5 +1,5 @@
 /**
- * Pull (plan B5): fetches records after the last applied `seq`, decrypts them and writes them
+ * Pull: fetches records after the last applied `seq`, decrypts them and writes them
  * into the app tables in one transaction. Records of a newer schema wait in `_sync_pending`.
  */
 import { decryptRecord, type RecordPlaintext } from "../crypto/records";
@@ -259,7 +259,7 @@ export async function pullChanges(
 }
 
 /**
- * Applies records that waited for this app version (plan B5, after an app update). Returns
+ * Applies records that waited for this app version (after an app update). Returns
  * the number of applied records.
  */
 export async function applyPending(ctx: SyncContext): Promise<number> {

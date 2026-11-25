@@ -6,7 +6,7 @@ import {
   type OutgoingRecord,
 } from "../sync/api";
 
-/** Server records and blobs of one account in memory, as in protocol.md 4 and 5. */
+/** Server records and blobs of one account in memory, as in docs/protocol.md 4 and 5. */
 export function createFakeServer() {
   const records = new Map<string, IncomingRecord>();
   const blobs = new Map<string, Bytes>();

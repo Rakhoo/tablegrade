@@ -1,5 +1,5 @@
 /**
- * OIDC login with Microsoft and Google (plan B4): PKCE and `state` in the browser, code
+ * OIDC login with Microsoft and Google: PKCE and `state` in the browser, code
  * exchange on the server. The provider redirects to the app origin with `code` (or `error`) and
  * `state` in the query; the hash route stays.
  */

@@ -1,5 +1,5 @@
 /**
- * Passkeys with `navigator.credentials` and the PRF extension (plan B4). Converts the JSON
+ * Passkeys with `navigator.credentials` and the PRF extension. Converts the JSON
  * options of the server by hand, because older Safari versions lack
  * `PublicKeyCredential.parseCreationOptionsFromJSON` and `toJSON()`.
  */

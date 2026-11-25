@@ -14,7 +14,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// WebSocket timings (protocol.md 7).
+// WebSocket timings (docs/protocol.md 7).
 const (
 	// defaultPingTimeout closes a connection whose client sent nothing for this long.
 	defaultPingTimeout = 90 * time.Second

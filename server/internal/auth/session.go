@@ -11,7 +11,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// Session timing (protocol.md 2).
+// Session timing (docs/protocol.md 2).
 const (
 	// SessionLifetime is how long a session lasts without use.
 	SessionLifetime = 90 * 24 * time.Hour

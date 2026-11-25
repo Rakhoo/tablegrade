@@ -1,5 +1,5 @@
 /**
- * Recovery key text (protocol.md section 3): 32 Crockford Base32 characters of 20 random bytes
+ * Recovery key text (docs/protocol.md section 3): 32 Crockford Base32 characters of 20 random bytes
  * plus 4 check characters, shown in groups of four.
  */
 import {

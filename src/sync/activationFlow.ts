@@ -1,5 +1,5 @@
 /**
- * When and how a signed-in, unlocked device starts syncing (plan B6). A new account uploads
+ * When and how a signed-in, unlocked device starts syncing. A new account uploads
  * the local data; an account with data replaces the local data, after the user agreed if the
  * device has own data.
  */

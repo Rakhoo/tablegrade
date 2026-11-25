@@ -1,5 +1,5 @@
 /**
- * Sync runs (plan B5): applies waiting records, pushes, pulls, and recovers from `410 gone`
+ * Sync runs: applies waiting records, pushes, pulls, and recovers from `410 gone`
  * and `410 server_restored`.
  * The engine runs one sync at a time and reacts to WebSocket messages.
  */
@@ -66,7 +66,7 @@ async function resync(ctx: SyncContext, onProgress?: ProgressHandler) {
 
 /**
  * Recovery after `410 server_restored`: the device wins. It uploads all its synced rows again,
- * like on activation, and then fetches everything (protocol.md 4). The fetch applies own
+ * like on activation, and then fetches everything (docs/protocol.md 4). The fetch applies own
  * records too: rows from the backup that this device deleted later come back, as on every
  * other device, so all devices end with the same data.
  */

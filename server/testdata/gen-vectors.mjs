@@ -1,4 +1,4 @@
-// Generates vectors.json: shared test vectors for the sync protocol (docs/sync-plan/protocol.md).
+// Generates vectors.json: shared test vectors for the sync protocol.
 // Run with `node server/testdata/gen-vectors.mjs`. All inputs derive from fixed labels, so the
 // output is deterministic and must not change unless the protocol changes.
 import { createECDH, webcrypto } from "node:crypto";
@@ -286,7 +286,7 @@ const link = {
 const vectors = {
   version: 1,
   _format:
-    "Raw bytes as lowercase hex (*Hex). Wire values (ids, wrapped, ciphertext, public keys) as base64url without padding. See docs/sync-plan/protocol.md.",
+    "Raw bytes as lowercase hex (*Hex). Wire values (ids, wrapped, ciphertext, public keys) as base64url without padding.",
   keys: {
     dekHex: hex(dek),
     idkInfo: "notenfeder/record-id/v1",

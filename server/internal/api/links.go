@@ -13,7 +13,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// Device link rules (protocol.md 6).
+// Device link rules (docs/protocol.md 6).
 const (
 	linkLifetime    = 10 * time.Minute
 	maxLinkFailures = 5
@@ -21,7 +21,7 @@ const (
 	linkCodeTries = 5
 )
 
-// crockford is the Crockford Base32 alphabet (protocol.md 1).
+// crockford is the Crockford Base32 alphabet (docs/protocol.md 1).
 const crockford = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 // errLinkNotFound covers unknown, expired and foreign links alike.
@@ -41,7 +41,7 @@ func newLinkCode() string {
 	return string(code)
 }
 
-// normalizeCode applies the input rules of protocol.md 1 to a typed code.
+// normalizeCode applies the input rules of docs/protocol.md 1 to a typed code.
 func normalizeCode(code string) string {
 	code = strings.ToUpper(strings.NewReplacer(" ", "", "-", "").Replace(code))
 	return strings.NewReplacer("O", "0", "I", "1", "L", "1").Replace(code)
@@ -110,7 +110,7 @@ func (s *Server) handleLinkByCode(w http.ResponseWriter, r *http.Request, sess s
 }
 
 // handleLinkKey stores the old device's public key, so the new device can show the check code
-// before the old device sends the data key (protocol.md 6).
+// before the old device sends the data key (docs/protocol.md 6).
 func (s *Server) handleLinkKey(w http.ResponseWriter, r *http.Request, sess store.Session) {
 	var body struct {
 		PublicKey string `json:"publicKey"`

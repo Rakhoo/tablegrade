@@ -1,5 +1,5 @@
 /**
- * WebSocket to the server (protocol.md 7): pings every 30 seconds and reconnects with backoff
+ * WebSocket to the server (docs/protocol.md 7): pings every 30 seconds and reconnects with backoff
  * from 1 to 60 seconds. Messages only tell the client to act; data comes by pull.
  */
 

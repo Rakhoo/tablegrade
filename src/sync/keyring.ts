@@ -1,5 +1,5 @@
 /**
- * Data key handling after sign-in (plan B4): unlock with a passkey PRF output or the recovery
+ * Data key handling after sign-in: unlock with a passkey PRF output or the recovery
  * key, create and replace the recovery key, add passkey wraps. Device link: see B6.
  */
 import { fromBase64url, toBase64url, type Bytes } from "../crypto/encoding";

@@ -1,11 +1,12 @@
 name: Server image
 
 on:
-  # Runs on pushes to the default branch that change the server. The message of the newest
-  # commit steers it like deploy.yml: "[skip deploy]" builds nothing, "[deploy dev]" pushes only
-  # the tag "dev", so the Pi (which follows "latest") stays unchanged.
+  # Runs on pushes to main and dev that change the server. dev always pushes only the tag "dev",
+  # so the Pi (which follows "latest" unless SERVER_TAG=dev) stays unchanged. The message of the
+  # newest commit steers it like deploy.yml: "[skip deploy]" builds nothing, "[deploy dev]" on
+  # main pushes only the tag "dev".
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
     paths:
       - "server/**"
       - ".github/workflows/server-image.yml"
@@ -34,7 +35,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip deploy]')
     runs-on: ubuntu-latest
     env:
-      DEV: ${{ (inputs.target == 'dev' || contains(github.event.head_commit.message, '[deploy dev]')) && 'true' || 'false' }}
+      DEV: ${{ (github.ref == 'refs/heads/dev' || inputs.target == 'dev' || contains(github.event.head_commit.message, '[deploy dev]')) && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

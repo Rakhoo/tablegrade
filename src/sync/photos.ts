@@ -1,5 +1,5 @@
 /**
- * Photos of students as encrypted blobs (protocol.md 5). Locally they stay data URLs in
+ * Photos of students as encrypted blobs (docs/protocol.md 5). Locally they stay data URLs in
  * `Students.image`; in records they become `{ blob: <blobId> }`.
  */
 import { blobId, decryptBlob, encryptBlob } from "../crypto/records";

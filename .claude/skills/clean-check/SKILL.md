@@ -68,7 +68,7 @@ Never run Prettier on `README.md`. Feature change → check that `README.md` is 
 
 ## 4. Report (German, short)
 
-Write it in the ASD-STE100 style described in `CLAUDE.md` ("Kontext sparsam halten").
+Write it in the ASD-STE100 style described in `CLAUDE.md` ("Keep context small").
 
 - What was tidied (one line per kind of fix, not per line).
 - Results of tsc / lint / build.

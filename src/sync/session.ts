@@ -1,5 +1,5 @@
 /**
- * Session check (plan B3): at start, every 15 minutes, when the device comes online and when
+ * Session check: at start, every 15 minutes, when the device comes online and when
  * the app becomes visible. A revoked session only stops sync; local work goes on.
  */
 import { ApiError, type Api, type KeyWrap, type SessionInfo } from "./api";

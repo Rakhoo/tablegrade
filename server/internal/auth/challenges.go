@@ -7,7 +7,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// ChallengeLifetime is how long a WebAuthn challenge stays valid (protocol.md 2).
+// ChallengeLifetime is how long a WebAuthn challenge stays valid (docs/protocol.md 2).
 const ChallengeLifetime = 5 * time.Minute
 
 // maxChallenges bounds memory; the auth rate limit keeps the real number far below.

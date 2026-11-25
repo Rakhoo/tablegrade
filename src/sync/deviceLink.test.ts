@@ -7,7 +7,7 @@ import { ApiError, type Api } from "./api";
 import { createMemoryStore, type DeviceStore } from "./deviceStore";
 import { findLink, startLink } from "./deviceLink";
 
-/** Fake link endpoints of one account (protocol.md 6). */
+/** Fake link endpoints of one account (docs/protocol.md 6). */
 function fakeLinkApi() {
   const links = new Map<
     string,

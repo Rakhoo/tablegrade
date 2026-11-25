@@ -1,5 +1,5 @@
 // Package store persists users, identities, devices, sessions, key wraps and encrypted records
-// (protocol.md 2–6). Handlers use only the Store interface, so the SQLite implementation
+// (docs/protocol.md 2–6). Handlers use only the Store interface, so the SQLite implementation
 // (package sqlite) can later be joined by a Postgres one. All times are Unix milliseconds.
 package store
 
@@ -21,14 +21,14 @@ var (
 	ErrLastRecovery = errors.New("store: last recovery wrap")
 )
 
-// Identity providers (protocol.md 2).
+// Identity providers (docs/protocol.md 2).
 const (
 	ProviderPasskey   = "passkey"
 	ProviderMicrosoft = "microsoft"
 	ProviderGoogle    = "google"
 )
 
-// Key wrap kinds (protocol.md 3).
+// Key wrap kinds (docs/protocol.md 3).
 const (
 	WrapPasskey  = "passkey"
 	WrapRecovery = "recovery"
@@ -147,7 +147,7 @@ type BlobRef struct {
 	ID     string
 }
 
-// Link is a pending or finished device link (protocol.md 6).
+// Link is a pending or finished device link (docs/protocol.md 6).
 type Link struct {
 	ID     string
 	UserID string

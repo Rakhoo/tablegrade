@@ -1,5 +1,5 @@
 /**
- * Data key (DEK), id key (IDK) and key wraps (protocol.md section 3).
+ * Data key (DEK), id key (IDK) and key wraps (docs/protocol.md section 3).
  */
 import type { Bytes } from "./encoding";
 import {
@@ -12,7 +12,7 @@ import {
   sha256,
 } from "./primitives";
 
-/** Kinds of wraps; `link` is the one-time wrap of a device link (protocol.md section 6). */
+/** Kinds of wraps; `link` is the one-time wrap of a device link (docs/protocol.md section 6). */
 export type WrapKind = "passkey" | "recovery" | "link";
 
 /** The account's data key with the derived id key. Stored as is in IndexedDB. */

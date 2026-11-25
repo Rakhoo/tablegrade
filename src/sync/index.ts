@@ -1,5 +1,5 @@
 /**
- * Public facade of account, encryption and sync (docs/sync-plan). The UI uses only this
+ * Public facade of account, encryption and sync. The UI uses only this
  * module. Built with `VITE_SYNC_DEMO=true`, it returns sample values instead.
  */
 import { syncDb } from "../db/queries/syncDb";

@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: ["main", "sync/**"]
+    branches: ["main", "dev", "**/integration"]
   pull_request:
-    branches: ["main", "sync/**"]
+    branches: ["main", "dev", "**/integration"]
 
 permissions:
   contents: read

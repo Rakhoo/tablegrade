@@ -16,13 +16,13 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// maxPasskeys is the limit per account (protocol.md 8).
+// maxPasskeys is the limit per account (docs/protocol.md 8).
 const maxPasskeys = 20
 
 // rpName is shown by the browser and the password manager.
 const rpName = "Notenfeder"
 
-// prfSalt is the fixed PRF input SHA-256("notenfeder/prf/v1") (protocol.md 3).
+// prfSalt is the fixed PRF input SHA-256("notenfeder/prf/v1") (docs/protocol.md 3).
 var prfSalt = sha256.Sum256([]byte("notenfeder/prf/v1"))
 
 // prfExtension asks for the PRF output with the fixed salt. In registration options it also

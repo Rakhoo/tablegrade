@@ -1,5 +1,5 @@
 /**
- * Device link (protocol.md 6, plan B6): the new device shows a code, the old device enters it
+ * Device link (docs/protocol.md 6): the new device shows a code, the old device enters it
  * and sends its ECDH key, so both show the check code. After the user confirmed on the old
  * device it sends the wrapped data key; the new device takes it only after its own confirmation.
  */

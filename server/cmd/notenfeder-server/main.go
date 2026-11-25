@@ -1,5 +1,5 @@
 // Command notenfeder-server is the sync server of Notenfeder. It stores only encrypted data
-// (docs/sync-plan/protocol.md) and is configured via environment variables (see README.md).
+// and is configured via environment variables (see README.md).
 package main
 
 import (

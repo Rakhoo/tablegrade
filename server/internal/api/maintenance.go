@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-// tombstoneLifetime is how long deletions stay available to offline devices (protocol.md 4).
+// tombstoneLifetime is how long deletions stay available to offline devices (docs/protocol.md 4).
 const tombstoneLifetime = 180 * 24 * time.Hour
 
 // maintenanceInterval is the pause between two cleanup runs.

@@ -1,5 +1,5 @@
 /**
- * Device link crypto (protocol.md section 6): ECDH P-256 key pairs, the link KEK and the
+ * Device link crypto (docs/protocol.md section 6): ECDH P-256 key pairs, the link KEK and the
  * check code both devices show.
  */
 import { concat, type Bytes } from "./encoding";

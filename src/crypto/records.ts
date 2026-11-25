@@ -1,5 +1,5 @@
 /**
- * Record and blob ids and their encryption (protocol.md sections 4 and 5).
+ * Record and blob ids and their encryption (docs/protocol.md sections 4 and 5).
  */
 import type { DataKey } from "./keys";
 import {

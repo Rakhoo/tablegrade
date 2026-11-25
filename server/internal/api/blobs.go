@@ -13,7 +13,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// maxBlobSize is the upload limit of one encrypted photo (protocol.md 5).
+// maxBlobSize is the upload limit of one encrypted photo (docs/protocol.md 5).
 const maxBlobSize = 2 << 20
 
 // orphanLifetime is how long a photo without references is kept.

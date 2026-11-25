@@ -1,5 +1,5 @@
 /**
- * Byte encodings of the sync protocol (docs/sync-plan/protocol.md section 1): UTF-8,
+ * Byte encodings of the sync protocol: UTF-8,
  * Base64url without padding and Crockford Base32.
  */
 

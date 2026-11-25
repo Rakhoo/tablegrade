@@ -8,7 +8,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// Record limits (protocol.md 4 and 8).
+// Record limits (docs/protocol.md 4 and 8).
 const (
 	maxPushRecords   = 500
 	maxPushBody      = 5 << 20
@@ -25,7 +25,7 @@ const (
 var errGone = newError(http.StatusGone, "gone", "Dieses Gerät war zu lange offline. Alle Daten werden neu geladen.")
 
 // errServerRestored tells a device that the server went back to a backup. The device's data is
-// newer, so it uploads everything again (decision in blockers.md).
+// newer, so it uploads everything again; the device wins over the restored state.
 var errServerRestored = newError(http.StatusGone, "server_restored",
 	"Der Server wurde aus einer Sicherung wiederhergestellt. Die Daten dieses Geräts werden erneut hochgeladen.")
 

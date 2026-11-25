@@ -10,7 +10,7 @@ import (
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 )
 
-// wrapAlg is the only wrap format for passkey and recovery wraps (protocol.md 3).
+// wrapAlg is the only wrap format for passkey and recovery wraps (docs/protocol.md 3).
 const wrapAlg = "A256GCM"
 
 // wrapSize is nonce(12) ‖ encrypted DEK(32) ‖ tag(16).

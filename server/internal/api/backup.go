@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-// Database snapshots in DATA_DIR/backup (tasks A10). Blobs are files already and are copied by
+// Database snapshots in DATA_DIR/backup. Blobs are files already and are copied by
 // the backup container directly.
 const (
 	backupDir    = "backup"

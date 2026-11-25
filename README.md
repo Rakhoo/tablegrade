@@ -24,8 +24,7 @@ exports a backup. The only network request then fetches school holidays from
 Sync between devices is optional and off by default (settings, "Konto & Sync"). With it, the
 app encrypts every record and photo on the device before upload. The own server
 ([server/](server/README.md)) only sees ciphertext, wrapped keys, hashed IDs and time stamps.
-Nobody but the user can read the data or reset the recovery key. Details:
-[docs/sync-plan](docs/sync-plan/README.md) and [protocol.md](docs/sync-plan/protocol.md).
+Nobody but the user can read the data or reset the recovery key.
 
 ## Features
 
@@ -273,22 +272,23 @@ account deletion. CI runs it in its own job.
 
 ## Deployment
 
-Every push to `main` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml): it
-builds the app and publishes `dist/` to the Cloudflare Pages project `tablegrade`. The
+Every push to `main` or `dev` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml):
+it builds the app and publishes `dist/` to the Cloudflare Pages project `tablegrade`, from
+`main` as production, from `dev` (the development branch for ad hoc fixes and the target of
+later `<feature>/integration` branches) always as the preview at `dev.tablegrade.pages.dev`. The
 repository needs the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 
 The message of the newest commit of a push steers the deployment: `[skip deploy]` deploys
-nothing, `[deploy dev]` publishes a preview at `dev.tablegrade.pages.dev` instead of
+nothing, `[deploy dev]` on `main` publishes the preview instead of
 production (its own origin, so an installed dev app keeps its own data). GitHub's `[skip ci]`
 skips all workflows. Run manually, the workflow asks for the target (`production` or `dev`).
 The build reads the repository variable `VITE_SYNC_URL` (the server's Tailscale address);
-without it the app has no sync.
+without it the app has no sync. A preview build uses `VITE_SYNC_URL_DEV` instead, if set.
 
-The sync server deploys on its own: a push to `main` that changes `server/` runs
+The sync server deploys on its own: a push to `main` (or `dev`, tag `dev` only) that changes `server/` runs
 [.github/workflows/server-image.yml](.github/workflows/server-image.yml), which builds the
 image for GHCR; a timer on the Raspberry Pi pulls it. Setup, configuration, backup and
-restore: [server/README.md](server/README.md) and
-[docs/sync-plan/manual-steps.md](docs/sync-plan/manual-steps.md).
+restore: [server/README.md](server/README.md).
 
 ## Project structure
 
@@ -386,8 +386,7 @@ Classes, students, grades, traits and duties have text UUIDs as `id` (since sche
 22), created with `crypto.randomUUID()` on insert, so several devices can add rows without
 conflicts. Only `Holidays` keeps integer ids (a cache, never synced).
 The internal tables `_sync_state` and `_outbox` (schema version 23) record changed rows for
-the coming sync; their triggers only write while sync is enabled (see
-[docs/sync-plan/protocol.md](docs/sync-plan/protocol.md)).
+the coming sync; their triggers only write while sync is enabled.
 
 ### Migrations
 
@@ -495,7 +494,7 @@ the default:
   shirt colors), oral grades, absences, warnings, comments, exams with retakes, a project and
   a partial grade, traits and duties. Always the same data
   ([src/lib/mockData.ts](src/lib/mockData.ts), [src/services/mockData.ts](src/services/mockData.ts)).
-- **Konto & Sync** (plan and protocol in [docs/sync-plan](docs/sync-plan/README.md)): one card
+- **Konto & Sync**: one card
   whose content follows the sync status (`lib/syncView.ts`): off (explanation and
   "Einrichten"), the setup wizard (`SyncSetupWizard.tsx`, vertical stepper with the required
   steps in order, only the current one open: "Anmelden" with device name and branded buttons

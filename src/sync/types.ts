@@ -113,7 +113,7 @@ export type Device = {
   current: boolean;
 };
 
-/** Device link as started on the new device (protocol.md 6). */
+/** Device link as started on the new device (docs/protocol.md 6). */
 export type PendingDeviceLink = {
   /** Code to show; the old device enters it. */
   code: string;

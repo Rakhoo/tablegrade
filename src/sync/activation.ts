@@ -1,5 +1,5 @@
 /**
- * Turning sync on and off in the app database (plan B5). Device store and server session are
+ * Turning sync on and off in the app database. Device store and server session are
  * handled by the caller.
  */
 import { DEVICE_SETTING_KEYS } from "../lib/settings";

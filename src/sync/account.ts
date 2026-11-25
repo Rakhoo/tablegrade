@@ -1,5 +1,5 @@
 /**
- * Deleting the account (plan B6). The server data goes; on this device only the sync
+ * Deleting the account. The server data goes; on this device only the sync
  * bookkeeping and the device store go, the app data stays.
  */
 import { turnOff } from "./activation";

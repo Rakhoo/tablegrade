@@ -1,5 +1,5 @@
 /**
- * Adding a passkey and unlocking with one (plan B4): server challenge, browser dialog, server
+ * Adding a passkey and unlocking with one: server challenge, browser dialog, server
  * check, then the data key via `keyring`. Signing in is left to Microsoft and Google.
  */
 import {

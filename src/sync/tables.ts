@@ -1,5 +1,5 @@
 /**
- * Synced tables of the current schema (protocol.md 4) and SQL helpers by primary key. Unlike
+ * Synced tables of the current schema (docs/protocol.md 4) and SQL helpers by primary key. Unlike
  * the frozen list in the migrations, this list follows the newest schema.
  */
 import type { KeyValue } from "../crypto/records";

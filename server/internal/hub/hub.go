@@ -1,5 +1,5 @@
 // Package hub keeps the WebSocket connections per account and notifies devices about new
-// records, revocations and finished device links (protocol.md 7).
+// records, revocations and finished device links (docs/protocol.md 7).
 package hub
 
 import "sync"
@@ -7,7 +7,7 @@ import "sync"
 // Message is one server message: the field "type" plus its data.
 type Message map[string]any
 
-// Message types (protocol.md 7).
+// Message types (docs/protocol.md 7).
 const (
 	TypeHello   = "hello"
 	TypeChanged = "changed"

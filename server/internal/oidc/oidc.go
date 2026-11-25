@@ -1,5 +1,5 @@
 // Package oidc signs in with Microsoft and Google: it redeems the authorization code the
-// browser got via PKCE and verifies the returned ID token (protocol.md 2).
+// browser got via PKCE and verifies the returned ID token (docs/protocol.md 2).
 package oidc
 
 import (

@@ -1,5 +1,5 @@
 /**
- * The sync service behind the facade (plan B6): keeps session, data key, activation and engine
+ * The sync service behind the facade: keeps session, data key, activation and engine
  * in step and turns them into the status for the UI. All browser parts come in as
  * dependencies, so the tests run it in Node.
  */

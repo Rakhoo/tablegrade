@@ -1,5 +1,5 @@
 // Package ratelimit limits requests per key (IP or account) with an in-memory token bucket
-// (protocol.md 8). State is lost on restart, which is fine for abuse protection.
+// (docs/protocol.md 8). State is lost on restart, which is fine for abuse protection.
 package ratelimit
 
 import (

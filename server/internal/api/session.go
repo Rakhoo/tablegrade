@@ -101,7 +101,7 @@ func (s *Server) clientIP(r *http.Request) string {
 	return host
 }
 
-// signIn is the response of every successful sign-in (protocol.md 2).
+// signIn is the response of every successful sign-in (docs/protocol.md 2).
 type signIn struct {
 	SessionToken string `json:"sessionToken"`
 	UserID       string `json:"userId"`
