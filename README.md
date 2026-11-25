@@ -79,9 +79,9 @@ Nobody but the user can read the data or reset the recovery key.
   - The speed dial is a round button in the bottom right corner that opens its entries as a
     sheet from the bottom, with *Hilfe* before *Einstellungen*. The help then explains one
     element after the other with a frame and "Weiter" ([src/components/help/HelpSteps.tsx](src/components/help/HelpSteps.tsx)).
-  - Page headers show the way back as an arrow, the title left aligned and no lesson arrows
-    (swiping the title switches); seating plan and overview table carry the switch to each
-    other ("Übersicht" or "Sitzplan") at the right end of the header.
+  - Page headers show the way back as an arrow and the title with its arrows centered
+    between it and the right end, where seating plan and overview table carry the switch to
+    each other ("Übersicht" or "Sitzplan").
   - Seating plan and overview table have a bar at the bottom: the mode choice above, undo and
     redo as round buttons (the step shows in a short notice) and the tool button or the mode's
     hint below; in landscape the overview puts it all into one row.
@@ -142,7 +142,8 @@ Nobody but the user can read the data or reset the recovery key.
     edits the comment or starts a new one.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
   - In landscape a side bar holds way back, title with the lesson arrows (swiping the title
-    switches too), the switch to the overview, undo/redo, the modes and their tools, so the
+    switches too), undo/redo, the modes and their tools (on phones also the switch to the
+    overview; large screens keep it next to the speed dial above the bar), so the
     plan gets the whole height ([src/features/classroom/ClassroomRail.tsx](src/features/classroom/ClassroomRail.tsx)); it sits on the right, or on the left
     with the switch in *Darstellung* → *Bedienung*, and the speed dial on the same side.
   - Seats under 44 px show no photo, under 64 px smaller badges, so names stay readable.

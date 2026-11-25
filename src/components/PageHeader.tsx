@@ -38,7 +38,7 @@ function Arrow({
       replace
       disabled={!to}
       aria-label={label}
-      className="bg-surface shadow-tile disabled:opacity-40 compact:hidden"
+      className="shrink-0 bg-surface shadow-tile disabled:opacity-40 compact:p-1.5"
     >
       {icon}
     </IconButton>
@@ -48,7 +48,7 @@ function Arrow({
 /**
  * Header of a page: the way back at the left and the centered title, optionally between
  * arrows; swiping the title goes there too. The right end stays free for the speed dial. Small
- * screens have no arrows and the title next to the way back, with room for `action` at the end.
+ * screens center the title between the way back and `action` at the end.
  */
 export function PageHeader({
   back,
@@ -70,7 +70,7 @@ export function PageHeader({
     <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 compact:flex compact:gap-1">
       <div className="justify-self-start">{back}</div>
       <div
-        className="flex items-center gap-3 compact:min-w-0 compact:flex-1"
+        className="flex items-center gap-3 compact:min-w-0 compact:flex-1 compact:justify-center compact:gap-1"
         data-help={
           help && arrows
             ? `${help} Wischen über den Titel wechselt ebenso.`
@@ -86,9 +86,9 @@ export function PageHeader({
         )}
         <div
           {...(arrows ? swipe : {})}
-          className="min-w-56 touch-pan-y text-center portrait:min-w-44 compact:min-w-0 compact:flex-1 compact:text-left"
+          className="min-w-56 touch-pan-y text-center portrait:min-w-44 compact:min-w-0 compact:flex-1"
         >
-          <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight compact:justify-start compact:text-lg compact:leading-tight">
+          <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight compact:gap-1.5 compact:text-base compact:leading-tight">
             {title}
           </div>
           {subtitle && (

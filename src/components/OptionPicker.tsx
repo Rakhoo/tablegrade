@@ -47,6 +47,13 @@ const MARGIN = 8;
 /** Movement in pixels after which releasing outside cancels instead of keeping it open. */
 const MOVE_TOLERANCE = 10;
 
+/** Distance in pixels from the choice to the bottom of its preview, above the fingertip. */
+const BUBBLE_GAP = 56;
+
+/** Room in pixels the preview needs at the screen edges: half its width and its height. */
+const BUBBLE_HALF = 80;
+const BUBBLE_HEIGHT = 110;
+
 type Size = { width: number; height: number };
 
 /** Top left corner of the picker: above, below, left or right of the anchor, where it fits. */
@@ -210,18 +217,22 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
         ))}
       </div>
       {hovered && hover && (
-        // The finger covers the choice, so it is repeated above it
+        // The finger covers the choice and its surroundings, so it is repeated large and well
+        // above it, kept on the screen
         <div
-          className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-full flex-col items-center rounded-2xl bg-ink px-3 py-1.5 text-surface shadow-card"
+          className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-full flex-col items-center gap-1 rounded-3xl bg-ink px-5 pt-4 pb-2 text-surface shadow-card"
           style={{
-            left: hover.rect.left + hover.rect.width / 2,
-            top: hover.rect.top - 10,
+            left: Math.min(
+              Math.max(hover.rect.left + hover.rect.width / 2, BUBBLE_HALF),
+              innerWidth - BUBBLE_HALF,
+            ),
+            top: Math.max(hover.rect.top - BUBBLE_GAP, BUBBLE_HEIGHT),
           }}
         >
-          <span className="flex scale-125 items-center py-1">
+          <span className="flex scale-[1.8] items-center py-2">
             {hovered.option.content}
           </span>
-          <span className="text-[10px] font-medium">
+          <span className="text-sm font-semibold whitespace-nowrap">
             {hovered.section.title
               ? `${hovered.option.label} · ${hovered.section.title}`
               : hovered.option.label}

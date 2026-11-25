@@ -24,36 +24,23 @@ import { PointsContext } from "../../hooks/useGradeFormat";
 import { useEditHistory } from "../../hooks/useEditHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import { useSettings } from "../../hooks/useSettings";
-import { suggestGrade } from "../../lib/assessment";
 import { formatStudentName } from "../../lib/formatters";
-import {
-  describeValues,
-  fromPickKey,
-  getToolValues,
-  type GradeTarget,
-} from "../../lib/gradeTools";
+import { fromPickKey, type GradeTarget } from "../../lib/gradeTools";
 import {
   DEFAULT_GRADE_TOOL,
-  getValidGradeTool,
-  isExamDay,
-  MARK_KIND,
   type GradeTool,
   type LessonType,
 } from "../../lib/grades";
-import { createMarkRules } from "../../lib/lessonChains";
 import { paths } from "../../lib/paths";
 import { getZoomedArea } from "../../lib/seating";
-import {
-  getVisibleGrades,
-  usesPoints,
-  type ClassroomMode,
-} from "../../lib/settings";
+import { usesPoints, type ClassroomMode } from "../../lib/settings";
 import { getClassColor } from "../../lib/subjectColors";
-import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
+import { nextWarningLevel } from "../../lib/warnings";
 import { classroomDialEntries } from "./classroomDialEntries";
 import { MODES } from "./classroomModes";
 import { LessonTitle, ModeTools } from "./ModeTools";
 import { WARNING_SECTION } from "./warningSection";
+import { useLessonGrading } from "./useLessonGrading";
 import type { ClassroomLoaderData } from "./classroomLoader";
 import { ClassroomRail } from "./ClassroomRail";
 import { ClearLessonDialog } from "./ClearLessonDialog";
@@ -112,7 +99,6 @@ export function ClassroomPage() {
     parts: GradeTarget[];
   } | null>(null);
 
-  const gradeMap = new Map(grades.map((entry) => [entry.studentId, entry]));
   const lessonDate = parseISO(date);
   const dateLabel = format(lessonDate, "EEEE, d. MMMM yyyy", { locale: de });
   const history = useEditHistory(
@@ -133,138 +119,30 @@ export function ClassroomPage() {
     handleLessonChanged,
   );
 
-  const visibleGrades = getVisibleGrades(settings);
-  const activeTool = getValidGradeTool(
-    tool,
-    lessonTypes,
-    visibleGrades,
-    settings.suggestions,
-  );
-  const examDay = isExamDay(lessonTypes);
-  const hasRetake = lessonTypes.includes("retake");
-  const hasProject = lessonTypes.some((type) => MARK_KIND[type] == "project");
-  // The marks set by mark tools; with a retake and a project on one day the switch decides
-  const markField: GradeTarget =
-    hasRetake && hasProject ? markTarget : hasRetake ? "mark" : "projectMark";
-  const rules = createMarkRules(
-    Object.keys(classLessonTypes),
-    (day) => classLessonTypes[day] ?? [],
-    students.map((student) => student.id),
+  const {
+    gradeMap,
+    activeTool,
+    markField,
+    rules,
+    closedStudents,
+    suggestions,
+    applyTool,
+    gradeStudent,
+    setWarnings,
+  } = useLessonGrading({
+    students,
+    grades,
     classGrades,
-  );
-  const isRetaker = (studentId: string) => rules.isRetaker(studentId, date);
-
-  /** The part of a student's entry a tool sets, `undefined` for erasing everything. */
-  const targetOf = (
-    studentId: string,
-    option: GradeTool,
-  ): GradeTarget | undefined => {
-    if (option == "erase") return undefined;
-    if (option.startsWith("mark:")) return markField;
-    if (option == "absent" && isRetaker(studentId)) return "mark";
-    return "oral";
-  };
-  /** Whether a tool cannot be used on a student: graded elsewhere, or a retaker's oral grade. */
-  const isClosed = (studentId: string, option: GradeTool) => {
-    const target = targetOf(studentId, option);
-    return !!target && rules.isClosed(studentId, date, target);
-  };
-  const closedStudents = new Set(
-    mode == "grade"
-      ? students
-          .filter((student) => isClosed(student.id, activeTool))
-          .map((student) => student.id)
-      : [],
-  );
-
-  // While grading, students without a symbol show what their previous ones suggest
-  const suggestions = new Map(
-    mode == "grade" && !examDay && settings.suggestions
-      ? students
-          .filter((student) => {
-            const entry = gradeMap.get(student.id);
-            return (
-              entry?.grade == null && !entry?.absent && !isRetaker(student.id)
-            );
-          })
-          .map((student) => [
-            student.id,
-            suggestGrade(
-              classGrades.filter((entry) => entry.studentId == student.id),
-              date,
-              visibleGrades,
-            ),
-          ])
-      : [],
-  );
-
-  /** The parts of a student's entry holding a grade; none on exam days, which have only one. */
-  const filledParts = (studentId: string): GradeTarget[] => {
-    const entry = gradeMap.get(studentId);
-    if (!entry || examDay) return [];
-    const retaker = isRetaker(studentId);
-    const parts: GradeTarget[] = [];
-    if (entry.grade != null || (entry.absent && !retaker)) parts.push("oral");
-    if (entry.projectMark != null) parts.push("projectMark");
-    if (entry.mark != null || (entry.absent && retaker)) parts.push("mark");
-    return parts;
-  };
-
-  /** Applies a grading tool to a student's entry, recorded in the undo history. */
-  const applyTool = async (
-    student: SeatedStudent,
-    option: GradeTool,
-    target: GradeTarget | undefined,
-  ) => {
-    const values = getToolValues(option, lessonTypes, target);
-    if (!values) return;
-    await history.change(
-      "Bewertung",
-      student.id,
-      date,
-      gradeMap.get(student.id),
-      values,
-      `${formatStudentName(student)}: ${describeValues(values, points)}`,
-    );
-  };
-
-  /** Sets the warning level of a student, recorded in the undo history. */
-  const setWarnings = async (student: SeatedStudent, level: number) => {
-    const warnings = gradeMap.get(student.id)?.warnings ?? 0;
-    if (level == warnings) return;
-    await history.changeWarnings(
-      student.id,
-      date,
-      warnings,
-      level,
-      `${formatStudentName(student)}: ${WARNING_LEVELS[level]?.label ?? "Normal"}`,
-    );
-  };
-
-  /**
-   * Grades a student with a tool; the suggestion takes the student's suggested symbol.
-   * @param target The field a mark sets, if chosen with the mark; otherwise as the tool decides.
-   */
-  const gradeStudent = async (
-    student: SeatedStudent,
-    chosen: GradeTool,
-    target?: GradeTarget,
-  ) => {
-    const field = target ?? targetOf(student.id, chosen);
-    if (field && rules.isClosed(student.id, date, field)) return;
-    const suggestion = suggestions.get(student.id);
-    const option: GradeTool | null =
-      chosen != "suggestion"
-        ? chosen
-        : suggestion == null
-          ? null
-          : `grade:${suggestion}`;
-    if (!option) return;
-    // With several grades, erasing asks which one goes
-    const parts = option == "erase" ? filledParts(student.id) : [];
-    if (parts.length > 1) setErasing({ student, parts });
-    else await applyTool(student, option, field);
-  };
+    date,
+    lessonTypes,
+    classLessonTypes,
+    grading: mode == "grade",
+    tool,
+    markTarget,
+    history,
+    points,
+    onEraseChoice: setErasing,
+  });
 
   /** Applies the current mode (and grading tool) to a tapped student. */
   const handleTap = async (student: SeatedStudent) => {
@@ -400,7 +278,7 @@ export function ClassroomPage() {
     <PointsContext value={points}>
       <SpeedDialLayout
         entries={dialEntries}
-        links={landscape ? [] : [overviewLink]}
+        links={compact ? [] : [overviewLink]}
         side={side}
         className={landscape ? "flex-row gap-3" : undefined}
       >
@@ -411,7 +289,7 @@ export function ClassroomPage() {
             subtitle={format(lessonDate, "EEE, d. MMM yyyy", { locale: de })}
             previous={previousUrl}
             next={nextUrl}
-            pageSwitch={<PageSwitch link={overviewLink} />}
+            pageSwitch={compact && <PageSwitch link={overviewLink} />}
             history={
               <HistoryButtons
                 history={history}

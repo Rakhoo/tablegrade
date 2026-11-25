@@ -34,11 +34,8 @@ import {
   formatStudentName,
   getStudentLabel,
 } from "../../lib/formatters";
-import { describeValues, FAIL_TOOL, getToolValues } from "../../lib/gradeTools";
 import {
   DEFAULT_GRADE_TOOL,
-  formatGrade,
-  getToolValue,
   getValidGradeTool,
   type GradeTool,
   type LessonType,
@@ -47,11 +44,7 @@ import { createMarkRules } from "../../lib/lessonChains";
 import { lessonKey } from "../../lib/lessons";
 import { getOverviewColumns, type LessonColumn } from "../../lib/overview";
 import { paths } from "../../lib/paths";
-import {
-  getReportColumns,
-  REPORT_LABELS,
-  type ReportColumn,
-} from "../../lib/reports";
+import { getReportColumns } from "../../lib/reports";
 import { SCHOOL_YEAR_PART_LABELS } from "../../lib/schoolYear";
 import { getVisibleGrades, usesPoints } from "../../lib/settings";
 import { CommentDialog } from "../classroom/CommentDialog";
@@ -61,6 +54,7 @@ import { MODES, type OverviewMode } from "./overviewModes";
 import type { OverviewLoaderData } from "./overviewLoader";
 import { OverviewTable } from "./OverviewTable";
 import { StudentCard } from "./StudentCard";
+import { describeCell, useCellGrading } from "./useCellGrading";
 import { useDateMenu } from "./useDateMenu";
 
 const entryKey = (studentId: string, date: string) => `${studentId}|${date}`;
@@ -198,85 +192,22 @@ export function OverviewPage() {
       date,
       visibleGrades,
     );
-  /** Name and date of a cell, for the undo history. */
-  const describeCell = (student: SeatedStudent, date: string) =>
-    `${formatStudentName(student)}, ${format(parseISO(date), "dd.MM.")}`;
-
-  /** Why the current tool cannot be used on a cell, `null` if it can. */
-  const toolError = (student: SeatedStudent, { date, kind }: LessonColumn) => {
-    if (activeTool != "erase" && rules.isClosed(student.id, date, kind)) {
-      if (kind == "oral")
-        return "Wer nachschreibt, bekommt in dieser Stunde keine mündliche Note.";
-      if (kind == "projectMark" && rules.isRetaker(student.id, date))
-        return "Wer nachschreibt, wird in dieser Stunde nicht für das Projekt bewertet.";
-      return "Dieser Schüler hat seine Note für diese Klausur bzw. dieses Projekt an einem anderen Termin.";
-    }
-    if (isCancelled(date))
-      return activeTool == FAIL_TOOL || activeTool == "erase"
-        ? null
-        : "Bei Ausfall kann nur die 6 vergeben oder gelöscht werden.";
-    const fits =
-      activeTool == "erase" ||
-      (activeTool == "absent"
-        ? kind != "projectMark"
-        : activeTool.startsWith("mark:")
-          ? kind != "oral"
-          : kind == "oral");
-    return fits ? null : "Dieses Werkzeug passt nicht zu dieser Spalte.";
-  };
-
-  const handleTap = async (student: SeatedStudent, column: LessonColumn) => {
-    const { date, kind } = column;
-    if (mode == "comment") return setCommenting({ student, date });
-    const error = toolError(student, column);
-    if (error) return setMessage(error);
-    const entry = entryOf(student.id, date);
-    if (activeTool == "suggestion" && (entry?.grade != null || entry?.absent))
-      return;
-    const values = getToolValues(
-      activeTool == "suggestion"
-        ? `grade:${suggestionFor(student, date)}`
-        : activeTool,
-      typesOf(date),
-      kind,
-    );
-    if (!values)
-      return setMessage("Dieses Werkzeug passt nicht zu dieser Stunde.");
-    await history.change(
-      "Bewertung",
-      student.id,
-      date,
-      entry,
-      values,
-      `${describeCell(student, date)}: ${describeValues(values, points)}`,
-    );
-  };
-
-  /** Tap on a report's grade: marks replace the calculated grade, erasing brings it back. */
-  const handleReportTap = async (
-    student: SeatedStudent,
-    { date, report: kind }: ReportColumn,
-  ) => {
-    if (!activeTool.startsWith("mark:") && activeTool != "erase")
-      return setMessage("Hier können nur Noten gesetzt oder gelöscht werden.");
-    const before =
-      reportGrades.find(
-        (grade) =>
-          grade.date == date &&
-          grade.kind == kind &&
-          grade.studentId == student.id,
-      )?.grade ?? null;
-    const after = activeTool == "erase" ? null : getToolValue(activeTool);
-    await history.changeReport(
-      { date, kind },
-      student.id,
-      before,
-      after,
-      `${formatStudentName(student)}, ${REPORT_LABELS[kind]}: ${
-        after == null ? "Vorschlag" : formatGrade(after, points)
-      }`,
-    );
-  };
+  const { gradeCell, gradeReport } = useCellGrading({
+    tool: activeTool,
+    rules,
+    isCancelled,
+    entryOf,
+    typesOf,
+    suggestionFor,
+    reportGrades,
+    history,
+    points,
+    onMessage: setMessage,
+  });
+  const handleTap = (student: SeatedStudent, column: LessonColumn) =>
+    mode == "comment"
+      ? setCommenting({ student, date: column.date })
+      : gradeCell(student, column);
 
   /** The table as shown, for the export. */
   const exportData = () => ({
@@ -298,9 +229,9 @@ export function OverviewPage() {
   const dialEntries = overviewDialEntries({
     classId: cls.id,
     lessonDate,
-    hasPhotos: hasPhotos && !compact,
-    hasTraits: hasTraits && !compact,
-    showNicknames: !compact,
+    hasPhotos,
+    hasTraits,
+    compact,
     options: {
       photos: photosOption,
       traits: traitsOption,
@@ -452,7 +383,7 @@ export function OverviewPage() {
             rules={rules}
             suggestionFor={suggestionFor}
             onTap={handleTap}
-            onReportTap={handleReportTap}
+            onReportTap={gradeReport}
             onMenu={openMenu}
             onCancel={setCancelTarget}
           />

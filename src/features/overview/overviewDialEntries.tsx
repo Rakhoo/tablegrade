@@ -20,8 +20,8 @@ type OverviewDialOptions = {
   lessonDate: string | null;
   hasPhotos: boolean;
   hasTraits: boolean;
-  /** Offers the switch between nicknames and full names. */
-  showNicknames: boolean;
+  /** Small screens always show the narrowest table, without photos, traits and full names. */
+  compact: boolean;
   options: Record<
     "photos" | "traits" | "nicknames" | "lastNameSort",
     SwitchOption
@@ -34,11 +34,11 @@ export function overviewDialEntries({
   lessonDate,
   hasPhotos,
   hasTraits,
-  showNicknames,
+  compact,
   options,
 }: OverviewDialOptions) {
   const entries = classPageEntries(classId, lessonDate, hasPhotos);
-  if (hasPhotos) {
+  if (hasPhotos && !compact) {
     entries.push(
       visibilitySwitch(
         {
@@ -52,7 +52,7 @@ export function overviewDialEntries({
       ),
     );
   }
-  if (hasTraits) {
+  if (hasTraits && !compact) {
     entries.push(
       visibilitySwitch(
         {
@@ -66,7 +66,7 @@ export function overviewDialEntries({
       ),
     );
   }
-  if (showNicknames) {
+  if (!compact) {
     entries.push(
       displaySwitch(
         {
