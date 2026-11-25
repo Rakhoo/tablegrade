@@ -31,14 +31,14 @@ export function BackButton({
       component={Link}
       to={url}
       startIcon={<ChevronLeftIcon />}
-      className="pl-2"
+      className="pl-2 compact:min-w-0 compact:px-2"
       data-help={
         page == "timetable"
           ? "Zurück zum Stundenplan."
           : "Zurück zu den Übersichten aller Klassen."
       }
     >
-      {MAIN_PAGE_LABELS[page]}
+      <span className="compact:sr-only">{MAIN_PAGE_LABELS[page]}</span>
     </Button>
   );
 }

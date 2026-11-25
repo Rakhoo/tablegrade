@@ -1,10 +1,14 @@
 import { createTheme } from "@mui/material";
 import { deDE as coreDeDE } from "@mui/material/locale";
 import { deDE as pickersDeDE } from "@mui/x-date-pickers/locales";
+import { COMPACT_QUERY } from "./hooks/useCompact";
 import type { getThemeTokens } from "./lib/themes";
 
 /** Narrow screens (phones in portrait), on which dialogs become sheets. */
 const NARROW = "@media (max-width: 599.98px)";
+
+/** Small screens, see `COMPACT_QUERY`. */
+const COMPACT = `@media ${COMPACT_QUERY}`;
 
 /** Creates the MUI theme for the selected colors: pill buttons, rounded surfaces, German texts. */
 export const createAppTheme = (
@@ -78,6 +82,14 @@ export const createAppTheme = (
               borderRadius: 24,
               backgroundImage: "none",
               boxShadow: "0 16px 48px -12px rgb(43 37 64 / 0.28)",
+            },
+          },
+        },
+        MuiSnackbar: {
+          styleOverrides: {
+            // Above the bars and the round menu button at the bottom of small screens
+            anchorOriginBottomCenter: {
+              [COMPACT]: { bottom: "calc(env(safe-area-inset-bottom) + 7rem)" },
             },
           },
         },
