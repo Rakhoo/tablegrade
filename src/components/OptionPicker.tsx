@@ -90,9 +90,9 @@ type OptionPickerProps = {
 
 /**
  * Choices in a panel next to their anchor. While the finger is down (`held`) sliding marks a
- * choice, shown enlarged above the finger, and releasing picks it. Releasing outside cancels once
- * the finger was in the panel; before that, e.g. after a tap on the anchor, the panel stays open,
- * so choices can be tapped as well.
+ * choice, shown enlarged above the finger, and releasing picks it. Releasing on the anchor, e.g.
+ * after a tap on it, keeps the panel open, so choices can be tapped as well; releasing anywhere
+ * else cancels.
  */
 export function OptionPicker({ request, onClose }: OptionPickerProps) {
   const { anchor, title, sections, selected, onPick } = request;
@@ -102,9 +102,6 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
   const [hover, setHover] = useState<{ key: string; rect: DOMRect } | null>(
     null,
   );
-  /** Whether the held finger has been in the panel, after which releasing outside cancels. */
-  const entered = useRef(false);
-
   useLayoutEffect(() => {
     if (!panel.current) return;
     // Measuring needs the rendered panel, so this cannot happen during rendering
@@ -116,15 +113,6 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
   useEffect(() => {
     if (!held) return;
     const handleMove = (event: PointerEvent) => {
-      const box = panel.current?.getBoundingClientRect();
-      if (
-        box &&
-        event.clientX >= box.left &&
-        event.clientX <= box.right &&
-        event.clientY >= box.top &&
-        event.clientY <= box.bottom
-      )
-        entered.current = true;
       const option = optionAt(event.clientX, event.clientY);
       setHover(
         option
@@ -138,8 +126,14 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
       if (key) {
         onPick(key);
         onClose();
-      } else if (entered.current) onClose();
-      else setHeld(false);
+      } else if (
+        event.clientX >= anchor.left &&
+        event.clientX <= anchor.right &&
+        event.clientY >= anchor.top &&
+        event.clientY <= anchor.bottom
+      )
+        setHeld(false);
+      else onClose();
     };
     window.addEventListener("pointermove", handleMove);
     window.addEventListener("pointerup", handleUp);
@@ -149,7 +143,7 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
       window.removeEventListener("pointerup", handleUp);
       window.removeEventListener("pointercancel", onClose);
     };
-  }, [held, onPick, onClose]);
+  }, [held, anchor, onPick, onClose]);
 
   const hovered = hover && findOption(sections, hover.key);
   return createPortal(

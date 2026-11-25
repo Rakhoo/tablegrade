@@ -134,9 +134,8 @@ Nobody but the user can read the data or reset the recovery key.
     which one it sets. Small screens (and others with the switch in *Darstellung* → *Bedienung*)
     have one tool button instead ([src/components/GradePicker.tsx](src/components/GradePicker.tsx)): holding it opens all tools
     next to it ([src/components/OptionPicker.tsx](src/components/OptionPicker.tsx)), sliding
-    marks one, shown enlarged above the finger, and releasing picks it; releasing outside
-    cancels once the finger was in the choices, before that (e.g. after a tap) they stay open
-    for a tap; the lesson type sits on a small button next to it.
+    marks one, shown enlarged above the finger, and releasing picks it; releasing on the
+    button (e.g. after a tap) keeps them open for a tap, releasing anywhere else cancels; the lesson type sits on a small button next to it.
     Holding a student opens the same choices for this student only (the tool stays), in
     *Ermahnen* the three levels;
     tapping a student applies the tool (the suggestion shows the nib of the app icon). The suggestion is the
