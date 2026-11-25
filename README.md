@@ -75,7 +75,8 @@ Nobody but the user can read the data or reset the recovery key.
 - **Small screens** (phones, narrow windows): below 600 px width or 500 px height the app
   switches to a one-hand layout (`useCompact` in [src/hooks/useCompact.ts](src/hooks/useCompact.ts),
   the Tailwind variant `compact:` in [src/index.css](src/index.css); `short:` for low height
-  only). Tablets and wide windows stay as they are.
+  only). Tablets and wide windows stay as they are. Landscape layouts (week grid, side bar)
+  need a low screen like a phone in landscape; narrow windows get the portrait layouts.
   - The speed dial stays in the top right corner with smaller buttons; the switch between
     seating plan and overview table next to it shows only its icon. Its entries scroll when
     they do not fit. The help explains one element after the other with a frame and "Weiter"
@@ -209,6 +210,9 @@ Nobody but the user can read the data or reset the recovery key.
   cross-origin isolation or on a timeout of its storage worker. `rootLoader` detects that,
   retries once by reloading and otherwise blocks the app with `StorageErrorPage`, as all input
   would be lost. It also requests persistent storage.
+- An error that stops the app before or while it renders (e.g. a part of the app that fails
+  to load) shows "Notenfeder konnte nicht starten." with the error and "Neu laden", which also
+  clears the offline copy of the app ([src/main.tsx](src/main.tsx)); the data stays.
 - The app only runs installed. In a browser tab `/` shows nothing but the install instructions
   (`src/features/install/InstallPage.tsx`) and the database is never opened; only
   `npm run dev` runs in a tab.

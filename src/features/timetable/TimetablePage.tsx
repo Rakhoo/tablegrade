@@ -33,7 +33,7 @@ import {
   PlusIcon,
   TableIcon,
 } from "../../components/icons";
-import { useCompact, useLandscape } from "../../hooks/useCompact";
+import { useCompact, useShort } from "../../hooks/useCompact";
 import { useRememberMainPage } from "../../hooks/useRememberMainPage";
 import { rememberCurrentPageFor } from "../../lib/returnPage";
 import { useSwipe } from "../../hooks/useSwipe";
@@ -61,9 +61,9 @@ export function TimetablePage() {
   const { revalidate } = useRevalidator();
   useRememberMainPage("timetable");
   const compact = useCompact();
-  const landscape = useLandscape();
-  // Phones in portrait show one day, the week bar opens the calendar
-  const dayView = compact && !landscape;
+  // Phones in portrait and narrow windows show one day, the week bar opens the calendar
+  const short = useShort();
+  const dayView = compact && !short;
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [cancelTarget, setCancelTarget] = useState<{
@@ -343,14 +343,14 @@ export function TimetablePage() {
         entries={entries}
         className="timetable-page flex-col gap-2"
       >
-        {/* As high as the speed dial's buttons; in landscape the week in the middle, the right
-            end free for the speed dial */}
-        <div className="grid h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 portrait:flex portrait:pr-24">
+        {/* As high as the speed dial's buttons, the right end free for it; phones in landscape
+            show the week in the middle */}
+        <div className="flex h-10 items-center gap-2 pr-24 short:grid short:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] short:pr-0">
           <h1 className="flex flex-1 items-center gap-2 text-xl font-bold tracking-tight">
             <Raven className="h-8 shrink-0 text-brand-500" />
             Stundenplan
           </h1>
-          {landscape ? (
+          {!dayView ? (
             <div className="flex items-center gap-2">
               {weekBar}
               {todayButton}

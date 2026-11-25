@@ -10,7 +10,51 @@ for (const type of ["gesturestart", "gesturechange"]) {
   });
 }
 
-const root = createRoot(document.getElementById("root")!);
+const container = document.getElementById("root")!;
+
+/**
+ * Shows an error that stopped the app before or while rendering, instead of an empty page:
+ * plain DOM, as React itself may be what failed. "Neu laden" also clears the offline copy of
+ * the app, in case it is out of step with the server. The data on the device stays.
+ */
+function showFatalError(reason: unknown) {
+  // Later, so React has finished removing a crashed tree first
+  setTimeout(() => {
+    if (container.childElementCount > 0) return;
+    const box = document.createElement("div");
+    box.style.cssText =
+      "display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;height:100dvh;padding:24px;text-align:center;font-family:system-ui,sans-serif;color:#2b2540";
+    const title = document.createElement("strong");
+    title.textContent = "Notenfeder konnte nicht starten.";
+    const detail = document.createElement("code");
+    detail.style.cssText = "font-size:12px;word-break:break-word;opacity:.7";
+    detail.textContent =
+      reason instanceof Error
+        ? `${reason.name}: ${reason.message}`
+        : String(reason);
+    const button = document.createElement("button");
+    button.textContent = "Neu laden";
+    button.style.cssText =
+      "padding:10px 20px;border-radius:999px;border:0;background:#7352d0;color:white;font-weight:600";
+    button.onclick = async () => {
+      const registrations = await navigator.serviceWorker?.getRegistrations();
+      await Promise.all(registrations?.map((item) => item.unregister()) ?? []);
+      await Promise.all((await caches.keys()).map((key) => caches.delete(key)));
+      location.reload();
+    };
+    box.append(title, detail, button);
+    container.replaceChildren(box);
+  });
+}
+
+window.addEventListener("error", (event) => showFatalError(event.error));
+window.addEventListener("unhandledrejection", (event) =>
+  showFatalError(event.reason),
+);
+
+const root = createRoot(container, {
+  onUncaughtError: (error) => showFatalError(error),
+});
 
 /** Starts the app. Loaded on demand, so a browser tab never opens the database. */
 async function startApp() {
@@ -26,9 +70,9 @@ async function startApp() {
 
 if (isStandalone()) {
   resetLaunchUrl();
-  startApp();
+  startApp().catch(showFatalError);
 } else if (isLocalRun()) {
-  startApp();
+  startApp().catch(showFatalError);
 } else {
   // The clean base URL is what gets installed; in the app it leads to the timetable
   history.replaceState(null, "", "/");

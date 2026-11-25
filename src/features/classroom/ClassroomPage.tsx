@@ -16,7 +16,7 @@ import {
 } from "../../components/SpeedDial";
 import { InfoIcon, TableIcon } from "../../components/icons";
 import { clearLesson, type SeatedStudent } from "../../db";
-import { useCompact, useLandscape } from "../../hooks/useCompact";
+import { useCompact, useLandscape, useShort } from "../../hooks/useCompact";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
 import { useGradePickSections } from "../../hooks/useGradePickSections";
 import { PointsContext } from "../../hooks/useGradeFormat";
@@ -84,7 +84,10 @@ export function ClassroomPage() {
   const [showPhotos] = photosOption;
   const [gradeButton] = useDisplayOption("gradeButton");
   const compact = useCompact();
-  const landscape = useLandscape();
+  const short = useShort();
+  // The side bar needs a landscape screen of some width: large ones or phones in landscape;
+  // narrow windows get the phone's portrait layout
+  const rail = useLandscape() && (!compact || short);
   // Small screens always grade with the tool button, others if chosen in the settings
   const oneButton = compact || gradeButton;
   const [picking, setPicking] = useState<PickRequest | null>(null);
@@ -276,9 +279,9 @@ export function ClassroomPage() {
       <SpeedDialLayout
         entries={dialEntries}
         links={[overviewLink]}
-        className={landscape ? "flex-row gap-3" : undefined}
+        className={rail ? "flex-row gap-3" : undefined}
       >
-        {landscape ? (
+        {rail ? (
           <ClassroomRail
             back={back}
             title={title}
@@ -311,7 +314,7 @@ export function ClassroomPage() {
           />
         )}
 
-        {!landscape && !compact && (
+        {!rail && !compact && (
           <ModeBar
             current={currentMode.label}
             modes={modes("row")}
@@ -327,7 +330,7 @@ export function ClassroomPage() {
           className={
             "card relative min-h-0 min-w-0 flex-1 bg-brand-400 p-2 " +
             (hasLegend ? "pb-13 " : "") +
-            (landscape ? "-order-1" : "")
+            (rail ? "-order-1" : "")
           }
           data-help={`Sitzplan: ${currentMode.gridHelp}`}
         >
@@ -377,7 +380,7 @@ export function ClassroomPage() {
           )}
         </main>
 
-        {compact && !landscape && (
+        {compact && !rail && (
           <BottomBar
             current={currentMode.label}
             modes={modes("full")}
