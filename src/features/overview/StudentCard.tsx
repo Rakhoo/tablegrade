@@ -13,6 +13,8 @@ import { REPORT_LABELS } from "../../lib/reports";
 type StudentCardProps = {
   student: SeatedStudent;
   name: string;
+  /** Whether photos are shown, see the display option "Bilder". */
+  showPhoto: boolean;
   traits: Trait[];
   columns: OverviewColumn[];
   entryOf: (studentId: string, date: string) => GradeEntry | undefined;
@@ -53,6 +55,7 @@ function Line({
 export function StudentCard({
   student,
   name,
+  showPhoto,
   traits,
   columns,
   entryOf,
@@ -119,7 +122,7 @@ export function StudentCard({
   return (
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
       <div className="flex items-center gap-3 px-6 pt-5 pb-2">
-        {student.image && (
+        {showPhoto && student.image && (
           <img
             src={student.image}
             alt=""

@@ -419,6 +419,8 @@ export function OverviewPage() {
           <StudentCard
             student={shown}
             name={nameOf(shown)}
+            // The setting itself: small screens leave photos out of the table only for room
+            showPhoto={photosOption[0]}
             traits={traitsOf(shown)}
             columns={columns}
             entryOf={entryOf}
