@@ -3,7 +3,14 @@
 @import "tailwindcss";
 
 /* Small screens like phones, in both orientations; matches COMPACT_QUERY in useCompact.ts */
-@custom-variant compact (@media (max-width: 599.98px), (max-height: 499.98px));
+@custom-variant compact {
+  @media (max-width: 599.98px) {
+    @slot;
+  }
+  @media (max-height: 499.98px) {
+    @slot;
+  }
+}
 /* All other screens: tablets and computers */
 @custom-variant wide (@media (min-width: 600px) and (min-height: 500px));
 

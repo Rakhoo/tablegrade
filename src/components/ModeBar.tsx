@@ -14,6 +14,15 @@ type ModeToggleProps<T extends string> = {
   options: ModeOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** "full": spread over the whole width; "grid": two columns, e.g. in the side bar. */
+  layout?: "row" | "full" | "grid";
+};
+
+/** Classes of the group per layout. */
+const TOGGLE_LAYOUTS = {
+  row: "rounded-full",
+  full: "flex w-full rounded-full",
+  grid: "grid grid-cols-2 gap-0.5 rounded-2xl",
 };
 
 /** Choice of the page's mode as a row of text toggle buttons. */
@@ -21,6 +30,7 @@ export function ModeToggle<T extends string>({
   options,
   value,
   onChange,
+  layout = "row",
 }: ModeToggleProps<T>) {
   return (
     <ToggleButtonGroup
@@ -30,14 +40,17 @@ export function ModeToggle<T extends string>({
       aria-label="Modus"
       value={value}
       onChange={(_, next: T | null) => next && onChange(next)}
-      className="rounded-full bg-brand-50 p-0.5"
+      className={`bg-brand-50 p-0.5 ${TOGGLE_LAYOUTS[layout]}`}
     >
       {options.map((option) => (
         <ToggleButton
           key={option.value}
           value={option.value}
           disabled={option.disabled}
-          className="toggle-pill px-2.5 py-0.5 text-xs leading-5"
+          className={
+            "toggle-pill px-2.5 py-0.5 text-xs leading-5 " +
+            (layout == "row" ? "" : "flex-1 px-1 py-1.5")
+          }
           data-help={option.help}
         >
           {option.label}
@@ -95,6 +108,44 @@ export function ModeBar({
           {footer}
         </div>
       )}
+    </div>
+  );
+}
+
+type BottomBarProps = {
+  /** The mode choice, spread over the whole width. */
+  modes: ReactNode;
+  /** Undo and redo as round buttons. */
+  history: ReactNode;
+  /** Tools or hint of the current mode, next to undo and redo. */
+  children?: ReactNode;
+  /** Label of the current mode, named in the help. */
+  current: string;
+};
+
+/**
+ * The mode bar of small screens, at the bottom in reach of the thumb: the mode choice above,
+ * undo, redo and the mode's tools or hint below, the right end free for the round menu button.
+ */
+export function BottomBar({
+  modes,
+  history,
+  children,
+  current,
+}: BottomBarProps) {
+  return (
+    <div
+      className="card flex shrink-0 flex-col gap-1.5 p-1.5"
+      data-help-group
+      data-help={`Modus-Auswahl, Rückgängig und die Werkzeuge des Modus. Aktueller Modus: ${current}.`}
+    >
+      {modes}
+      <div className="flex min-h-12 items-center gap-1.5 pr-12">
+        {history}
+        <div className="flex min-w-0 flex-1 justify-center text-center text-xs text-muted">
+          {children}
+        </div>
+      </div>
     </div>
   );
 }

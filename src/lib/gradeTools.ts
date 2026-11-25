@@ -76,3 +76,16 @@ export function describeValues(values: Partial<EntryValues>, points: boolean) {
 
 /** The tool for sanctioning a student in a cancelled lesson. */
 export const FAIL_TOOL: GradeTool = `grade:${FAIL_GRADE}`;
+
+/** Key of a choice: the tool, and for marks the field it sets when the lesson has two. */
+export const toPickKey = (tool: GradeTool, target?: GradeTarget) =>
+  target ? `${tool}|${target}` : tool;
+
+/** Tool and field of a choice's key, see `toPickKey`. */
+export function fromPickKey(key: string) {
+  const [tool, target] = key.split("|");
+  return {
+    tool: tool as GradeTool,
+    target: (target || undefined) as GradeTarget | undefined,
+  };
+}

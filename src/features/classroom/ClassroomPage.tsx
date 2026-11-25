@@ -5,23 +5,30 @@ import { useState } from "react";
 import { useLoaderData, useRevalidator } from "react-router";
 import { BackButton } from "../../components/BackButton";
 import { EmptyState } from "../../components/EmptyState";
-import { GradeToolBar } from "../../components/GradeToolBar";
 import { HistoryButtons } from "../../components/HistoryButtons";
 import { LessonTypeBadge } from "../../components/LessonTypeBadge";
-import { ModeBar, ModeToggle } from "../../components/ModeBar";
+import { BottomBar, ModeBar, ModeToggle } from "../../components/ModeBar";
 import { PageHeader } from "../../components/PageHeader";
-import { SpeedDialLayout } from "../../components/SpeedDial";
-import { CheckIcon, InfoIcon, TableIcon } from "../../components/icons";
+import { OptionPicker, type PickRequest } from "../../components/OptionPicker";
+import {
+  PageSwitch,
+  SpeedDialLayout,
+  type SpeedDialLink,
+} from "../../components/SpeedDial";
+import { InfoIcon, TableIcon } from "../../components/icons";
 import { clearLesson, type SeatedStudent } from "../../db";
+import { useCompact, useLandscape } from "../../hooks/useCompact";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
+import { useGradePickSections } from "../../hooks/useGradePickSections";
 import { PointsContext } from "../../hooks/useGradeFormat";
 import { useEditHistory } from "../../hooks/useEditHistory";
 import { useLessonTypeChange } from "../../hooks/useLessonTypeChange";
 import { useSettings } from "../../hooks/useSettings";
 import { suggestGrade } from "../../lib/assessment";
-import { formatClassName, formatStudentName } from "../../lib/formatters";
+import { formatStudentName } from "../../lib/formatters";
 import {
   describeValues,
+  fromPickKey,
   getToolValues,
   type GradeTarget,
 } from "../../lib/gradeTools";
@@ -31,6 +38,7 @@ import {
   isExamDay,
   MARK_KIND,
   type GradeTool,
+  type LessonType,
 } from "../../lib/grades";
 import { createMarkRules } from "../../lib/lessonChains";
 import { paths } from "../../lib/paths";
@@ -44,8 +52,10 @@ import { getClassColor } from "../../lib/subjectColors";
 import { nextWarningLevel, WARNING_LEVELS } from "../../lib/warnings";
 import { classroomDialEntries } from "./classroomDialEntries";
 import { MODES } from "./classroomModes";
-import { WarningLevels } from "./WarningLevels";
+import { LessonTitle, ModeTools } from "./ModeTools";
+import { WARNING_SECTION } from "./warningSection";
 import type { ClassroomLoaderData } from "./classroomLoader";
+import { ClassroomRail } from "./ClassroomRail";
 import { ClearLessonDialog } from "./ClearLessonDialog";
 import { CommentDialog } from "./CommentDialog";
 import { EraseChoiceDialog } from "./EraseChoiceDialog";
@@ -77,7 +87,7 @@ export function ClassroomPage() {
   const points = usesPoints(settings, cls);
   const [mode, setMode] = useState<ClassroomMode>(settings.startMode);
   const [tool, setTool] = useState<GradeTool>(DEFAULT_GRADE_TOOL);
-  const [markTarget, setMarkTarget] = useState<"mark" | "projectMark">("mark");
+  const [markTarget, setMarkTarget] = useState<GradeTarget>("mark");
   const [confirmClear, setConfirmClear] = useState(false);
   const traitsOption = useDisplayOption("traits");
   const photosOption = useDisplayOption("photos");
@@ -86,6 +96,14 @@ export function ClassroomPage() {
   const [showTraits] = traitsOption;
   const [showDuties] = dutiesOption;
   const [showPhotos] = photosOption;
+  const [railLeft] = useDisplayOption("railLeft");
+  const [gradeButton] = useDisplayOption("gradeButton");
+  const compact = useCompact();
+  const landscape = useLandscape();
+  // Small screens always grade with the tool button, others if chosen in the settings
+  const oneButton = compact || gradeButton;
+  const side = landscape && railLeft ? "left" : "right";
+  const [picking, setPicking] = useState<PickRequest | null>(null);
   const [legendAnchor, setLegendAnchor] = useState<HTMLElement | null>(null);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
   /** A student with several grades in this lesson, asked which one to erase. */
@@ -210,33 +228,80 @@ export function ClassroomPage() {
     );
   };
 
+  /** Sets the warning level of a student, recorded in the undo history. */
+  const setWarnings = async (student: SeatedStudent, level: number) => {
+    const warnings = gradeMap.get(student.id)?.warnings ?? 0;
+    if (level == warnings) return;
+    await history.changeWarnings(
+      student.id,
+      date,
+      warnings,
+      level,
+      `${formatStudentName(student)}: ${WARNING_LEVELS[level]?.label ?? "Normal"}`,
+    );
+  };
+
+  /**
+   * Grades a student with a tool; the suggestion takes the student's suggested symbol.
+   * @param target The field a mark sets, if chosen with the mark; otherwise as the tool decides.
+   */
+  const gradeStudent = async (
+    student: SeatedStudent,
+    chosen: GradeTool,
+    target?: GradeTarget,
+  ) => {
+    const field = target ?? targetOf(student.id, chosen);
+    if (field && rules.isClosed(student.id, date, field)) return;
+    const suggestion = suggestions.get(student.id);
+    const option: GradeTool | null =
+      chosen != "suggestion"
+        ? chosen
+        : suggestion == null
+          ? null
+          : `grade:${suggestion}`;
+    if (!option) return;
+    // With several grades, erasing asks which one goes
+    const parts = option == "erase" ? filledParts(student.id) : [];
+    if (parts.length > 1) setErasing({ student, parts });
+    else await applyTool(student, option, field);
+  };
+
   /** Applies the current mode (and grading tool) to a tapped student. */
   const handleTap = async (student: SeatedStudent) => {
     if (mode == "warn") {
       const warnings = gradeMap.get(student.id)?.warnings ?? 0;
-      const level = nextWarningLevel(warnings);
-      await history.changeWarnings(
-        student.id,
-        date,
-        warnings,
-        level,
-        `${formatStudentName(student)}: ${WARNING_LEVELS[level]?.label ?? "Normal"}`,
-      );
+      await setWarnings(student, nextWarningLevel(warnings));
     } else if (mode == "comment") {
       setCommenting(student);
-    } else if (mode == "grade" && !isClosed(student.id, activeTool)) {
-      const suggestion = suggestions.get(student.id);
-      const option: GradeTool | null =
-        activeTool != "suggestion"
-          ? activeTool
-          : suggestion == null
-            ? null
-            : `grade:${suggestion}`;
-      if (!option) return;
-      // With several grades, erasing asks which one goes
-      const parts = option == "erase" ? filledParts(student.id) : [];
-      if (parts.length > 1) setErasing({ student, parts });
-      else await applyTool(student, option, targetOf(student.id, option));
+    } else if (mode == "grade") {
+      await gradeStudent(student, activeTool);
+    }
+  };
+
+  const gradeSections = useGradePickSections(lessonTypes);
+  /** Opens the choices for one student only: grades while grading, levels while warning. */
+  const handleHold = (student: SeatedStudent, anchor: DOMRect) => {
+    const title = formatStudentName(student);
+    if (mode == "grade") {
+      setPicking({
+        anchor,
+        title,
+        sections: gradeSections,
+        held: true,
+        onPick: (key) => {
+          const { tool: picked, target } = fromPickKey(key);
+          void gradeStudent(student, picked, target);
+        },
+      });
+    } else if (mode == "warn") {
+      setPicking({
+        anchor,
+        title,
+        selected: String(gradeMap.get(student.id)?.warnings ?? 0),
+        held: true,
+        sections: [WARNING_SECTION],
+        onPick: (key) => void setWarnings(student, Number(key)),
+      });
     }
   };
 
@@ -273,91 +338,126 @@ export function ClassroomPage() {
       traits: traitsOption,
     },
   });
+  const overviewLink: SpeedDialLink = {
+    key: "overview",
+    label: "Übersicht",
+    icon: <TableIcon />,
+    help: "Übersichtstabelle der Klasse mit allen Stunden und Noten.",
+    to: paths.table(cls.id, date),
+  };
+  const back = <BackButton timetableUrl={paths.timetable(date)} />;
+  const previousUrl = previous && paths.seating(previous.id, previous.date);
+  const nextUrl = next && paths.seating(next.id, next.date);
+  const title = (
+    <LessonTitle
+      schoolClass={cls}
+      accent={getClassColor(cls, settings.levels).accent}
+      badges={lessonTypes.map((type) => (
+        <LessonTypeBadge
+          key={type}
+          type={type}
+          label={rules.typeLabel(date, type)}
+        />
+      ))}
+      complete={rules.completion(date).lesson}
+    />
+  );
+  const modes = (layout: "row" | "full" | "grid") => (
+    <ModeToggle
+      layout={layout}
+      value={mode}
+      onChange={setMode}
+      options={MODES.map(({ mode: value, label, help }) => ({
+        value,
+        label: compact && value == "comment" ? "Komm." : label,
+        help,
+      }))}
+    />
+  );
+  const toggleType = (type: LessonType) =>
+    requestLessonType(date, lessonTypes, type, grades);
+  const selectTool = (chosen: GradeTool, target?: GradeTarget) => {
+    setTool(chosen);
+    if (target) setMarkTarget(target);
+  };
+  /** What the current mode shows next to the plan: tools while grading, else a hint. */
+  const modeContent = (layout: "bar" | "rail") => (
+    <ModeTools
+      mode={mode}
+      layout={layout}
+      oneButton={oneButton}
+      tool={activeTool}
+      markTarget={markField}
+      onToolChange={selectTool}
+      lessonTypes={lessonTypes}
+      availableTypes={rules.availableTypes(date)}
+      onToggleType={toggleType}
+      hint={currentMode.hint}
+    />
+  );
+
   return (
     <PointsContext value={points}>
       <SpeedDialLayout
         entries={dialEntries}
-        links={[
-          {
-            key: "overview",
-            label: "Übersicht",
-            icon: <TableIcon />,
-            help: "Übersichtstabelle der Klasse mit allen Stunden und Noten.",
-            to: paths.table(cls.id, date),
-          },
-        ]}
+        links={landscape ? [] : [overviewLink]}
+        side={side}
+        className={landscape ? "flex-row gap-3" : undefined}
       >
-        <PageHeader
-          back={<BackButton timetableUrl={paths.timetable(date)} />}
-          previous={previous && paths.seating(previous.id, previous.date)}
-          next={next && paths.seating(next.id, next.date)}
-          help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
-          title={
-            <>
-              <span
-                className="h-3 w-3 rounded-full"
-                style={{
-                  background: getClassColor(cls, settings.levels).accent,
-                }}
+        {landscape ? (
+          <ClassroomRail
+            back={back}
+            title={title}
+            subtitle={format(lessonDate, "EEE, d. MMM yyyy", { locale: de })}
+            previous={previousUrl}
+            next={nextUrl}
+            pageSwitch={<PageSwitch link={overviewLink} />}
+            history={
+              <HistoryButtons
+                history={history}
+                round={compact}
+                stacked={!compact}
               />
-              {formatClassName(cls)} · {cls.subject}
-              {lessonTypes.map((type) => (
-                <LessonTypeBadge
-                  key={type}
-                  type={type}
-                  label={rules.typeLabel(date, type)}
-                />
-              ))}
-              {rules.completion(date).lesson && (
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full text-white"
-                  style={{ background: "#15803d" }}
-                  aria-label="Vollständig bewertet"
-                >
-                  <CheckIcon size={15} strokeWidth={3} />
-                </span>
-              )}
-            </>
-          }
-          subtitle={dateLabel}
-        />
+            }
+            modes={modes("grid")}
+            dialAtTop={!compact}
+            dialAtBottom={compact}
+          >
+            {modeContent(compact ? "bar" : "rail")}
+          </ClassroomRail>
+        ) : (
+          <PageHeader
+            back={back}
+            previous={previousUrl}
+            next={nextUrl}
+            help="Klasse und Datum der Stunde; die Pfeile springen zur vorherigen oder nächsten Stunde."
+            title={title}
+            subtitle={
+              compact
+                ? format(lessonDate, "EEE, d. MMM yyyy", { locale: de })
+                : dateLabel
+            }
+            action={compact && <PageSwitch link={overviewLink} />}
+          />
+        )}
 
-        <ModeBar
-          current={currentMode.label}
-          modes={
-            <ModeToggle
-              value={mode}
-              onChange={setMode}
-              options={MODES.map(({ mode: value, label, help }) => ({
-                value,
-                label,
-                help,
-              }))}
-            />
-          }
-          history={<HistoryButtons history={history} />}
-          hint={mode == "warn" ? <WarningLevels /> : currentMode.hint}
-        >
-          {mode == "grade" && (
-            <GradeToolBar
-              tool={activeTool}
-              onChange={setTool}
-              lessonTypes={lessonTypes}
-              availableTypes={rules.availableTypes(date)}
-              onToggleType={(type) =>
-                requestLessonType(date, lessonTypes, type, grades)
-              }
-              markTarget={markTarget}
-              onMarkTargetChange={setMarkTarget}
-            />
-          )}
-        </ModeBar>
+        {!landscape && !compact && (
+          <ModeBar
+            current={currentMode.label}
+            modes={modes("row")}
+            history={<HistoryButtons history={history} />}
+            hint={mode != "grade" && modeContent("bar")}
+          >
+            {mode == "grade" && modeContent("bar")}
+          </ModeBar>
+        )}
 
         {/* With the legend shown, the plan ends above its button, zoomed or not */}
         <main
           className={
-            "card relative min-h-0 flex-1 bg-brand-400 p-2 " +
-            (hasLegend ? "pb-13" : "")
+            "card relative min-h-0 min-w-0 flex-1 bg-brand-400 p-2 " +
+            (hasLegend ? "pb-13 " : "") +
+            (landscape && side == "right" ? "-order-1" : "")
           }
           data-help={`Sitzplan: ${currentMode.gridHelp}`}
         >
@@ -380,6 +480,7 @@ export function ClassroomPage() {
             zoomed={zoomOption[0]}
             dimmed={closedStudents}
             onTap={handleTap}
+            onHold={handleHold}
             onMove={(student, x, y) =>
               history.moveSeat(
                 student.id,
@@ -405,6 +506,20 @@ export function ClassroomPage() {
             </Button>
           )}
         </main>
+
+        {compact && !landscape && (
+          <BottomBar
+            current={currentMode.label}
+            modes={modes("full")}
+            history={<HistoryButtons history={history} round />}
+          >
+            {modeContent("bar")}
+          </BottomBar>
+        )}
+
+        {picking && (
+          <OptionPicker request={picking} onClose={() => setPicking(null)} />
+        )}
 
         <SeatLegend
           anchor={legendAnchor}

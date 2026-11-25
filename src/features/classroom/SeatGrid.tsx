@@ -1,4 +1,5 @@
-import { useRef, useState, type PointerEvent } from "react";
+import { useLayoutEffect, useRef, useState, type PointerEvent } from "react";
+import { useLongPress } from "../../hooks/useLongPress";
 import { FitText } from "../../components/FitText";
 import { GradeIcon } from "../../components/GradeIcon";
 import { MarkBadge } from "../../components/MarkBadge";
@@ -38,6 +39,8 @@ type SeatGridProps = {
   zoomed?: boolean;
   /** Called when a student is tapped outside of arrange mode. */
   onTap: (student: SeatedStudent) => void;
+  /** Called when a student is held outside of arrange mode, with the seat's position. */
+  onHold?: (student: SeatedStudent, seat: DOMRect) => void;
   onMove: (student: SeatedStudent, x: number, y: number) => void;
 };
 
@@ -45,6 +48,37 @@ type Position = { x: number; y: number };
 type Drag = { student: SeatedStudent; pointer: Position; target: Position };
 
 const clamp = (value: number, max: number) => Math.min(Math.max(value, 0), max);
+
+/** Smallest side of a seat in pixels that still shows a photo above the name. */
+const MIN_PHOTO_SEAT = 44;
+
+/** How long a seat is held before its choices open, in milliseconds. */
+const HOLD_MS = 450;
+
+/** Smallest side of a seat in pixels below which its badges shrink, so the name stays readable. */
+const SMALL_SEAT = 64;
+
+/** Margin around each seat in pixels (`m-1`). */
+const SEAT_MARGIN = 4;
+
+/** Size of an element in pixels, updated when it changes. */
+function useSize() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      }),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return [ref, size] as const;
+}
 
 /** Grid placement of a seat whose top left cell is at `(x, y)`. */
 const seatArea = ({ x, y }: Position) => ({
@@ -69,9 +103,11 @@ export function SeatGrid({
   zoomed = false,
   dimmed,
   onTap,
+  onHold,
   onMove,
 }: SeatGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
+  const [areaRef, area] = useSize();
   const [drag, setDrag] = useState<Drag | null>(null);
 
   /** Top left cell of a seat centered below the pointer, kept inside the grid. */
@@ -123,10 +159,19 @@ export function SeatGrid({
   const zoomedArea =
     zoomed && !arranging ? getZoomedArea(seated as Position[]) : null;
   const percent = (share: number) => `${share * 100}%`;
+  // Small seats, e.g. on phones, show the name alone, as a photo would leave it no room
+  const seatSide =
+    Math.min(
+      ((area.width * (zoomedArea?.width ?? 1)) / GRID_COLUMNS) * SEAT_SIZE,
+      ((area.height * (zoomedArea?.height ?? 1)) / GRID_ROWS) * SEAT_SIZE,
+    ) -
+    2 * SEAT_MARGIN;
+  const photosFit = area.width == 0 || seatSide >= MIN_PHOTO_SEAT;
+  const small = area.width > 0 && seatSide < SMALL_SEAT;
 
   return (
     <>
-      <div className="relative h-full overflow-hidden">
+      <div ref={areaRef} className="relative h-full touch-none overflow-hidden">
         <div
           ref={gridRef}
           className={
@@ -153,10 +198,12 @@ export function SeatGrid({
               showComment={showComments}
               traits={traits}
               duty={duties.find((duty) => duty.id == student.dutyId)}
-              showPhoto={showPhotos}
+              showPhoto={showPhotos && photosFit}
+              small={small}
               isDragged={drag?.student.id == student.id}
               isDimmed={!!dimmed?.has(student.id)}
               onTap={onTap}
+              onHold={arranging ? undefined : onHold}
             />
           ))}
           {drag && (
@@ -188,9 +235,12 @@ type SeatProps = {
   traits: Trait[];
   duty?: Duty;
   showPhoto: boolean;
+  /** Smaller badges on small seats. */
+  small: boolean;
   isDragged: boolean;
   isDimmed: boolean;
   onTap: SeatGridProps["onTap"];
+  onHold?: SeatGridProps["onHold"];
 };
 
 /** A placed student with photo, name, warning color and badges for duty, grade and comment. */
@@ -203,11 +253,19 @@ function Seat({
   traits,
   duty,
   showPhoto,
+  small,
   isDragged,
   isDimmed,
   onTap,
+  onHold,
 }: SeatProps) {
+  const badge = small ? 18 : 24;
   const getGradeColor = useGradeColor();
+  const seatRef = useRef<HTMLDivElement>(null);
+  const holdHandlers = useLongPress(() => {
+    if (seatRef.current)
+      onHold?.(student, seatRef.current.getBoundingClientRect());
+  }, HOLD_MS);
   const grade = entry?.grade ?? null;
   const hasSymbol = grade != null || !!entry?.absent;
   const warning = WARNING_LEVELS[entry?.warnings ?? 0];
@@ -222,6 +280,7 @@ function Seat({
 
   return (
     <div
+      ref={seatRef}
       className={
         "seat relative m-1 flex flex-col items-center justify-center gap-0.5 rounded-2xl bg-surface p-1.5 text-center shadow-tile transition-[transform,opacity,background-color] active:scale-95 " +
         (arranging ? "cursor-grab " : "") +
@@ -233,6 +292,7 @@ function Seat({
         boxShadow: rings.filter(Boolean).join(", "),
       }}
       data-student={student.id}
+      {...(onHold ? holdHandlers : {})}
       onClick={arranging ? undefined : () => onTap(student)}
     >
       {/* Photo area: keeps its space without a photo, so all names stay on one level. With
@@ -284,7 +344,7 @@ function Seat({
           {duty && (
             <DutyBadge
               duty={duty}
-              size={24}
+              size={badge}
               className="relative z-1 border-2 shadow-tile"
               style={{ borderColor: tileColor }}
             />
@@ -292,12 +352,14 @@ function Seat({
           {warning && (
             <span
               className={
-                "flex h-6 min-w-6 items-center justify-center rounded-full border-2 px-1 text-xs font-bold text-white shadow-tile " +
+                "flex items-center justify-center rounded-full border-2 px-1 text-xs font-bold text-white shadow-tile " +
                 (duty ? "-ml-1.5" : "")
               }
               style={{
                 background: warning.accent,
                 borderColor: tileColor,
+                height: badge,
+                minWidth: badge,
               }}
               title={warning.label}
             >
@@ -311,7 +373,7 @@ function Seat({
           className="absolute -top-1 -right-1 z-10 flex rounded-full p-0.5 shadow-tile"
           style={{ background: tileColor }}
         >
-          <GradeIcon grade={grade ?? undefined} size={24} />
+          <GradeIcon grade={grade ?? undefined} size={badge} />
         </span>
       )}
       {!hasSymbol && suggestion != null && (
@@ -319,18 +381,23 @@ function Seat({
           className="absolute -top-1 -right-1 z-10 flex rounded-full"
           style={{ background: tileColor }}
         >
-          <SuggestedGradeIcon grade={suggestion} size={28} />
+          <SuggestedGradeIcon grade={suggestion} size={badge + 4} />
         </span>
       )}
       {(entry?.mark != null || entry?.projectMark != null) && (
         // Exam or retake mark and project mark side by side
         <span className="absolute -bottom-1 -left-1 z-10 flex gap-0.5">
           {entry.mark != null && (
-            <MarkBadge mark={entry.mark} className="border-2 shadow-tile" />
+            <MarkBadge
+              mark={entry.mark}
+              size={badge}
+              className="border-2 shadow-tile"
+            />
           )}
           {entry.projectMark != null && (
             <MarkBadge
               mark={entry.projectMark}
+              size={badge}
               className="border-2 shadow-tile"
             />
           )}
