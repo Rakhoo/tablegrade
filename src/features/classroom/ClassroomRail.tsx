@@ -11,16 +11,10 @@ type ClassroomRailProps = {
   /** Seating plans of the previous and next lesson, `null` if there is none. */
   previous: string | null;
   next: string | null;
-  /** The switch to the overview table; on large screens the corner dial shows it. */
-  pageSwitch?: ReactNode;
   history: ReactNode;
   modes: ReactNode;
   /** The mode's tools or hint. */
   children: ReactNode;
-  /** Leaves room at the top for the dial in the corner of large screens. */
-  dialAtTop: boolean;
-  /** Leaves room at the bottom for the round menu button of small screens. */
-  dialAtBottom: boolean;
 };
 
 /** Arrow to the previous or next lesson, replacing the page so the way back stays the same. */
@@ -58,12 +52,9 @@ export function ClassroomRail({
   subtitle,
   previous,
   next,
-  pageSwitch,
   history,
   modes,
   children,
-  dialAtTop,
-  dialAtBottom,
 }: ClassroomRailProps) {
   const navigate = useNavigate();
   const swipe = useSwipe((direction) => {
@@ -76,11 +67,9 @@ export function ClassroomRail({
       data-help-group
       data-help="Seitenleiste: Stunde, Modus, Rückgängig und die Werkzeuge des Modus."
     >
-      {dialAtTop && <div className="h-12 shrink-0" />}
-      <div className="flex flex-wrap items-center justify-between gap-1">
-        {back}
-        {pageSwitch}
-      </div>
+      {/* Room for the speed dial in the corner above */}
+      <div className="h-12 shrink-0" />
+      <div className="self-start">{back}</div>
       <div
         {...swipe}
         className="flex touch-pan-y flex-col items-center gap-1 text-center"
@@ -104,7 +93,6 @@ export function ClassroomRail({
       <div className="flex min-h-0 flex-col items-stretch gap-2 text-center text-sm text-muted">
         {children}
       </div>
-      {dialAtBottom && <div className="h-12 shrink-0" />}
     </aside>
   );
 }

@@ -16,7 +16,6 @@ import { BottomBar, ModeBar, ModeToggle } from "../../components/ModeBar";
 import { PageHeader } from "../../components/PageHeader";
 import { GradeToolButton } from "../../components/GradePicker";
 import {
-  PageSwitch,
   SpeedDialLayout,
   type SpeedDialLink,
 } from "../../components/SpeedDial";
@@ -277,10 +276,7 @@ export function OverviewPage() {
 
   return (
     <PointsContext value={points}>
-      <SpeedDialLayout
-        entries={dialEntries}
-        links={compact ? [] : [seatingLink]}
-      >
+      <SpeedDialLayout entries={dialEntries} links={[seatingLink]}>
         <PageHeader
           back={<BackButton timetableUrl={paths.timetable(lessonDate)} />}
           previous={previous && paths.table(previous.id, previous.date)}
@@ -294,7 +290,6 @@ export function OverviewPage() {
           ]
             .filter(Boolean)
             .join(" · ")}
-          action={compact && <PageSwitch link={seatingLink} />}
         />
 
         {!compact && (

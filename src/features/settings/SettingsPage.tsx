@@ -153,10 +153,10 @@ export function SettingsPage() {
     sync: <SyncSettings />,
   };
 
-  /** Opens a tab and remembers it; on small screens as a new step, so going back lists them. */
+  /** Opens a tab and remembers it; replacing the URL, so one step back leaves the settings. */
   const openTab = (key: TabKey) => {
     storeTab(key);
-    setSearchParams({ tab: key }, { replace: !compact });
+    setSearchParams({ tab: key }, { replace: true });
   };
   const toneOf = (key: TabKey) =>
     worstTone(attention.filter((item) => item.tab == key));
@@ -239,7 +239,7 @@ export function SettingsPage() {
               })}
             </Tabs>
           )}
-          <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4 compact:pb-20">
+          <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto pb-4">
             {cards[tab]}
           </main>
         </>

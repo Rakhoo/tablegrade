@@ -76,25 +76,28 @@ Nobody but the user can read the data or reset the recovery key.
   switches to a one-hand layout (`useCompact` in [src/hooks/useCompact.ts](src/hooks/useCompact.ts),
   the Tailwind variant `compact:` in [src/index.css](src/index.css); `short:` for low height
   only). Tablets and wide windows stay as they are.
-  - The speed dial is a round button in the bottom right corner that opens its entries as a
-    sheet from the bottom, with *Hilfe* before *Einstellungen*. The help then explains one
-    element after the other with a frame and "Weiter" ([src/components/help/HelpSteps.tsx](src/components/help/HelpSteps.tsx)).
-  - Page headers show the way back as an arrow and the title with its arrows centered
-    between it and the right end, where seating plan and overview table carry the switch to
-    each other ("Übersicht" or "Sitzplan").
+  - The speed dial stays in the top right corner with smaller buttons; the switch between
+    seating plan and overview table next to it shows only its icon. Its entries scroll when
+    they do not fit. The help explains one element after the other with a frame and "Weiter"
+    ([src/components/help/HelpSteps.tsx](src/components/help/HelpSteps.tsx)), with the menu
+    open its entries.
+  - Page headers show the way back as an arrow; the lesson arrows use the whole room up to
+    the speed dial, so they keep their place whatever the title's width, and the title wraps
+    instead of being cut.
   - Seating plan and overview table have a bar at the bottom: the mode choice above, undo and
     redo as round buttons (the step shows in a short notice) and the tool button or the mode's
     hint below; in landscape the overview puts it all into one row.
   - Dialogs open as sheets from the bottom on narrow screens (theme in [src/theme.ts](src/theme.ts)),
     notices at the bottom sit above the bars.
   - Timetable in portrait: one day with day chips (a long press sets "Ausfall"), swiping
-    switches the day (Friday to Monday), the week bar opens the calendar in a dialog. In
+    switches the day (Friday to Monday), the week bar opens the calendar in a dialog; the
+    week arrows keep the shown weekday. In
     landscape the week with lower rows and without subjects. "Neue Klasse" and "Übersichten"
     move into the speed dial.
   - Overview table: always compact, nicknames, no photos and traits (their switches are left
     out).
   - Settings: a list of the topics; a tap opens one as a page of its own ("Themen" leads
-    back). Tapping the title of "Daten und Export" seven times unlocks the developer card.
+    back; the URL is replaced, so one step back leaves the settings). Tapping the title of "Daten und Export" seven times unlocks the developer card.
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
   selected week, one row per lesson, with its start and end time below the number once the
   lesson times are set; optionally only the days and lessons with classes (see Settings).
@@ -142,10 +145,9 @@ Nobody but the user can read the data or reset the recovery key.
     edits the comment or starts a new one.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
   - In landscape a side bar holds way back, title with the lesson arrows (swiping the title
-    switches too), undo/redo, the modes and their tools (on phones also the switch to the
-    overview; large screens keep it next to the speed dial above the bar), so the
-    plan gets the whole height ([src/features/classroom/ClassroomRail.tsx](src/features/classroom/ClassroomRail.tsx)); it sits on the right, or on the left
-    with the switch in *Darstellung* → *Bedienung*, and the speed dial on the same side.
+    switches too), undo/redo, the modes and their tools, so the plan gets the whole height
+    ([src/features/classroom/ClassroomRail.tsx](src/features/classroom/ClassroomRail.tsx)). It
+    sits on the right, below the speed dial with the switch to the overview.
   - Seats under 44 px show no photo, under 64 px smaller badges, so names stay readable.
   - "Zoom" zooms in on the smallest part of the room holding
     all seated students. The seats get larger, not the text, so longer names and larger photos
@@ -517,8 +519,7 @@ the default:
   yellow and red of the warnings; usual duties like "Tafel", "iPad" or "Lüftung/Fenster" are
   offered as suggestions).
 - **Darstellung**: theme and light/dark mode; *Bedienung* (this device only, kept in local
-  storage): the side bar of the seating plan on the left and the one tool button on large
-  screens; the grade colors, green to red or blue to
+  storage): the one tool button on large screens; the grade colors, green to red or blue to
   orange for red-green color blindness (`gradePalette`, everywhere in the app and in the PDF
   export, also the correction arrows of reports); a compact overview table (lower rows,
   narrower columns, smaller photos, symbols and marks of exams, projects and reports, through

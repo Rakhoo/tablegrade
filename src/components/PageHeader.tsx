@@ -17,8 +17,6 @@ type PageHeaderProps = {
   next?: string | null;
   /** Help text of the title with its arrows. */
   help?: string;
-  /** Shown at the right end on small screens, e.g. the switch to the other page of the class. */
-  action?: ReactNode;
 };
 
 /** Link of an arrow next to the title, replacing the page so the way back stays the same. */
@@ -48,7 +46,8 @@ function Arrow({
 /**
  * Header of a page: the way back at the left and the centered title, optionally between
  * arrows; swiping the title goes there too. The right end stays free for the speed dial. Small
- * screens center the title between the way back and `action` at the end.
+ * screens give the arrows the whole room between the way back and the speed dial, so they
+ * keep their place whatever the title's width.
  */
 export function PageHeader({
   back,
@@ -57,7 +56,6 @@ export function PageHeader({
   previous,
   next,
   help,
-  action,
 }: PageHeaderProps) {
   const navigate = useNavigate();
   const arrows = previous !== undefined || next !== undefined;
@@ -70,7 +68,7 @@ export function PageHeader({
     <header className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 compact:flex compact:gap-1">
       <div className="justify-self-start">{back}</div>
       <div
-        className="flex items-center gap-3 compact:min-w-0 compact:flex-1 compact:justify-center compact:gap-1"
+        className="flex items-center gap-3 compact:mx-2 compact:min-w-0 compact:flex-1 compact:gap-1"
         data-help={
           help && arrows
             ? `${help} Wischen über den Titel wechselt ebenso.`
@@ -88,7 +86,7 @@ export function PageHeader({
           {...(arrows ? swipe : {})}
           className="min-w-56 touch-pan-y text-center portrait:min-w-44 compact:min-w-0 compact:flex-1"
         >
-          <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight compact:gap-1.5 compact:text-base compact:leading-tight">
+          <div className="flex items-center justify-center gap-2 text-xl font-bold tracking-tight compact:flex-wrap compact:gap-x-1.5 compact:gap-y-0 compact:text-base compact:leading-tight">
             {title}
           </div>
           {subtitle && (
@@ -105,7 +103,8 @@ export function PageHeader({
           />
         )}
       </div>
-      <div className="flex justify-end">{action}</div>
+      {/* Room for the speed dial: the switch to the other page of the class, help and menu */}
+      <div className="compact:w-[8.25rem] compact:shrink-0" />
     </header>
   );
 }

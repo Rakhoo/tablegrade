@@ -84,10 +84,15 @@ export function TimetablePage() {
     setSearchParams({ date: toIsoDate(date) }, { replace: true });
   /**
    * Selects a week via its Wednesday, so the calendar shows the month holding most of that
-   * week when it spans two months.
+   * week when it spans two months. The day view keeps the shown weekday instead.
    */
   const selectWeekAround = (weekStart: Date) =>
-    selectDate(addDays(weekStart, 2));
+    selectDate(
+      addDays(
+        weekStart,
+        dayView ? Math.min(Math.max(anchor.getDay(), 1), 5) - 1 : 2,
+      ),
+    );
   const maxDate = getCalendarEnd(
     Object.keys(calendar.secondHalfStarts).map(Number),
   );
@@ -331,7 +336,8 @@ export function TimetablePage() {
         entries={entries}
         className="timetable-page flex-col gap-2"
       >
-        <div className="flex items-center gap-2">
+        {/* The right end stays free for the speed dial */}
+        <div className="flex items-center gap-2 pr-24">
           {!landscape && (
             <h1 className="flex flex-1 items-center gap-2 text-xl font-bold tracking-tight">
               <Raven className="h-8 shrink-0 text-brand-500" />

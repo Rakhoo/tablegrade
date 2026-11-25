@@ -11,7 +11,6 @@ import { BottomBar, ModeBar, ModeToggle } from "../../components/ModeBar";
 import { PageHeader } from "../../components/PageHeader";
 import { OptionPicker, type PickRequest } from "../../components/OptionPicker";
 import {
-  PageSwitch,
   SpeedDialLayout,
   type SpeedDialLink,
 } from "../../components/SpeedDial";
@@ -83,13 +82,11 @@ export function ClassroomPage() {
   const [showTraits] = traitsOption;
   const [showDuties] = dutiesOption;
   const [showPhotos] = photosOption;
-  const [railLeft] = useDisplayOption("railLeft");
   const [gradeButton] = useDisplayOption("gradeButton");
   const compact = useCompact();
   const landscape = useLandscape();
   // Small screens always grade with the tool button, others if chosen in the settings
   const oneButton = compact || gradeButton;
-  const side = landscape && railLeft ? "left" : "right";
   const [picking, setPicking] = useState<PickRequest | null>(null);
   const [legendAnchor, setLegendAnchor] = useState<HTMLElement | null>(null);
   const [commenting, setCommenting] = useState<SeatedStudent | null>(null);
@@ -278,8 +275,7 @@ export function ClassroomPage() {
     <PointsContext value={points}>
       <SpeedDialLayout
         entries={dialEntries}
-        links={compact ? [] : [overviewLink]}
-        side={side}
+        links={[overviewLink]}
         className={landscape ? "flex-row gap-3" : undefined}
       >
         {landscape ? (
@@ -289,7 +285,6 @@ export function ClassroomPage() {
             subtitle={format(lessonDate, "EEE, d. MMM yyyy", { locale: de })}
             previous={previousUrl}
             next={nextUrl}
-            pageSwitch={compact && <PageSwitch link={overviewLink} />}
             history={
               <HistoryButtons
                 history={history}
@@ -298,8 +293,6 @@ export function ClassroomPage() {
               />
             }
             modes={modes("grid")}
-            dialAtTop={!compact}
-            dialAtBottom={compact}
           >
             {modeContent(compact ? "bar" : "rail")}
           </ClassroomRail>
@@ -315,7 +308,6 @@ export function ClassroomPage() {
                 ? format(lessonDate, "EEE, d. MMM yyyy", { locale: de })
                 : dateLabel
             }
-            action={compact && <PageSwitch link={overviewLink} />}
           />
         )}
 
@@ -335,7 +327,7 @@ export function ClassroomPage() {
           className={
             "card relative min-h-0 min-w-0 flex-1 bg-brand-400 p-2 " +
             (hasLegend ? "pb-13 " : "") +
-            (landscape && side == "right" ? "-order-1" : "")
+            (landscape ? "-order-1" : "")
           }
           data-help={`Sitzplan: ${currentMode.gridHelp}`}
         >

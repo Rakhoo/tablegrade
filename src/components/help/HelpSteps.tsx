@@ -10,12 +10,18 @@ const GAP = 12;
  * All explanations of the page in reading order: each card is followed by the elements inside
  * it, as small screens have no room to explain them all at once.
  */
-function collectSteps(group: HTMLElement | null = null): Target[] {
-  const targets = collectTargets(null, false, group).sort(
+function collectSteps(
+  scope: HTMLElement | null,
+  inside: boolean,
+  group: HTMLElement | null = null,
+): Target[] {
+  const targets = collectTargets(scope, inside, group).sort(
     (a, b) => a.rect.top - b.rect.top || a.rect.left - b.rect.left,
   );
   return targets.flatMap((target) =>
-    target.group ? [target, ...collectSteps(target.group)] : [target],
+    target.group
+      ? [target, ...collectSteps(scope, inside, target.group)]
+      : [target],
   );
 }
 
@@ -26,6 +32,10 @@ function measure(element: HTMLElement): Rect {
 }
 
 type HelpStepsProps = {
+  /** The part of the page to explain, see `inside`. */
+  scope: HTMLElement | null;
+  /** Explains the elements inside `scope` (e.g. the open menu), otherwise all others. */
+  inside: boolean;
   onClose: () => void;
 };
 
@@ -33,8 +43,8 @@ type HelpStepsProps = {
  * Help of small screens: explains the page one element after the other. The element is framed
  * on a darkened page, its explanation sits above or below it, and "Weiter" goes on.
  */
-export function HelpSteps({ onClose }: HelpStepsProps) {
-  const [steps] = useState(collectSteps);
+export function HelpSteps({ scope, inside, onClose }: HelpStepsProps) {
+  const [steps] = useState(() => collectSteps(scope, inside));
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const step = steps[index];

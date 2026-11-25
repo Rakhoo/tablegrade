@@ -102,7 +102,8 @@ export function LessonTitle({
         className="h-3 w-3 shrink-0 rounded-full"
         style={{ background: accent }}
       />
-      <span className="truncate">
+      {/* Small screens wrap the title instead of cutting it */}
+      <span className="truncate compact:whitespace-normal">
         {formatClassName(schoolClass)} · {schoolClass.subject}
       </span>
       {badges}

@@ -125,7 +125,7 @@ type BottomBarProps = {
 
 /**
  * The mode bar of small screens, at the bottom in reach of the thumb: the mode choice above,
- * undo, redo and the mode's tools or hint below, the right end free for the round menu button.
+ * undo, redo and the mode's tools or hint below.
  */
 export function BottomBar({
   modes,
@@ -141,7 +141,7 @@ export function BottomBar({
       data-help={`Modus-Auswahl, Rückgängig und die Werkzeuge des Modus. Aktueller Modus: ${current}.`}
     >
       <div className="short:w-80 short:shrink-0">{modes}</div>
-      <div className="flex min-h-12 min-w-0 flex-1 items-center gap-1.5 pr-12">
+      <div className="flex min-h-12 min-w-0 flex-1 items-center gap-1.5">
         {history}
         <div className="flex min-w-0 flex-1 justify-center text-center text-xs text-muted">
           {children}
