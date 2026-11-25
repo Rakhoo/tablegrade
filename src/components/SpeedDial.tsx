@@ -193,7 +193,7 @@ const SHEET_MS = 250;
 const STAGGER_MS = 20;
 
 /** Where the dial sits: its corner on large screens, its bottom corner on small ones. */
-export type DialSide = "left" | "right";
+type DialSide = "left" | "right";
 
 type SpeedDialProps = {
   entries: SpeedDialEntry[];

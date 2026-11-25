@@ -39,8 +39,8 @@ export function HelpSteps({ onClose }: HelpStepsProps) {
   const [rect, setRect] = useState<Rect | null>(null);
   const step = steps[index];
 
-  // Scrolling and measuring need the rendered page
   useLayoutEffect(() => {
+    // Scrolling and measuring need the rendered page
     // oxlint-disable-next-line react/set-state-in-effect
     setRect(step ? measure(step.element) : null);
   }, [step]);

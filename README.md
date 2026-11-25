@@ -72,6 +72,29 @@ Nobody but the user can read the data or reset the recovery key.
     step is named after its mode (*Ermahnung* or *Maßnahme*, *Bewertung*,
     *Kommentar*, *Anordnung*; struck through for removals) and describes the student and value
     ([src/hooks/useEditHistory.ts](src/hooks/useEditHistory.ts)).
+- **Small screens** (phones, narrow windows): below 600 px width or 500 px height the app
+  switches to a one-hand layout (`useCompact` in [src/hooks/useCompact.ts](src/hooks/useCompact.ts),
+  the Tailwind variant `compact:` in [src/index.css](src/index.css); `short:` for low height
+  only). Tablets and wide windows stay as they are.
+  - The speed dial is a round button in the bottom right corner that opens its entries as a
+    sheet from the bottom, with *Hilfe* before *Einstellungen*. The help then explains one
+    element after the other with a frame and "Weiter" ([src/components/help/HelpSteps.tsx](src/components/help/HelpSteps.tsx)).
+  - Page headers show the way back as an arrow, the title left aligned and no lesson arrows
+    (swiping the title switches); seating plan and overview table carry the switch to each
+    other ("Übersicht" or "Sitzplan") at the right end of the header.
+  - Seating plan and overview table have a bar at the bottom: the mode choice above, undo and
+    redo as round buttons (the step shows in a short notice) and the tool button or the mode's
+    hint below; in landscape the overview puts it all into one row.
+  - Dialogs open as sheets from the bottom on narrow screens (theme in [src/theme.ts](src/theme.ts)),
+    notices at the bottom sit above the bars.
+  - Timetable in portrait: one day with day chips (a long press sets "Ausfall"), swiping
+    switches the day (Friday to Monday), the week bar opens the calendar in a dialog. In
+    landscape the week with lower rows and without subjects. "Neue Klasse" and "Übersichten"
+    move into the speed dial.
+  - Overview table: always compact, nicknames, no photos and traits (their switches are left
+    out).
+  - Settings: a list of the topics; a tap opens one as a page of its own ("Themen" leads
+    back). Tapping the title of "Daten und Export" seven times unlocks the developer card.
 - **Timetable** (`/timetable`): week picker (Monday–Friday only) and the timetable of the
   selected week, one row per lesson, with its start and end time below the number once the
   lesson times are set; optionally only the days and lessons with classes (see Settings).
@@ -102,7 +125,15 @@ Nobody but the user can read the data or reset the recovery key.
     switches for zoom, photos, duties and traits.
   - *Ermahnen*: each tap cycles a student through yellow → red → none.
   - *Bewerten*: the tool bar (grade symbols, "abwesend", suggestion, lesson type, marks for
-    exams and projects and one delete tool at the right for both) stays open below the header;
+    exams and projects and one delete tool at the right for both) stays open below the header.
+    A retake and a project on one day get one row of marks each, so a tap on a mark also picks
+    which one it sets. Small screens (and others with the switch in *Darstellung* → *Bedienung*)
+    have one tool button instead ([src/components/GradePicker.tsx](src/components/GradePicker.tsx)): holding it opens all tools
+    next to it ([src/components/OptionPicker.tsx](src/components/OptionPicker.tsx)), sliding
+    marks one, shown enlarged above the finger, and releasing picks it; releasing without
+    sliding keeps them open for a tap; the lesson type sits on a small button next to it.
+    Holding a student opens the same choices for this student only (the tool stays), in
+    *Ermahnen* the three levels;
     tapping a student applies the tool (the suggestion shows the nib of the app icon). The suggestion is the
     default tool; without previous grades it suggests the shown symbol closest to a plain 3,
     the better one of two equally close. Erasing a student with several grades in the lesson
@@ -110,6 +141,11 @@ Nobody but the user can read the data or reset the recovery key.
   - *Kommentieren*: the only place for comments. Speech bubbles show their first words, a tap
     edits the comment or starts a new one.
   - *Anordnen*: drag students to whole or half seats; dropping onto a student swaps both.
+  - In landscape a side bar holds way back, title with the lesson arrows (swiping the title
+    switches too), the switch to the overview, undo/redo, the modes and their tools, so the
+    plan gets the whole height ([src/features/classroom/ClassroomRail.tsx](src/features/classroom/ClassroomRail.tsx)); it sits on the right, or on the left
+    with the switch in *Darstellung* → *Bedienung*, and the speed dial on the same side.
+  - Seats under 44 px show no photo, under 64 px smaller badges, so names stay readable.
   - "Zoom" zooms in on the smallest part of the room holding
     all seated students. The seats get larger, not the text, so longer names and larger photos
     fit; each direction grows on its own, so that part fills the plan from corner to corner,
@@ -196,8 +232,10 @@ Nobody but the user can read the data or reset the recovery key.
   with the seating plan), and nicknames, and after them the sorting switch (rows sorted by last name,
   shown or not, else by the shown names; exports follow it). Rows and columns are tinted,
   comments are marked with a small symbol, and a long press on a date cancels that lesson. A
-  tap on a name covers the entries of all other students and hides all traits, to show a
-  student their own.
+  tap on a name opens a card with all entries of the student, newest first
+  ([src/features/overview/StudentCard.tsx](src/features/overview/StudentCard.tsx)), to show a
+  student their own; on large screens "In der Tabelle zeigen" covers the entries of all other
+  students and hides all traits instead.
 - **Lesson types**: a lesson can be a *Klausur* (classic marks 1 to 6 with tendencies, plus
   "abwesend", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
   on the date in the overview and in the grading tool bar of the seating plan; a second tap
@@ -298,10 +336,12 @@ src/
 ├── rootLoader.ts                   settings and storage check for every page
 ├── theme.ts, index.css             MUI theme and CSS design tokens
 ├── components/                     shared UI: speed dial (and its entries), page header, mode
-│                                   bar, undo/redo, grade tool bar, the frame of a class's sub
+│                                   bar and bottom bar, undo/redo, grade tool bar, tool button
+│                                   and option picker, the frame of a class's sub
 │                                   pages, empty states, icons, dialogs
 │   ├── brand/                      mascot (raven silhouette), loading nib, startup screen
-│   └── help/                       help overlay: component, targets, placement, geometry
+│   └── help/                       help overlay and the step-by-step help of small screens:
+│                                   components, targets, placement, geometry
 ├── features/
 │   ├── timetable/                  timetable page, grid, backup reminder
 │   ├── classroom/                  seating plan page, seat grid, its dialogs
@@ -329,7 +369,8 @@ src/
 │                                   IndexedDB, backup import guard; sample values with
 │                                   `VITE_SYNC_DEMO=true`
 ├── hooks/                          shared state (undo history, display options, stored
-│                                   preferences), long press, swipe, settings, going back
+│                                   preferences), long press, swipe, settings, going back,
+│                                   small screens, the grading tools of a lesson
 ├── test/                           test helpers (in-memory `node:sqlite` with all migrations,
 │                                   fake sync server, Go server start for `test:e2e`)
 └── lib/                            pure helpers: dates, school year, lessons and their mark
@@ -474,7 +515,9 @@ the default:
 - **Schüler**: traits; duties (symbol, color and name up to 24 characters; colors avoid the
   yellow and red of the warnings; usual duties like "Tafel", "iPad" or "Lüftung/Fenster" are
   offered as suggestions).
-- **Darstellung**: theme and light/dark mode; the grade colors, green to red or blue to
+- **Darstellung**: theme and light/dark mode; *Bedienung* (this device only, kept in local
+  storage): the side bar of the seating plan on the left and the one tool button on large
+  screens; the grade colors, green to red or blue to
   orange for red-green color blindness (`gradePalette`, everywhere in the app and in the PDF
   export, also the correction arrows of reports); a compact overview table (lower rows,
   narrower columns, smaller photos, symbols and marks of exams, projects and reports, through

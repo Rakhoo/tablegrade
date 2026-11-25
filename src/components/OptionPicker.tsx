@@ -101,9 +101,9 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
   const start = useRef<{ x: number; y: number } | null>(null);
   const moved = useRef(false);
 
-  // Placing needs the rendered size of the panel
   useLayoutEffect(() => {
     if (!panel.current) return;
+    // Measuring needs the rendered panel, so this cannot happen during rendering
     // oxlint-disable-next-line react/set-state-in-effect
     setPosition(place(anchor, panel.current.getBoundingClientRect()));
   }, [anchor]);
@@ -198,7 +198,8 @@ export function OptionPicker({ request, onClose }: OptionPickerProps) {
                         {option.content}
                       </button>
                     ) : (
-                      // oxlint-disable-next-line react/no-array-index-key -- empty cells have no data
+                      // Empty cells have no data to key them by
+                      // oxlint-disable-next-line react/no-array-index-key
                       <span key={`empty-${index}`} />
                     ),
                   )}

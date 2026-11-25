@@ -13,8 +13,6 @@
 }
 /* Screens of little height, e.g. phones in landscape */
 @custom-variant short (@media (max-height: 499.98px));
-/* All other screens: tablets and computers */
-@custom-variant wide (@media (min-width: 600px) and (min-height: 500px));
 
 /* Design tokens of the default theme; the selected theme overrides them, see useAppTheme */
 @theme {
