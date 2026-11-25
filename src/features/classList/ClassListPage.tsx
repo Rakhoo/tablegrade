@@ -50,7 +50,7 @@ export function ClassListPage() {
       </header>
 
       <main
-        className="card min-h-0 flex-1 overflow-auto p-5"
+        className="card min-h-0 flex-1 overflow-auto p-5 compact:p-3 compact:pb-16"
         data-help-group
         data-help="Alle Klassen nach Halbjahr; eine Klasse öffnet ihre Notentabelle."
       >

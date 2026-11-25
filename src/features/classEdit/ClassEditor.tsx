@@ -324,7 +324,7 @@ export function ClassEditor({
           : "Angaben und Schülerliste der neuen Klasse; erst „Speichern“ legt sie an."
       }
     >
-      <div className="min-h-0 flex-1 overflow-auto p-5">
+      <div className="min-h-0 flex-1 overflow-auto p-5 compact:p-3 compact:pb-16">
         {saveError && (
           <Alert severity="error" className="mb-3">
             {saveError}

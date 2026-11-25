@@ -135,12 +135,13 @@ export function BottomBar({
 }: BottomBarProps) {
   return (
     <div
-      className="card flex shrink-0 flex-col gap-1.5 p-1.5"
+      // Short screens put everything into one row, so the page keeps its height
+      className="card flex shrink-0 flex-col gap-1.5 p-1.5 short:flex-row short:items-center"
       data-help-group
       data-help={`Modus-Auswahl, Rückgängig und die Werkzeuge des Modus. Aktueller Modus: ${current}.`}
     >
-      {modes}
-      <div className="flex min-h-12 items-center gap-1.5 pr-12">
+      <div className="short:w-80 short:shrink-0">{modes}</div>
+      <div className="flex min-h-12 min-w-0 flex-1 items-center gap-1.5 pr-12">
         {history}
         <div className="flex min-w-0 flex-1 justify-center text-center text-xs text-muted">
           {children}

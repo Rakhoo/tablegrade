@@ -87,7 +87,17 @@ export function HelpSteps({ onClose }: HelpStepsProps) {
                 }
         }
       >
-        <p>{step?.text ?? "Auf dieser Seite gibt es nichts zu erklären."}</p>
+        <button
+          type="button"
+          aria-label="Hilfe schließen"
+          className="absolute top-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full text-xl leading-none text-muted"
+          onClick={onClose}
+        >
+          ×
+        </button>
+        <p className="pr-6">
+          {step?.text ?? "Auf dieser Seite gibt es nichts zu erklären."}
+        </p>
         <div className="mt-3 flex items-center justify-between gap-2 font-semibold">
           <button
             type="button"
@@ -109,14 +119,6 @@ export function HelpSteps({ onClose }: HelpStepsProps) {
           </button>
         </div>
       </div>
-      <button
-        type="button"
-        aria-label="Hilfe schließen"
-        className="absolute top-[calc(env(safe-area-inset-top)+0.75rem)] right-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface text-xl leading-none text-ink shadow-card"
-        onClick={onClose}
-      >
-        ×
-      </button>
     </div>,
     document.body,
   );
