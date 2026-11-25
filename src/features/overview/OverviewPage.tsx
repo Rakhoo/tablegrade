@@ -90,12 +90,19 @@ export function OverviewPage() {
   const [shownStudent, setShownStudent] = useState<string | null>(null);
   /** Whether the shown student's entries are listed on a card above the table. */
   const [cardOpen, setCardOpen] = useState(false);
+  const [cardFirstSetting] = useDisplayOption("studentCard");
+  /**
+   * Whether a tap on a name opens the card or only covers the others: as set in the settings
+   * for a freshly opened table, then as chosen last in it.
+   */
+  const [cardFirst, setCardFirst] = useState(cardFirstSetting);
   // The arrows switch the class without leaving the page, the student may not be in the new one
   const [shownClass, setShownClass] = useState(cls.id);
   if (shownClass != cls.id) {
     setShownClass(cls.id);
     setShownStudent(null);
     setCardOpen(false);
+    setCardFirst(cardFirstSetting);
   }
   // Looked up instead of trusted, as the render that resets it still sees the old id
   const shown = students.find((student) => student.id == shownStudent);
@@ -276,12 +283,21 @@ export function OverviewPage() {
         ? "Ein Tipp auf einen anderen Namen zeigt dessen Einträge"
         : "Ein Tipp auf einen Namen zeigt nur die Einträge des Schülers";
   /**
-   * A tap on a name shows only that student's entries, with the card on top; while one student
-   * is shown, another name switches to them and the shown name opens the card again.
+   * A tap on a name shows only that student's entries, with the card on top if it was used last;
+   * while one student is shown, another name switches to them and the shown name opens the card.
    */
   const showStudent = (studentId: string) => {
-    if (!shown || studentId == shown.id) setCardOpen(true);
+    if (shown ? studentId == shown.id : cardFirst) openCard();
     setShownStudent(studentId);
+  };
+  const openCard = () => {
+    setCardOpen(true);
+    setCardFirst(true);
+  };
+  /** Closes the card but keeps the others covered, which the next name tap does again. */
+  const closeCard = () => {
+    setCardOpen(false);
+    setCardFirst(false);
   };
   const showAll = () => {
     setShownStudent(null);
@@ -295,7 +311,7 @@ export function OverviewPage() {
         <span className="font-semibold text-ink">{nameOf(shown)}</span>
         {compact ? "" : " sind sichtbar."}
       </span>
-      <Button size="small" onClick={() => setCardOpen(true)}>
+      <Button size="small" onClick={openCard}>
         Karte
       </Button>
       <Button size="small" onClick={showAll}>
@@ -427,7 +443,7 @@ export function OverviewPage() {
             typesOf={typesOf}
             isCancelled={isCancelled}
             rules={rules}
-            onCover={() => setCardOpen(false)}
+            onCover={closeCard}
             onClose={showAll}
           />
         )}

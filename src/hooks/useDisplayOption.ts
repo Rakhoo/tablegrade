@@ -16,6 +16,8 @@ const DISPLAY_OPTIONS = {
   zoom: true,
   /** Grading with one tool button on large screens too; small screens always use it. */
   gradeButton: false,
+  /** A tap on a name in the overview opens the student card; otherwise it only covers the others. */
+  studentCard: true,
 };
 
 export type DisplayOption = keyof typeof DISPLAY_OPTIONS;
@@ -29,6 +31,7 @@ const STORAGE_KEYS: Record<DisplayOption, string> = {
   lastNameSort: "overviewLastNameSort",
   zoom: "seatZoom",
   gradeButton: "gradeButton",
+  studentCard: "studentCard",
 };
 
 /** A display option of the class pages, kept on the device. */

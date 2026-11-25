@@ -247,7 +247,9 @@ Nobody but the user can read the data or reset the recovery key.
   student their own. "In der Tabelle zeigen" closes only the card, "Schließen" shows all
   again. While one student is shown, a notice names them with "Karte" and "Alle zeigen" (on
   phones a slim strip above the table), and a tap on another name switches to that student
-  without the card.
+  without the card. Whether a tap on a name opens the card first is set in *Darstellung* →
+  *Bedienung*; an opened table then follows the choice made last in it ("In der Tabelle
+  zeigen" or "Karte").
 - **Lesson types**: a lesson can be a *Klausur* (classic marks 1 to 6 with tendencies, plus
   "abwesend", no oral grades) or carry a *Projekt*, a *Nachklausur* or both. They are chosen
   on the date in the overview and in the grading tool bar of the seating plan; a second tap
@@ -528,7 +530,8 @@ the default:
   yellow and red of the warnings; usual duties like "Tafel", "iPad" or "Lüftung/Fenster" are
   offered as suggestions).
 - **Darstellung**: theme and light/dark mode; *Bedienung* (this device only, kept in local
-  storage): the one tool button on large screens; the grade colors, green to red or blue to
+  storage): the one tool button on large screens and whether a tap on a name in the overview
+  opens the student card first; the grade colors, green to red or blue to
   orange for red-green color blindness (`gradePalette`, everywhere in the app and in the PDF
   export, also the correction arrows of reports); a compact overview table (lower rows,
   narrower columns, smaller photos, symbols and marks of exams, projects and reports, through
