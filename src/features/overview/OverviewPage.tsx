@@ -12,11 +12,17 @@ import { CancelDialog } from "../../components/CancelDialog";
 import { EmptyState } from "../../components/EmptyState";
 import { GradeToolBar } from "../../components/GradeToolBar";
 import { HistoryButtons } from "../../components/HistoryButtons";
-import { ModeBar, ModeToggle } from "../../components/ModeBar";
+import { BottomBar, ModeBar, ModeToggle } from "../../components/ModeBar";
 import { PageHeader } from "../../components/PageHeader";
-import { SpeedDialLayout } from "../../components/SpeedDial";
+import { GradeToolButton } from "../../components/GradePicker";
+import {
+  PageSwitch,
+  SpeedDialLayout,
+  type SpeedDialLink,
+} from "../../components/SpeedDial";
 import { SeatsIcon } from "../../components/icons";
 import type { GradeEntry, SeatedStudent } from "../../db";
+import { useCompact } from "../../hooks/useCompact";
 import { useDisplayOption } from "../../hooks/useDisplayOption";
 import { useEditHistory } from "../../hooks/useEditHistory";
 import { PointsContext } from "../../hooks/useGradeFormat";
@@ -54,6 +60,7 @@ import { overviewDialEntries } from "./overviewDialEntries";
 import { MODES, type OverviewMode } from "./overviewModes";
 import type { OverviewLoaderData } from "./overviewLoader";
 import { OverviewTable } from "./OverviewTable";
+import { StudentCard } from "./StudentCard";
 import { useDateMenu } from "./useDateMenu";
 
 const entryKey = (studentId: string, date: string) => `${studentId}|${date}`;
@@ -101,10 +108,15 @@ export function OverviewPage() {
   const photosOption = useDisplayOption("photos");
   const traitsOption = useDisplayOption("traits");
   const lastNameSortOption = useDisplayOption("lastNameSort");
-  const [useNicknames] = nicknamesOption;
+  const compact = useCompact();
+  const [gradeButton] = useDisplayOption("gradeButton");
+  // Small screens show the narrowest table: nicknames, no photos, no traits
+  const useNicknames = nicknamesOption[0] || compact;
   const [sortByLastName] = lastNameSortOption;
-  const [showPhotos] = photosOption;
-  const [showTraits] = traitsOption;
+  const showPhotos = photosOption[0] && !compact;
+  const showTraits = traitsOption[0] && !compact;
+  /** Student whose entries the card shows. */
+  const [cardStudent, setCardStudent] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [commenting, setCommenting] = useState<{
@@ -286,8 +298,9 @@ export function OverviewPage() {
   const dialEntries = overviewDialEntries({
     classId: cls.id,
     lessonDate,
-    hasPhotos,
-    hasTraits,
+    hasPhotos: hasPhotos && !compact,
+    hasTraits: hasTraits && !compact,
+    showNicknames: !compact,
     options: {
       photos: photosOption,
       traits: traitsOption,
@@ -298,19 +311,44 @@ export function OverviewPage() {
 
   const currentMode = MODES.find((option) => option.value == mode);
 
+  const seatingLink: SpeedDialLink = {
+    key: "seating",
+    label: "Sitzplan",
+    icon: <SeatsIcon />,
+    help: "Sitzplan der Klasse: in der Stunde, aus der diese Übersicht geöffnet wurde, sonst in der heutigen oder nächsten.",
+    to: paths.seating(cls.id, lessonDate),
+  };
+  const modes = (layout: "row" | "full") => (
+    <ModeToggle
+      layout={layout}
+      value={mode}
+      onChange={setMode}
+      options={MODES.map((option) => ({
+        ...option,
+        label: compact && option.value == "comment" ? "Komm." : option.label,
+        disabled: option.value != "view" && dates.length == 0,
+      }))}
+    />
+  );
+  const toolButton = (
+    <GradeToolButton
+      tool={activeTool}
+      onChange={setTool}
+      hideMarks={!hasMarkColumns}
+      className="h-12 w-full max-w-80"
+    />
+  );
+  const hint =
+    mode == "comment"
+      ? "Zelle antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"
+      : "Ein Tipp auf einen Namen zeigt alle Einträge des Schülers";
+  const cardFor = students.find((student) => student.id == cardStudent);
+
   return (
     <PointsContext value={points}>
       <SpeedDialLayout
         entries={dialEntries}
-        links={[
-          {
-            key: "seating",
-            label: "Sitzplan",
-            icon: <SeatsIcon />,
-            help: "Sitzplan der Klasse: in der Stunde, aus der diese Übersicht geöffnet wurde, sonst in der heutigen oder nächsten.",
-            to: paths.seating(cls.id, lessonDate),
-          },
-        ]}
+        links={compact ? [] : [seatingLink]}
       >
         <PageHeader
           back={<BackButton timetableUrl={paths.timetable(lessonDate)} />}
@@ -325,49 +363,42 @@ export function OverviewPage() {
           ]
             .filter(Boolean)
             .join(" · ")}
+          action={compact && <PageSwitch link={seatingLink} />}
         />
 
-        <ModeBar
-          current={currentMode?.label ?? ""}
-          modes={
-            <ModeToggle
-              value={mode}
-              onChange={setMode}
-              options={MODES.map((option) => ({
-                ...option,
-                disabled: option.value != "view" && dates.length == 0,
-              }))}
-            />
-          }
-          history={<HistoryButtons history={history} />}
-          footer={
-            shown && (
-              <>
-                Nur die Einträge von{" "}
-                <span className="font-semibold text-ink">{nameOf(shown)}</span>{" "}
-                sind sichtbar.
-                <Button size="small" onClick={() => setShownStudent(null)}>
-                  Alle zeigen
-                </Button>
-              </>
-            )
-          }
-          hint={
-            grading
-              ? null
-              : mode == "comment"
-                ? "Zelle antippen, um den Kommentar zu bearbeiten oder einen neuen zu schreiben"
-                : "Ein Tipp auf einen Namen zeigt nur dessen Einträge"
-          }
-        >
-          {grading && (
-            <GradeToolBar
-              tool={activeTool}
-              onChange={setTool}
-              hideMarks={!hasMarkColumns}
-            />
-          )}
-        </ModeBar>
+        {!compact && (
+          <ModeBar
+            current={currentMode?.label ?? ""}
+            modes={modes("row")}
+            history={<HistoryButtons history={history} />}
+            footer={
+              shown && (
+                <>
+                  Nur die Einträge von{" "}
+                  <span className="font-semibold text-ink">
+                    {nameOf(shown)}
+                  </span>{" "}
+                  sind sichtbar.
+                  <Button size="small" onClick={() => setShownStudent(null)}>
+                    Alle zeigen
+                  </Button>
+                </>
+              )
+            }
+            hint={grading ? null : hint}
+          >
+            {grading &&
+              (gradeButton ? (
+                <div className="flex justify-center">{toolButton}</div>
+              ) : (
+                <GradeToolBar
+                  tool={activeTool}
+                  onChange={setTool}
+                  hideMarks={!hasMarkColumns}
+                />
+              ))}
+          </ModeBar>
+        )}
 
         <div className="relative min-h-0 flex-1">
           <OverviewTable
@@ -412,7 +443,9 @@ export function OverviewPage() {
             showPhotos={showPhotos && hasPhotos}
             showTraits={showTraits}
             shown={shown}
-            onShow={setShownStudent}
+            onShow={(studentId) =>
+              studentId ? setCardStudent(studentId) : setShownStudent(null)
+            }
             entryOf={entryOf}
             typesOf={typesOf}
             isCancelled={isCancelled}
@@ -424,6 +457,31 @@ export function OverviewPage() {
             onCancel={setCancelTarget}
           />
         </div>
+
+        {compact && (
+          <BottomBar
+            current={currentMode?.label ?? ""}
+            modes={modes("full")}
+            history={<HistoryButtons history={history} round />}
+          >
+            {grading ? toolButton : hint}
+          </BottomBar>
+        )}
+
+        {cardFor && (
+          <StudentCard
+            student={cardFor}
+            name={nameOf(cardFor)}
+            traits={traitsOf(cardFor)}
+            columns={columns}
+            entryOf={entryOf}
+            typesOf={typesOf}
+            isCancelled={isCancelled}
+            rules={rules}
+            onCover={compact ? undefined : () => setShownStudent(cardFor.id)}
+            onClose={() => setCardStudent(null)}
+          />
+        )}
 
         {menu}
 

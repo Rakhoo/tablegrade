@@ -41,7 +41,7 @@ type NameCellProps = {
 
 /**
  * First cell of a row: number (1 to n from the top, matching the anonymous export), photo, name
- * and traits; a tap shows only this student's entries.
+ * and traits; a tap shows this student's entries on a card.
  */
 export function NameCell({
   student,
@@ -67,7 +67,7 @@ export function NameCell({
       <button
         type="button"
         aria-pressed={shown}
-        data-help="Name antippen zeigt nur dessen Einträge, etwa für den Schüler selbst."
+        data-help="Name antippen zeigt alle Einträge des Schülers auf einer Karte, etwa für ihn selbst."
         data-help-repeat
         data-help-place="below"
         onClick={onTap}

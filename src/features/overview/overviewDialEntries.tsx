@@ -20,6 +20,8 @@ type OverviewDialOptions = {
   lessonDate: string | null;
   hasPhotos: boolean;
   hasTraits: boolean;
+  /** Offers the switch between nicknames and full names. */
+  showNicknames: boolean;
   options: Record<
     "photos" | "traits" | "nicknames" | "lastNameSort",
     SwitchOption
@@ -32,6 +34,7 @@ export function overviewDialEntries({
   lessonDate,
   hasPhotos,
   hasTraits,
+  showNicknames,
   options,
 }: OverviewDialOptions) {
   const entries = classPageEntries(classId, lessonDate, hasPhotos);
@@ -63,19 +66,23 @@ export function overviewDialEntries({
       ),
     );
   }
+  if (showNicknames) {
+    entries.push(
+      displaySwitch(
+        {
+          key: "nicknames",
+          on: { label: "Spitznamen", action: "volle Namen" },
+          off: { label: "Volle Namen", action: "Spitznamen" },
+          icon: <SmileIcon />,
+          offIcon: <BadgeIcon />,
+          help: "Zeigt Spitznamen statt der vollen Namen; solange nicht nach Nachname sortiert wird, folgt die Reihenfolge den angezeigten Namen.",
+        },
+        options.nicknames,
+      ),
+    );
+  }
+  // Sorting comes after the display options, so they stay together
   entries.push(
-    displaySwitch(
-      {
-        key: "nicknames",
-        on: { label: "Spitznamen", action: "volle Namen" },
-        off: { label: "Volle Namen", action: "Spitznamen" },
-        icon: <SmileIcon />,
-        offIcon: <BadgeIcon />,
-        help: "Zeigt Spitznamen statt der vollen Namen; solange nicht nach Nachname sortiert wird, folgt die Reihenfolge den angezeigten Namen.",
-      },
-      options.nicknames,
-    ),
-    // Sorting comes after the display options, so they stay together
     displaySwitch(
       {
         key: "lastNameSort",

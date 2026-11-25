@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import type { GradeEntry, SeatedStudent, Trait } from "../../db";
+import { useCompact } from "../../hooks/useCompact";
 import { useSettings } from "../../hooks/useSettings";
 import { formatStudentName } from "../../lib/formatters";
 import { isExamDay, MARK_FIELD, MARK_KIND } from "../../lib/grades";
@@ -95,8 +96,10 @@ export function OverviewTable({
   onCancel,
 }: OverviewTableProps) {
   const settings = useSettings();
+  // Small screens always get the compact table
+  const compactTable = useCompact() || settings.compactTable;
   /** Size of the grade symbols in the cells; marks match it (see `TableCells`). */
-  const iconSize = settings.compactTable ? 20 : 26;
+  const iconSize = compactTable ? 20 : 26;
   const grading = mode == "grade";
   const tableArea = useRef<HTMLElement>(null);
 
@@ -244,7 +247,7 @@ export function OverviewTable({
       {empty ?? (
         <table
           className="border-separate border-spacing-0"
-          style={settings.compactTable ? COMPACT_SIZES : COMFORTABLE_SIZES}
+          style={compactTable ? COMPACT_SIZES : COMFORTABLE_SIZES}
         >
           <thead>
             <tr>
