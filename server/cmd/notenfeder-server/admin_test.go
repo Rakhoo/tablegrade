@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/Rakhoo/tablegrade/server/internal/blob"
 	"github.com/Rakhoo/tablegrade/server/internal/store/sqlite"
 )
 
@@ -45,5 +47,24 @@ func TestAdmin(t *testing.T) {
 	}
 	if err := admin([]string{"approve", "nobody@example.org"}, &bytes.Buffer{}); err == nil {
 		t.Error("unknown account accepted")
+	}
+
+	// Delete: without --ja only a preview, with it the account and its photos are gone.
+	photos := filepath.Join(dir, blob.DirName, u.ID)
+	if err := os.MkdirAll(photos, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if got := run("delete", u.ID); !strings.Contains(got, "--ja") {
+		t.Errorf("preview: %s", got)
+	}
+	if got := run("list"); !strings.Contains(got, u.ID) {
+		t.Error("preview deleted the account")
+	}
+	run("delete", u.ID, "--ja")
+	if got := run("list"); strings.Contains(got, u.ID) {
+		t.Errorf("account still listed:\n%s", got)
+	}
+	if _, err := os.Stat(photos); !os.IsNotExist(err) {
+		t.Errorf("photos still there: %v", err)
 	}
 }

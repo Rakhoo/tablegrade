@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/Rakhoo/tablegrade/server/internal/blob"
 	"github.com/Rakhoo/tablegrade/server/internal/config"
 	"github.com/Rakhoo/tablegrade/server/internal/store"
 	"github.com/Rakhoo/tablegrade/server/internal/store/sqlite"
@@ -22,7 +23,9 @@ const adminUsage = `Befehle:
   admin pending           nur Konten, die auf Freischaltung warten
   admin approve <id|mail> Konto freischalten
   admin revoke <id|mail>  Freischaltung zurücknehmen
-  admin emails            Kontakt-Adressen freigeschalteter Konten, für Rundmails (BCC)`
+  admin emails            Kontakt-Adressen freigeschalteter Konten, für Rundmails (BCC)
+  admin delete <id|mail> --ja
+                          Konto mit allen Daten und Fotos löschen (ohne --ja nur Vorschau)`
 
 // admin runs one operator command on the database of DATA_DIR.
 func admin(args []string, out io.Writer) error {
@@ -69,9 +72,34 @@ func admin(args []string, out io.Writer) error {
 		}
 		// Mails are sent by hand, so the command reminds of it.
 		fmt.Fprintf(out, "Freigeschaltet. Benachrichtigung an: %s\n", orDash(u.ContactEmail))
+	case args[0] == "delete" && (len(args) == 2 || len(args) == 3):
+		u, err := findUser(users, args[1])
+		if err != nil {
+			return err
+		}
+		// A typo in the id must not delete an account, so the command first only names it
+		if len(args) == 2 || args[2] != "--ja" {
+			fmt.Fprintf(out, "Löscht Konto %s (%s) mit allen Daten und Fotos. Zum Ausführen: admin delete %s --ja\n",
+				orDash(u.ContactEmail), u.ID, u.ID)
+			return nil
+		}
+		return deleteUser(ctx, db, cfg.DataDir, u, out)
 	default:
 		return errors.New(adminUsage)
 	}
+	return nil
+}
+
+// deleteUser removes an account like DELETE /account: database rows first, then the photos.
+func deleteUser(ctx context.Context, db *sqlite.DB, dataDir string, u store.User, out io.Writer) error {
+	if err := db.DeleteUser(ctx, u.ID); err != nil {
+		return err
+	}
+	if err := blob.NewFS(filepath.Join(dataDir, blob.DirName)).DeleteUser(ctx, u.ID); err != nil {
+		return fmt.Errorf("konto gelöscht, Fotos nicht: %w", err)
+	}
+	fmt.Fprintf(out, "Gelöscht: %s (%s). In den Sicherungen bleibt es höchstens 7 Tage, im Papierkorb des Cloud-Speichers bis zu 30 weitere.\n",
+		orDash(u.ContactEmail), u.ID)
 	return nil
 }
 

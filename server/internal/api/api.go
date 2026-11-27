@@ -64,7 +64,7 @@ func WithClock(now func() time.Time) Option {
 // New returns the server with all routes. It fails if the WebAuthn settings are invalid.
 func New(cfg config.Config, st store.Store, opts ...Option) (*Server, error) {
 	s := &Server{cfg: cfg, store: st, now: time.Now, oidc: newOIDCProviders(cfg),
-		blobs: blob.NewFS(filepath.Join(cfg.DataDir, "blobs")), hub: hub.NewMemory(),
+		blobs: blob.NewFS(filepath.Join(cfg.DataDir, blob.DirName)), hub: hub.NewMemory(),
 		pingTimeout: defaultPingTimeout}
 	for _, opt := range opts {
 		opt(s)

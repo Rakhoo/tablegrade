@@ -38,6 +38,9 @@ type FS struct{ dir string }
 // NewFS returns a file system store below dir; dir is created on first write.
 func NewFS(dir string) *FS { return &FS{dir: dir} }
 
+// DirName is the folder of the photos in DATA_DIR, shared by the server and the operator commands.
+const DirName = "blobs"
+
 // path returns the file of a blob and rejects ids that could leave the directory.
 func (f *FS) path(userID, blobID string) (string, error) {
 	if !safeName.MatchString(userID) || !safeName.MatchString(blobID) {

@@ -174,11 +174,17 @@ docker compose exec server /notenfeder-server admin list               # all acc
 docker compose exec server /notenfeder-server admin approve <id|mail>  # approve
 docker compose exec server /notenfeder-server admin revoke <id|mail>   # take back
 docker compose exec server /notenfeder-server admin emails             # addresses for mailings
+docker compose exec server /notenfeder-server admin delete <id|mail>   # preview: which account
+docker compose exec server /notenfeder-server admin delete <id> --ja   # delete account, data and photos
 ```
 
 The server sends no mails. After `approve`, notify the person yourself. For mailings about
 maintenance or payment, use the list from `admin emails` as BCC. The app notices the approval
 at the next start, when switching to the app or via "Status prüfen".
+
+`admin delete` deletes like "Konto löschen" in the app: database rows and photos at once. The
+daily backups keep the account for at most 7 days, the trash of the cloud storage for up to 30
+more. Connected devices notice it at their next request (`unauthorized`).
 
 ### Logs
 
