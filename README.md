@@ -322,9 +322,18 @@ it with `DEV_AUTH=1` and a temporary data folder, and syncs three simulated devi
 write wins, deletion, photo, offline phase, server restored from a backup, revoked device and
 account deletion. CI runs it in its own job.
 
+CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs only the jobs a push or pull
+request concerns: a first job compares the changed files with `git diff`. The frontend job runs
+for changes outside `server/`, `docs/`, `.claude/`, `.github/` and Markdown, the server job for
+`server/`, the end-to-end job for either. A changed `ci.yml`, a new branch or a force push runs
+all of them.
+
 ## Deployment
 
-Every push to `main` or `dev` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml):
+Every push to `main` or `dev` that changes the frontend build (`src/` without tests, `public/`,
+`index.html`, package and build config, the workflow itself) runs
+[.github/workflows/deploy.yml](.github/workflows/deploy.yml); server, docs or tests alone deploy
+nothing:
 it builds the app and publishes `dist/` to the Cloudflare Pages project `tablegrade`, from
 `main` as production, from `dev` (the development branch for ad hoc fixes and the target of
 later `<feature>/integration` branches) always as the preview at `dev.tablegrade.pages.dev`. The

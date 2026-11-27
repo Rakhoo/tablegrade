@@ -1,12 +1,27 @@
 name: Deploy to Cloudflare Pages
 
 on:
-  # Runs on pushes to main (production) and dev (dev preview at dev.tablegrade.pages.dev).
-  # The message of the newest commit of a push steers it: "[skip deploy]" deploys nothing,
-  # "[deploy dev]" on main deploys to the dev preview instead of production. GitHub's own
-  # "[skip ci]" skips all workflows.
+  # Runs on pushes to main (production) and dev (dev preview at dev.tablegrade.pages.dev) that
+  # change the frontend build; server, docs and tests alone deploy nothing. The message of the
+  # newest commit of a push steers it: "[skip deploy]" deploys nothing, "[deploy dev]" on main
+  # deploys to the dev preview instead of production. GitHub's own "[skip ci]" skips all
+  # workflows.
   push:
     branches: ["main", "dev"]
+    paths:
+      - "src/**"
+      - "!src/**/*.test.ts"
+      - "!src/test/**"
+      - "public/**"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.config.ts"
+      - "pwa-assets.config.ts"
+      - "tsconfig.json"
+      - "tsconfig.app.json"
+      - "tsconfig.node.json"
+      - ".github/workflows/deploy.yml"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

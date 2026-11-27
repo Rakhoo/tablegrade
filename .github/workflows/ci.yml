@@ -10,7 +10,46 @@ permissions:
   contents: read
 
 jobs:
+  # Decides which jobs run: the frontend for everything outside server/ and the docs, the server
+  # for server/, the end-to-end test for either. A changed ci.yml runs all of them.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.diff.outputs.frontend }}
+      server: ${{ steps.diff.outputs.server }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # A new branch or a force push has no usable base: check everything
+          if ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "frontend=true" >> "$GITHUB_OUTPUT"
+            echo "server=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          files=$(git diff --name-only "$BASE" HEAD)
+          frontend=false
+          server=false
+          if grep -qE '^\.github/workflows/ci\.yml$' <<< "$files"; then
+            frontend=true
+            server=true
+          fi
+          if grep -vE '^(server/|docs/|\.claude/|\.github/)|\.md$' <<< "$files" | grep -q .; then
+            frontend=true
+          fi
+          if grep -qE '^server/' <<< "$files"; then
+            server=true
+          fi
+          echo "frontend=$frontend" >> "$GITHUB_OUTPUT"
+          echo "server=$server" >> "$GITHUB_OUTPUT"
+
   frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +64,8 @@ jobs:
       - run: npm run build
 
   server:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,6 +81,8 @@ jobs:
 
   # Client against the real server (src/sync/e2e.test.ts); builds the server with Go
   e2e:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
